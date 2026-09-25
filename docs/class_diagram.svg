@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1883" height="996" font-family="Helvetica, Arial, sans-serif" font-size="12">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="20" y="32" font-size="20" font-weight="bold" fill="#1d2b3a">Problem 4 banking model - inheritance hierarchies (arrow points to the parent class)</text>
+<text x="20" y="770" font-size="15" font-weight="bold" fill="#1d2b3a">Standalone classes (related by composition / references, deliberately not inheritance)</text>
+<defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#4a6076"/></marker></defs>
+<line x1="480" y1="132" x2="296" y2="100" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="204" y1="132" x2="296" y2="100" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="296" y1="194" x2="204" y2="162" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="112" y1="194" x2="204" y2="162" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="786" y1="132" x2="878" y2="100" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="694" y1="194" x2="786" y2="162" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="878" y1="194" x2="786" y2="162" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1062" y1="132" x2="878" y2="100" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="388" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="480" y1="420" x2="388" y2="388" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="296" y1="420" x2="388" y2="388" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="112" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="664" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="848" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1768" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1032" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1400" y1="358" x2="940" y2="326" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1400" y1="420" x2="1400" y2="388" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1216" y1="420" x2="1400" y2="388" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1584" y1="420" x2="1400" y2="388" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="480" y1="584" x2="572" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="480" y1="646" x2="480" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="296" y1="646" x2="480" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="664" y1="646" x2="480" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="940" y1="584" x2="572" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1032" y1="646" x2="940" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="848" y1="646" x2="940" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="112" y1="584" x2="572" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
+<rect x="211" y="70" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
+<text x="296" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Party</text>
+<rect x="119" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="204" y="151" text-anchor="middle" fill="#1d2b3a">Organization</text>
+<rect x="27" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="112" y="213" text-anchor="middle" fill="#1d2b3a">Charity</text>
+<rect x="211" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="296" y="213" text-anchor="middle" fill="#1d2b3a">Company</text>
+<rect x="395" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="480" y="151" text-anchor="middle" fill="#1d2b3a">Person</text>
+<rect x="793" y="70" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
+<text x="878" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Arrangement</text>
+<rect x="701" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="786" y="151" text-anchor="middle" fill="#1d2b3a">DepositAccount</text>
+<rect x="609" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="694" y="213" text-anchor="middle" fill="#1d2b3a">CurrentAccount</text>
+<rect x="793" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="878" y="213" text-anchor="middle" fill="#1d2b3a">SavingsAccount</text>
+<rect x="977" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1062" y="151" text-anchor="middle" fill="#1d2b3a">FinancingAgreement</text>
+<rect x="855" y="296" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
+<text x="940" y="315" text-anchor="middle" fill="#1d2b3a" font-weight="bold">BankTransaction</text>
+<rect x="27" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="112" y="377" text-anchor="middle" fill="#1d2b3a">CashTransaction</text>
+<rect x="303" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="388" y="377" text-anchor="middle" fill="#1d2b3a">CustomerPayment</text>
+<rect x="211" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="296" y="439" text-anchor="middle" fill="#1d2b3a">CardPayment</text>
+<rect x="395" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="480" y="439" text-anchor="middle" fill="#1d2b3a">TransferPayment</text>
+<rect x="579" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="664" y="377" text-anchor="middle" fill="#1d2b3a">FeeCharge</text>
+<rect x="763" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="848" y="377" text-anchor="middle" fill="#1d2b3a">InterestCredit</text>
+<rect x="947" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1032" y="377" text-anchor="middle" fill="#1d2b3a">InternalTransfer</text>
+<rect x="1315" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1400" y="377" text-anchor="middle" fill="#1d2b3a">LoanTransaction</text>
+<rect x="1131" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1216" y="439" text-anchor="middle" fill="#1d2b3a">InterestCapitalisation</text>
+<rect x="1315" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1400" y="439" text-anchor="middle" fill="#1d2b3a">LoanDisbursement</text>
+<rect x="1499" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1584" y="439" text-anchor="middle" fill="#1d2b3a">LoanRepayment</text>
+<rect x="1683" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1768" y="377" text-anchor="middle" fill="#1d2b3a">Reversal</text>
+<rect x="487" y="522" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
+<text x="572" y="541" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Case</text>
+<rect x="27" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="112" y="603" text-anchor="middle" fill="#1d2b3a">CollectionsCase</text>
+<rect x="395" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="480" y="603" text-anchor="middle" fill="#1d2b3a">CustomerCase</text>
+<rect x="211" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="296" y="665" text-anchor="middle" fill="#1d2b3a">Complaint</text>
+<rect x="395" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="480" y="665" text-anchor="middle" fill="#1d2b3a">Dispute</text>
+<rect x="579" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="664" y="665" text-anchor="middle" fill="#1d2b3a">ServiceRequest</text>
+<rect x="855" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="940" y="603" text-anchor="middle" fill="#1d2b3a">RiskCase</text>
+<rect x="763" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="848" y="665" text-anchor="middle" fill="#1d2b3a">ComplianceInvestigation</text>
+<rect x="947" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1032" y="665" text-anchor="middle" fill="#1d2b3a">FraudAlert</text>
+<rect x="20" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="105" y="807" text-anchor="middle" fill="#1d2b3a">AccountHold</text>
+<rect x="204" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="289" y="807" text-anchor="middle" fill="#1d2b3a">Approval</text>
+<rect x="388" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="473" y="807" text-anchor="middle" fill="#1d2b3a">ApprovalCondition</text>
+<rect x="572" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="657" y="807" text-anchor="middle" fill="#1d2b3a">AuditEvent</text>
+<rect x="756" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="841" y="807" text-anchor="middle" fill="#1d2b3a">Bank</text>
+<rect x="940" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1025" y="807" text-anchor="middle" fill="#1d2b3a">BeneficialOwnership</text>
+<rect x="1124" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1209" y="807" text-anchor="middle" fill="#1d2b3a">Beneficiary</text>
+<rect x="1308" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1393" y="807" text-anchor="middle" fill="#1d2b3a">BeneficiaryVersion</text>
+<rect x="1492" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1577" y="807" text-anchor="middle" fill="#1d2b3a">Branch</text>
+<rect x="1676" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1761" y="807" text-anchor="middle" fill="#1d2b3a">CaseEvidence</text>
+<rect x="20" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="105" y="853" text-anchor="middle" fill="#1d2b3a">CaseNote</text>
+<rect x="204" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="289" y="853" text-anchor="middle" fill="#1d2b3a">Correction</text>
+<rect x="388" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="473" y="853" text-anchor="middle" fill="#1d2b3a">CustomerRelationship</text>
+<rect x="572" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="657" y="853" text-anchor="middle" fill="#1d2b3a">Employee</text>
+<rect x="756" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="841" y="853" text-anchor="middle" fill="#1d2b3a">FinancingApplication</text>
+<rect x="940" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1025" y="853" text-anchor="middle" fill="#1d2b3a">GeneralLedgerAccount</text>
+<rect x="1124" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1209" y="853" text-anchor="middle" fill="#1d2b3a">IdentityDocument</text>
+<rect x="1308" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1393" y="853" text-anchor="middle" fill="#1d2b3a">Installment</text>
+<rect x="1492" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1577" y="853" text-anchor="middle" fill="#1d2b3a">IssuedCard</text>
+<rect x="1676" y="834" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1761" y="853" text-anchor="middle" fill="#1d2b3a">LedgerEntry</text>
+<rect x="20" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="105" y="899" text-anchor="middle" fill="#1d2b3a">Mandate</text>
+<rect x="204" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="289" y="899" text-anchor="middle" fill="#1d2b3a">Notice</text>
+<rect x="388" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="473" y="899" text-anchor="middle" fill="#1d2b3a">OfficerRole</text>
+<rect x="572" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="657" y="899" text-anchor="middle" fill="#1d2b3a">PaymentAuthorisation</text>
+<rect x="756" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="841" y="899" text-anchor="middle" fill="#1d2b3a">Period</text>
+<rect x="940" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1025" y="899" text-anchor="middle" fill="#1d2b3a">ProductDefinition</text>
+<rect x="1124" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1209" y="899" text-anchor="middle" fill="#1d2b3a">ProductTermsVersion</text>
+<rect x="1308" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1393" y="899" text-anchor="middle" fill="#1d2b3a">RepaymentSchedule</text>
+<rect x="1492" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1577" y="899" text-anchor="middle" fill="#1d2b3a">Restriction</text>
+<rect x="1676" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1761" y="899" text-anchor="middle" fill="#1d2b3a">RoleAssignment</text>
+<rect x="20" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="105" y="945" text-anchor="middle" fill="#1d2b3a">StandingOrder</text>
+<rect x="204" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="289" y="945" text-anchor="middle" fill="#1d2b3a">Statement</text>
+<rect x="388" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="473" y="945" text-anchor="middle" fill="#1d2b3a">StatusChange</text>
+<rect x="572" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="657" y="945" text-anchor="middle" fill="#1d2b3a">StatusHistory</text>
+<rect x="756" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="841" y="945" text-anchor="middle" fill="#1d2b3a">VerificationCheck</text>
+</svg>
