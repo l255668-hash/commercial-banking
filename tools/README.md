@@ -10,6 +10,7 @@ These scripts regenerate the files in `docs/`. **None of them is needed to run o
 | `build_report_pdf.py` | Builds `docs/Design_Report.pdf` from `docs/Design_Report.md` | Chromium, `markdown` |
 | `md2docx.js` | Builds `docs/Design_Report.docx` from `docs/Design_Report.md` | Node.js, `docx` |
 | `make_deck.js` | Builds `docs/Viva_Presentation.pptx` (16 slides, speaker notes) | Node.js, `pptxgenjs` |
+| `make_progress_deck.js` | Builds `docs/Progress_Presentation_1.pptx` (8 slides, 5-minute progress checkpoint; the notes are the speech) | Node.js, `pptxgenjs` |
 | `gui_smoke_test.py` | Drives every guided check, every operation form and an onboarding story in the GUI; exits 1 on a crash or unbalanced books | Tkinter, a display (or `xvfb-run`) |
 | `gui_screenshots.py` | Captures the GUI screenshots used in the report | Linux/X11: `xwd`, netpbm |
 
@@ -25,6 +26,8 @@ python tools/build_report_pdf.py            # report PDF
 cd tools && npm install && cd ..            # once: docx and pptxgenjs
 node tools/md2docx.js docs/Design_Report.md docs/Design_Report.docx
 node tools/make_deck.js
+node tools/make_progress_deck.js
+node tools/md2docx.js docs/Progress_Presentation_1_Speech.md docs/Progress_Presentation_1_Speech.docx
 
 xvfb-run -a python tools/gui_smoke_test.py
 xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py

@@ -4,7 +4,7 @@ banking_system.py
 =================
 Problem 4 - Commercial Banking, Lending, Payments and Compliance
 (OOP project: assessed concepts are CLASSES and INHERITANCE)
-Prepared by: Khizar Rizwan and Bilal Nadeem
+Prepared by: Khizar Rizwan (instructor: Bilal Nadeem, CS2012 Introduction to OOP)
 
 A single, self-contained Python file (standard library only, Python 3.9+)
 that contains:

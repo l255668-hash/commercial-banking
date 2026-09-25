@@ -43,7 +43,7 @@ s.background = { color: TEAL };
 s.addText("Problem 4", { x: 0.6, y: 0.9, w: 8.8, h: 0.5, fontFace: BODY, fontSize: 18, color: "CFE3DF", margin: 0, isTextBox: true });
 s.addText("Commercial Banking, Lending, Payments and Compliance", { x: 0.6, y: 1.35, w: 8.8, h: 1.3, fontFace: HEAD, fontSize: 36, bold: true, color: WHITE, margin: 0, isTextBox: true });
 s.addText("An object model where nothing is deleted and every past state can be rebuilt", { x: 0.6, y: 2.75, w: 8.8, h: 0.5, fontFace: BODY, fontSize: 16, italic: true, color: "E9D3A6", margin: 0, isTextBox: true });
-s.addText([{ text: "Prepared by: Khizar Rizwan and Bilal Nadeem", options: { breakLine: true } }, { text: "Roll numbers: _____________", options: { breakLine: true } }, { text: "Course: __________________" }],
+s.addText([{ text: "Prepared by: Khizar Rizwan", options: { breakLine: true } }, { text: "Roll number: _____________", options: { breakLine: true } }, { text: "CS2012 Introduction to OOP - Instructor: Bilal Nadeem" }],
   { x: 0.6, y: 3.7, w: 5, h: 1.2, fontFace: BODY, fontSize: 13, color: WHITE, margin: 0, isTextBox: true });
 s.addNotes("Introduce the project: a teaching model of a commercial bank. The assessed concepts are classes and inheritance. The central idea is that history is never overwritten.");
 
