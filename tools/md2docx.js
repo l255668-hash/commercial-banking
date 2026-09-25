@@ -63,6 +63,7 @@ function table(rows) {
   });
 }
 
+const URDU = /[\u0600-\u06FF]/;
 const children = [];
 for (let i = 0; i < lines.length; i++) {
   const line = lines[i];
@@ -83,7 +84,9 @@ for (let i = 0; i < lines.length; i++) {
   } else if (/^#{1,3} /.test(line)) {
     const level = line.match(/^#+/)[0].length;
     const text = line.replace(/^#+ /, "");
+    const rtl = URDU.test(text);
     children.push(new Paragraph({
+      bidirectional: rtl || undefined, alignment: rtl ? AlignmentType.RIGHT : undefined,
       heading: [HeadingLevel.TITLE, HeadingLevel.HEADING_1, HeadingLevel.HEADING_2, HeadingLevel.HEADING_3][level - 1],
       pageBreakBefore: level === 2 && /^\d+\./.test(text),
       children: [new TextRun(text)],
@@ -99,6 +102,9 @@ for (let i = 0; i < lines.length; i++) {
       children: inline(line.replace(/^\d+\. /, "")) }));
   } else if (line.trim() === "---" || line.trim() === "") {
     continue;
+  } else if (URDU.test(line)) {                      // Urdu script: right-to-left, larger type
+    children.push(new Paragraph({ bidirectional: true, alignment: AlignmentType.RIGHT, spacing: { after: 160, line: 360 },
+      children: [new TextRun({ text: line, rightToLeft: true, font: { name: "Arial", cs: "Arial" }, size: 26, sizeComplexScript: 28 })] }));
   } else {
     children.push(new Paragraph({ children: inline(line) }));
   }

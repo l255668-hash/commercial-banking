@@ -4,7 +4,7 @@ Work through this list before you hand the project in.
 
 ## 1. Fill in your details
 
-- [ ] Name, roll number and course on the report cover (`docs/Design_Report.md`, then rebuild `.docx` / `.pdf`, or edit the Word file directly).
+- [x] Name, roll number and course on the report cover (`docs/Design_Report.md`, then rebuild `.docx` / `.pdf`, or edit the Word file directly).
 - [ ] The same fields on slide 1 of `docs/Viva_Presentation.pptx`.
 
 ## 2. Check the course rules (only your instructor can answer these)
@@ -56,8 +56,8 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
 | `docs/Viva_Presentation.pptx` | 16-slide deck for the viva, with speaker notes |
-| `docs/Progress_Presentation_1.pptx` | 8-slide deck for Project Presentation 1 (5-minute progress checkpoint) |
-| `docs/Progress_Presentation_1_Speech.docx` | Its timed speech, how it earns each mark, and likely questions |
+| `docs/Progress_Presentation_1.pptx` | 9-slide deck for Project Presentation 1 (5-minute progress checkpoint) |
+| `docs/Progress_Presentation_1_Speech.docx` | Its timed speech (Urdu and Roman Urdu), how it earns each mark, and likely questions |
 | `docs/Submission_Checklist.md` | This list |
 | `docs/screenshots/` | GUI screenshots used in report section 11 |
 | `tools/` | Optional build scripts that regenerate the flowcharts, PNGs, PDF, Word file, deck and screenshots, plus the GUI smoke test (see `tools/README.md`) |

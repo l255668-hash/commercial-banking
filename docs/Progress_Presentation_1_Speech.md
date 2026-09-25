@@ -1,90 +1,120 @@
-# Project Presentation 1: speech and preparation
+# Project Presentation 1: speech (Urdu) and preparation
 
-**Khizar Rizwan**, Problem 4: Commercial Banking, Lending, Payments and Compliance
+**Khizar Rizwan (25L-5668)**, Problem 4: Commercial Banking, Lending, Payments and Compliance
 CS2012 Introduction to Object-Oriented Programming, instructor Bilal Nadeem
 
-Slides: `docs/Progress_Presentation_1.pptx` (8 slides). The same speech is in each slide's speaker notes.
+Slides: `docs/Progress_Presentation_1.pptx` (9 slides). The Roman Urdu speech is also in each slide's speaker notes.
 
 ## What to submit on Google Classroom
 
 1. **`Progress_Presentation_1.pptx`**, the slide deck (the main submission).
-2. Optionally, this speech as `Progress_Presentation_1_Speech.docx`, if the class accepts a second file. The brief says "only one submission per group member", so if only one file is allowed, submit the deck.
-
-Before submitting, open the deck in PowerPoint, type your roll number on slide 1, and check that nothing overlaps.
+2. Optionally, this document (`Progress_Presentation_1_Speech.docx`), if a second file is allowed. The brief says "only one submission per group member", so if only one file is allowed, submit the deck.
 
 ## How the talk earns each part of the 40 marks
 
 | Criterion (10 marks each) | Where it is earned |
 |---|---|
-| Content delivery | A timed script (below), one idea per slide, and every claim backed by something on screen |
-| Progress | Slide 2: seven planned phases with their status, and five numbers measured from the code; slide 8: the remaining steps |
-| Sequencing | The talk follows the order the work was done: progress, research, design, build, next. The tracker at the top of every slide shows where you are |
-| Diagrams | Five kinds: a progress timeline, the class diagram, two UML inheritance diagrams, a flowchart in standard symbols and a UML state machine |
+| Content delivery | A timed script, one idea per slide, every claim backed by something on screen |
+| Progress | Slide 2: six phases with their status and five numbers; slide 8: what is built and what is in progress; slide 9: remaining steps |
+| Sequencing | Progress, research, design, build, next: the order the work was done. The tracker at the top of every slide shows where you are |
+| Diagrams | A progress timeline, the class diagram, two UML inheritance diagrams, a flowchart in standard symbols and a GUI screen |
 
-## The speech (about 5 minutes, 700 words)
+## Speech in Urdu (about 5 minutes)
 
-Speak at a steady pace, about 140 words a minute. The times in brackets are checkpoints: if you are behind, shorten the next slide rather than rushing.
+Keep technical words (class, inheritance, mandate, reversal) in English, as written. Speak calmly; the times in brackets are checkpoints.
 
-### Slide 1: Title (0:00 to 0:20)
+### سلائیڈ 1: تعارف (0:00 تا 0:20)
 
-Assalam-o-Alaikum. I am Khizar Rizwan, and my project is Problem 4: a commercial bank modelled with classes and inheritance. In five minutes I will show where the project stands, the research behind the design, the class and inheritance diagrams, one workflow and one lifecycle, and what I will do next.
+السلام علیکم۔ میرا نام خضر رضوان ہے، رول نمبر 25L-5668۔ میرا پروجیکٹ Problem 4 ہے: ایک commercial bank کا object-oriented model، جس میں customers، loans، payments، cards اور compliance سب شامل ہیں۔ اگلے پانچ منٹ میں میں آپ کو اپنی research، design، اب تک کی progress اور اگلے steps دکھاؤں گا۔
 
-### Slide 2: Where the project stands (0:20 to 1:05)
+### سلائیڈ 2: پروجیکٹ کہاں کھڑا ہے (0:20 تا 0:55)
 
-Here is my progress. I planned seven phases. The first five are complete: research, assumptions, the class design, the core implementation with tests, and a seeded demonstration with a desktop interface.
+میں نے پروجیکٹ کو چھ phases میں plan کیا۔ پہلے تین phases مکمل ہیں: domain research، assumptions اور requirements، اور class اور inheritance design۔ چوتھا phase، یعنی Python implementation، اس وقت جاری ہے، اور اس کے ساتھ Tkinter GUI پر بھی کام چل رہا ہے۔ آخری phase final report اور viva ہے۔ نیچے دیے گئے numbers میری research اور design کے ہیں: آٹھ sources، ستائیس banking terms، چھتیس documented assumptions، اور اکہتر classes کا design، جن میں چار multi-level hierarchies ہیں۔
 
-The numbers underneath are measured from the code: 71 business classes, 98 operations, four multi-level inheritance hierarchies, 16 scenarios where the normal workflow breaks, and 73 automated tests that all pass. The brief asks for at least 30 classes and 30 operations, so the minimum is covered. I am now in phase six, refining the design with your feedback, and phase seven is the final report and viva.
+### سلائیڈ 3: ریسرچ (0:55 تا 1:40)
 
-### Slide 3: Research changed the design (1:05 to 1:50)
+Brief کہتا ہے کہ model بنانے سے پہلے industry کو سمجھو۔ اس لیے میں نے آٹھ sources study کیے۔ FATF Recommendations اور State Bank of Pakistan کی AML regulations سے customer due diligence اور beneficial ownership سمجھا۔ Basel Committee سے risk management۔ ISO 20022 سے payment کا lifecycle، کہ payment صرف "ہوئی" یا "نہیں ہوئی" نہیں ہوتی، بلکہ pending، held، posted اور failed جیسے statuses سے گزرتی ہے۔ Visa اور Mastercard کے dispute rules سے reversal، refund اور chargeback کا فرق۔ IFRS 9 سے loan restructuring، BIAN سے product اور customer agreement کا فرق، اور Martin Fowler کی Analysis Patterns سے roles اور time-dated records۔
 
-Before designing I researched how banks actually work, and three findings changed my design.
+### سلائیڈ 4: ریسرچ نے design کیسے بدلا (1:40 تا 2:20)
 
-First, know-your-customer rules treat customer, director, owner and signatory as roles of one person. So I have one Person class, and the roles are separate dated objects, not subclasses.
+اس research نے میرا design بدل دیا۔ پہلے میرا خیال تھا کہ Customer، Person کی subclass ہوگی۔ لیکن KYC rules بتاتے ہیں کہ customer، director، owner اور signatory ایک ہی انسان کے roles ہیں۔ اس لیے ایک Person class ہے، اور roles الگ، dated objects ہیں۔ دوسرا: bank کبھی غلط payment کو مٹاتا نہیں، بلکہ نئی entry post کرتا ہے۔ اس لیے Reversal اور Chargeback نئی transactions ہیں۔ تیسرا: product بند ہو جائے تو پرانے customers اپنی پرانی terms پر رہتے ہیں، اس لیے ProductDefinition اور customer کا Arrangement الگ classes ہیں۔
 
-Second, banks never erase a wrong payment; they post a new entry that counteracts it. So a Reversal, and a card Chargeback, are new transactions linked to the original.
+### سلائیڈ 5: Class diagram (2:20 تا 2:50)
 
-Third, a bank product can stop being sold while existing customers keep it on their old terms. So I separated the product definition from the customer's own arrangement.
+یہ research کے بعد کا class diagram ہے۔ اس میں چار hierarchies ہیں: Party، Arrangement، BankTransaction اور Case۔ باقی چیزیں، جیسے cards، mandates، branches اور employees، association سے جڑی ہیں، کیونکہ وہ ایک دوسرے سے related ہیں مگر ایک دوسرے کی قسم نہیں۔ میرا اصول یہ تھا: inheritance صرف وہاں جہاں سچ مچ "is-a" رشتہ ہو۔
 
-### Slide 4: Class model after research (1:50 to 2:30)
+### سلائیڈ 6: Multi-level inheritance (2:50 تا 3:25)
 
-This is the class diagram. It is generated from the code itself, so it always matches the program.
+یہ دو multi-level hierarchies UML میں ہیں۔ Party سے Organization، اور Organization سے Company اور Charity۔ اور Arrangement سے DepositAccount، پھر Current، Savings اور Term Deposit۔ Shared data ہمیشہ اس سب سے اونچے level پر ہے جہاں ہر subclass کو اس کی ضرورت ہے۔ دائیں طرف وہ inheritance ہے جو میں نے سوچ کر reject کی: card account نہیں کیونکہ اس میں پیسہ نہیں ہوتا، sole trader الگ legal entity نہیں، اور merchant refund، reversal نہیں کیونکہ اصل purchase valid رہتی ہے۔
 
-There are four hierarchies: parties, arrangements, transactions and cases. Everything else, like cards, mandates, branches and employees, is a standalone class connected by association, because those things are related to each other but are not kinds of each other. That was my main rule: inheritance only for an is-a relationship where the parent's data genuinely belongs to every child.
+### سلائیڈ 7: ایک مکمل workflow (3:25 تا 3:55)
 
-### Slide 5: Multi-level inheritance, and what I rejected (2:30 to 3:15)
+یہ flowchart ایک پورا workflow دکھاتا ہے: digital banking سے ایک بڑا transfer، جو brief کا اپنا case ہے۔ پہلے authority check ہوتی ہے، پھر funds اور limit، پھر dual control جہاں دوسرے signatory کی approval چاہیے، اور پھر compliance review۔ اگر کوئی rule fail ہو تو payment مٹتی نہیں، بلکہ وجہ کے ساتھ record میں رہتی ہے۔
 
-Here are two of the multi-level hierarchies as UML. Party, then Organization, then Company and Charity: an organization adds registration and officers, and each subclass adds its own rule; for example, a charity needs two trustees. Arrangement, then DepositAccount, then current, savings and term deposit: every deposit account has a ledger and a balance, and each subclass changes only one behaviour.
+### سلائیڈ 8: Implementation اور GUI (3:55 تا 4:35)
 
-On the right are tempting inheritances I rejected. A customer is a role with a start and an end, not a kind of person. A card holds no money, so it is not an account. A sole trader is legally the person. And a merchant refund is not a reversal, because the original purchase stays valid.
+اب implementation کی progress۔ Core model Python میں بن رہا ہے: parties، accounts، transactions اور double-entry ledger کا کام ہو چکا ہے، اور ہر rule کے ساتھ test لکھ رہا ہوں۔ اس وقت میں cards اور lending کے workflows اور brief کے exception scenarios پر کام کر رہا ہوں۔ ساتھ ہی Tkinter میں GUI کا prototype بن رہا ہے، یہ اس کی screen ہے، جہاں staff اور customer دونوں اپنے role کے حساب سے کام کر سکیں گے۔
 
-### Slide 6: One workflow end to end (3:15 to 3:50)
+### سلائیڈ 9: اگلے steps (4:35 تا 5:00)
 
-This flowchart shows one complete workflow: a large transfer from the company account through digital banking, exactly the case in the brief. The code checks the rules in this order: authority, then funds and limits, then dual control, where a second signatory must approve, then the compliance hold for review. If any rule fails, the payment is not thrown away; it is kept as a failed transaction with the reason, so the history is complete.
+اگلے steps: implementation اور GUI مکمل کرنا، brief کے ہر critical case کو automated tests سے check کرنا، files اور JSON سے data save کرنا، اور SOLID principles کے مطابق design review کرنا۔ آخر میں final report اور viva۔ شکریہ، میں سوالات کے لیے حاضر ہوں۔
 
-### Slide 7: A lifecycle the code enforces (3:50 to 4:30)
+## Speech in Roman Urdu
 
-Records also change over time, so each class declares its lifecycle. This UML state machine for a card is drawn from that declaration, and the same declaration is enforced in the code. It covers the brief's critical case: a card is reported stolen and blocked, then replaced with a different limit, and when the old card is found it is destroyed, never re-activated. Every old payment still names the exact card that was used, and an illegal move, like destroyed back to active, is refused.
+The same speech, for reading aloud. This version is also in the slides' speaker notes.
 
-### Slide 8: Next steps (4:30 to 5:00)
+### Slide 1 (0:00-0:20)
 
-To finish, my next steps. Now, I will refine the model with your feedback from today. Next, I will add saving and loading the bank's records with files and JSON, which we cover in the course, and review the design against SOLID and the design patterns we will study. Finally, I will complete the report and prepare for the viva. Thank you; I am happy to take questions.
+Assalam-o-Alaikum. Mera naam Khizar Rizwan hai, roll number 25L-5668. Mera project Problem 4 hai: ek commercial bank ka object-oriented model, jis mein customers, loans, payments, cards aur compliance sab shamil hain. Agle paanch minute mein main aap ko apni research, design, ab tak ki progress aur agle steps dikhaunga.
 
-## Questions you may be asked, with short answers
+### Slide 2 (0:20-0:55)
 
-**Why is Customer not a subclass of Person?** Being a customer is a role that starts and ends. Ayesha is a customer, a director and a signatory at the same time. Subclasses would force three records for one real person, and the history would break when a role ends.
+Main ne project ko chhe phases mein plan kiya. Pehle teen phases mukammal hain: domain research, assumptions aur requirements, aur class aur inheritance design. Chautha phase, yani Python implementation, is waqt jaari hai, aur us ke saath Tkinter GUI par bhi kaam chal raha hai. Aakhri phase final report aur viva hai. Neeche diye gaye numbers meri research aur design ke hain: aath sources, sattaees banking terms, chhattees documented assumptions, aur ikhattar classes ka design, jin mein chaar multi-level hierarchies hain.
 
-**Where is your multi-level inheritance?** Four places. For example, Party › Organization › Company, and BankTransaction › Reversal › Chargeback.
+### Slide 3 (0:55-1:40)
 
-**Why is a reversal a new record instead of deleting the payment?** Banks never erase history. The original payment stays posted, and the reversal counteracts it, so the books still balance and an auditor can see both.
+Brief kehta hai ke model banane se pehle industry ko samjho. Is liye main ne aath sources study kiye. FATF Recommendations aur State Bank of Pakistan ki AML regulations se customer due diligence aur beneficial ownership samjha. Basel Committee se risk management. ISO 20022 se payment ka lifecycle, ke payment sirf "hui" ya "nahi hui" nahi hoti, balkay pending, held, posted aur failed jaise statuses se guzarti hai. Visa aur Mastercard ke dispute rules se reversal, refund aur chargeback ka farq. IFRS 9 se loan restructuring, BIAN se product aur customer agreement ka farq, aur Martin Fowler ki Analysis Patterns se roles aur time-dated records.
 
-**How do you show authority that existed in the past?** A Mandate has a validity period. Revoking it closes the period instead of deleting it, and every payment stores the mandate it used, so "could Bilal pay on 11 April 2026?" is still answerable.
+### Slide 4 (1:40-2:20)
 
-**What does the product-versus-arrangement split buy you?** A product can close to new customers while existing holders keep the terms version they signed up under, without rewriting their history.
+Is research ne mera design badal diya. Pehle mera khayal tha ke Customer, Person ki subclass hogi. Lekin KYC rules batate hain ke customer, director, owner aur signatory ek hi insaan ke roles hain. Is liye ek Person class hai, aur roles alag, dated objects hain. Doosra: bank kabhi galat payment ko mitata nahi, balkay nayi entry post karta hai. Is liye Reversal aur Chargeback nayi transactions hain. Teesra: product band ho jaye to purane customers apni purani terms par rehte hain, is liye ProductDefinition aur customer ka Arrangement alag classes hain.
 
-**What is not done yet?** Saving to files or JSON, a SOLID and design-pattern review, and the final report and viva. These are on slide 8.
+### Slide 5 (2:20-2:50)
+
+Yeh research ke baad ka class diagram hai. Is mein chaar hierarchies hain: Party, Arrangement, BankTransaction aur Case. Baqi cheezen, jaise cards, mandates, branches aur employees, association se jurri hain, kyunke woh ek doosre se related hain magar ek doosre ki qism nahi. Mera usool yeh tha: inheritance sirf wahan jahan sach mein "is-a" rishta ho.
+
+### Slide 6 (2:50-3:25)
+
+Yeh do multi-level hierarchies UML mein hain. Party se Organization, aur Organization se Company aur Charity. Aur Arrangement se DepositAccount, phir Current, Savings aur Term Deposit. Shared data hamesha us sab se oonche level par hai jahan har subclass ko us ki zaroorat hai. Daayen taraf woh inheritance hai jo main ne soch kar reject ki: card account nahi kyunke us mein paisa nahi hota, sole trader alag legal entity nahi, aur merchant refund reversal nahi kyunke asal purchase valid rehti hai.
+
+### Slide 7 (3:25-3:55)
+
+Yeh flowchart ek poora workflow dikhata hai: digital banking se ek bara transfer, jo brief ka apna case hai. Pehle authority check hoti hai, phir funds aur limit, phir dual control jahan doosre signatory ki approval chahiye, aur phir compliance review. Agar koi rule fail ho to payment mitti nahi, balkay wajah ke saath record mein rehti hai.
+
+### Slide 8 (3:55-4:35)
+
+Ab implementation ki progress. Core model Python mein ban raha hai: parties, accounts, transactions aur double-entry ledger ka kaam ho chuka hai, aur har rule ke saath test likh raha hoon. Is waqt main cards aur lending ke workflows aur brief ke exception scenarios par kaam kar raha hoon. Saath hi Tkinter mein GUI ka prototype ban raha hai, yeh us ki screen hai, jahan staff aur customer dono apne role ke hisaab se kaam kar sakenge.
+
+### Slide 9 (4:35-5:00)
+
+Agle steps: implementation aur GUI mukammal karna, brief ke har critical case ko automated tests se check karna, files aur JSON se data save karna, aur SOLID principles ke mutabiq design review karna. Aakhir mein final report aur viva. Shukriya, main sawalat ke liye hazir hoon.
+
+## Likely questions (answers in Roman Urdu)
+
+**Customer, Person ki subclass kyun nahi?** Customer hona ek role hai jo shuru aur khatam hota hai. Ayesha ek hi waqt mein customer, director aur signatory hai. Subclasses se ek insaan ke teen records ban jate, aur role khatam hone par history toot jati.
+
+**Multi-level inheritance kahan hai?** Chaar jagah. Misal ke taur par Party › Organization › Company, aur BankTransaction › Reversal › Chargeback.
+
+**Reversal naya record kyun, payment delete kyun nahi?** Bank history kabhi nahi mitata. Asal payment posted rehti hai aur reversal usay counteract karta hai, is liye books balance rehti hain aur auditor dono dekh sakta hai.
+
+**Purani authority kaise dikhate ho?** Mandate ka ek validity period hai. Revoke karne se period band hota hai, mandate delete nahi hota, aur har payment apna mandate store karti hai.
+
+**Research ke kaun se sources?** FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa aur Mastercard dispute rules, IFRS 9, BIAN aur Martin Fowler ki Analysis Patterns.
+
+**Abhi kya baqi hai?** Implementation aur GUI mukammal karna, har critical case ka test, files/JSON persistence, SOLID review, aur final report aur viva.
 
 ## Rehearsal checklist
 
-- Time yourself twice with a phone stopwatch. Stop at 5:00 even if you have not finished.
-- Point at the diagram while you describe it, for example the Party › Organization › Company path on slide 5.
-- Keep the demo ready as a backup: `python banking_gui.py`, but only if the instructor asks. The talk does not depend on it.
+- Time yourself twice with a stopwatch; stop at 5:00.
+- Point at the diagram while you describe it, for example the Party › Organization › Company path on slide 6.
+- Learn the eight source names on slide 3; they are the strongest sign of research.

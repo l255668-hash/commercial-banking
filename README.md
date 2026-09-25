@@ -40,8 +40,8 @@ docs/
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
   Viva_Presentation.pptx       16-slide viva deck with speaker notes
-  Progress_Presentation_1.pptx 8-slide, 5-minute progress checkpoint (Project Presentation 1)
-  Progress_Presentation_1_Speech.md/.docx   its timed speech, marks map and likely questions
+  Progress_Presentation_1.pptx 9-slide, 5-minute progress checkpoint (Project Presentation 1)
+  Progress_Presentation_1_Speech.md/.docx   its timed speech in Urdu and Roman Urdu, marks map, likely questions
   Submission_Checklist.md      what to check and fill in before handing in
   screenshots/gui_*.png        screenshots of the desktop GUI
 .github/workflows/tests.yml    CI: tests on Python 3.9 / 3.11 / 3.13, GUI smoke test, diagrams up to date

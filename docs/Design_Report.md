@@ -5,7 +5,7 @@
 | | |
 |---|---|
 | Prepared by | Khizar Rizwan |
-| Roll number | ______________________________ |
+| Roll number | 25L-5668 |
 | Course and instructor | CS2012 Introduction to Object-Oriented Programming, FAST-NUCES Lahore; Bilal Nadeem |
 
 The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 73 automated tests and generators for the class and UML diagrams.
