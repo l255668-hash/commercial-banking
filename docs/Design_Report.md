@@ -22,7 +22,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 1. Domain research summary, sources and terminology | Section 1 |
 | 2. Assumptions | Section 2 (A1 to A36) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
-| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`) |
+| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); section 4.1 adds six flowcharts of the main workflows |
 | 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (73 domain classes, 96 operations, 78 of them state-changing commands) |
 | 6. Explanation of every inheritance relationship | Section 6 |
 | 7. At least three tempting inheritances rejected | Section 7 (twelve given) |
@@ -271,6 +271,45 @@ Complete class list by area:
 | Application service | `Bank` |
 | Rule violations | `BankingError`, `KycIncomplete`, `AuthorityError`, `RestrictionViolation`, `ProductNotAvailable`, `InsufficientFunds`, `InvalidStateError` |
 
+
+### 4.1 Behaviour: the main workflows as flowcharts
+
+The class diagrams above show the structure. These six flowcharts show the behaviour: the order in which the code checks each rule and where a refusal ends the flow. Each one was traced from the method it describes, so the order of the decisions is the order of the checks in `banking_system.py` / `banking_gui.py`. They are drawn from code by `tools/make_flowcharts.py` using the standard flowchart symbols (ISO 5807):
+
+| Symbol | Shape | Meaning in these charts |
+|---|---|---|
+| Terminator | Rounded "stadium" (green) | Start or normal end of the flow |
+| Terminator | Rounded "stadium" (red) | The flow ends because a rule refused it (error raised, or the record kept as FAILED / DECLINED / REJECTED) |
+| Process | Rectangle | One step the code performs |
+| Decision | Diamond | A yes / no rule; every diamond has exactly one Yes and one No exit |
+| Input / output | Parallelogram | Data coming in (an instruction) or going out (a printed report, a banner) |
+| Predefined process | Rectangle with double sides | A named `Bank` operation described elsewhere (for example `post()`, `verify_party()`) |
+| Data store | Cylinder | Stored records: ledger entries and the append-only audit log |
+
+**Flowchart 1. Program overview:** what `python banking_system.py` does for each command-line option, and how the demonstration reaches a zero trial balance.
+
+![Flowchart 1 - Program overview](flowchart_1_program.png)
+
+**Flowchart 2. Customer onboarding and account opening:** a failed document check is recorded (never deleted); KYC gaps block onboarding; an organisation needs its directors or trustees and owners verified first.
+
+![Flowchart 2 - Customer onboarding](flowchart_2_onboarding.png)
+
+**Flowchart 3. Transfer payment** (`initiate_transfer`, `authorise_payment`, `release_transaction`): beneficiary, authority, funds, dual control and the PKR 1,000,000 compliance hold, in the order the code checks them.
+
+![Flowchart 3 - Transfer payment](flowchart_3_transfer.png)
+
+**Flowchart 4. Card purchase** (`card_purchase`): every refusal is a DECLINED payment kept with its reason; the card used is remembered so the history survives replacement.
+
+![Flowchart 4 - Card purchase](flowchart_4_card_purchase.png)
+
+**Flowchart 5. Financing lifecycle:** delegated credit authority, conditions before disbursement, arrears and collections, restructuring (a new schedule version, the old one kept) and settlement.
+
+![Flowchart 5 - Financing lifecycle](flowchart_5_financing.png)
+
+**Flowchart 6. Desktop console** (`banking_gui.py`): every action calls one `Bank` operation and the result decides the banner colour; no rule lives in the GUI.
+
+![Flowchart 6 - Desktop console](flowchart_6_gui.png)
+
 ---
 
 ## 5. Implementation and operations
@@ -404,11 +443,13 @@ The brief assesses classes and inheritance, so the interface was built to make t
 | `Page` | `ttk.Frame` | A screen with a title, `build()` and `refresh()` |
 | `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
 | `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
-| `DashboardPage`, `OperationsPage`, `BooksPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
+| `DashboardPage`, `OperationsPage`, `BooksPage`, `DiagramsPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
 | `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Reusable table, rich text pane and scrolling area |
 | `Panel`, `StatCard` | `tk.Frame` | Reusable card widgets |
 | `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
-| `BankController`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a result in words; a form definition; colours, fonts and styles |
+| `BankController`, `CurrentBank`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a stand-in that always forwards to the current bank (so "Reset data" reaches every form); a result in words; a form definition; colours, fonts and styles |
+
+**What it covers.** 13 screens. The Operations screen has 30 forms in seven groups (Customers 9, Payments 7, Cards 5, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Diagrams screen shows every flowchart and UML diagram in `docs/`, so the design can be explained from inside the running program. `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
 
 `MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
 
@@ -435,3 +476,11 @@ The brief assesses classes and inheritance, so the interface was built to make t
 **Figure 14. Class model read from the code at runtime,** with what each level adds and live object counts.
 
 ![Class model](screenshots/gui_06_class_model.png)
+
+**Figure 15. Onboarding forms:** each form lists the permitted staff first and calls one `Bank` operation.
+
+![Onboarding form](screenshots/gui_08_onboarding_form.png)
+
+**Figure 16. Diagrams screen:** the flowcharts and UML diagrams from `docs/`, viewable while the program runs.
+
+![Diagrams screen](screenshots/gui_07_diagrams.png)

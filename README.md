@@ -28,13 +28,32 @@ docs/
   class_diagram.png/.svg       overview of all hierarchies and standalone classes
   uml_*.png/.svg               UML: four hierarchy diagrams (attributes, methods, overrides)
                                and three association diagrams
+  flowchart_*.png/.svg         six flowcharts of the main workflows, standard symbols
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
-  Viva_Presentation.pptx       13-slide viva deck with speaker notes
+  Viva_Presentation.pptx       14-slide viva deck with speaker notes
   Submission_Checklist.md      what to check and fill in before handing in
   screenshots/gui_*.png        screenshots of the desktop GUI
+tools/                         scripts that rebuild the flowcharts, PNGs, PDF, Word report,
+                               slide deck and GUI screenshots, plus a GUI smoke test
+                               (not needed to run the project; see tools/README.md)
 ```
+
+## Flowcharts
+
+Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the order in which the code checks each rule and where a refusal ends the flow. They use the standard symbols: stadium = start / end (red when a rule ends the flow), rectangle = process, diamond = yes / no decision, parallelogram = input / output, double-sided rectangle = a named `Bank` operation, cylinder = stored records.
+
+| Flowchart | Traced from |
+|---|---|
+| 1. Program overview | `banking_system.py` command line, `run_demo()` |
+| 2. Customer onboarding and account opening | `verify_party`, `become_customer`, `open_deposit_account` |
+| 3. Transfer payment | `initiate_transfer`, `authorise_payment`, `release_transaction` |
+| 4. Card purchase | `card_purchase` |
+| 5. Financing lifecycle | `submit_financing_application` to `settle_financing` |
+| 6. Desktop console interaction | `BankController.run` in `banking_gui.py` |
+
+![Flowchart 3 - Transfer payment](docs/flowchart_3_transfer.png)
 
 ## Inside `banking_system.py`
 
@@ -62,7 +81,7 @@ docs/
 | Screen | What it shows |
 |---|---|
 | Overview | Customers, deposits, lending, open cases, payments waiting for a second signatory or held for review (authorise or release them here), recent audit events, and whether the books balance |
-| Operations | 20 operation forms (payments, cash, cards, compliance, lending, records) and 14 guided rule checks, each running one real operation and showing the model's answer |
+| Operations | 30 operation forms in seven groups (customers and onboarding, payments, cash, cards, compliance, lending, records) and 14 guided rule checks, each running one real operation and showing the model's answer |
 | Customers | Every party with its class path, KYC, capacities, a timeline of dated roles (offices, ownerships, mandates, branch and RM history, restrictions), and a time machine for any past date |
 | Accounts | Each arrangement with its pinned terms, branch history, balances, ledger with running balance, term-deposit maturity, and every financing schedule version |
 | Transactions | Filter by class (including parent classes such as `CustomerPayment`), status or text; each record's story, beneficiary as sent vs today, and its double-entry legs |
@@ -71,6 +90,7 @@ docs/
 | Staff / Products & branches | Role history and every approval with the role held then; products with terms versions and holders; branches and their history |
 | Books & audit | Trial balance on any date (always zero) and a searchable audit log |
 | Class model | The inheritance tree read from the code, what each level adds, and live object counts |
+| Diagrams | Every flowchart and UML diagram in `docs/`, viewable inside the program |
 | Scenario log | The 16 seeded scenarios with refusals highlighted |
 
 The GUI never edits an object directly: every button calls one `Bank` operation, so all rules, refusals and audit events are the model's own. The top bar advances the business date (running the end-of-day batch) or resets the seeded data. The GUI is itself built from classes and inheritance (`Page -> MasterDetailPage -> CustomersPage` and so on).
@@ -82,7 +102,7 @@ The GUI never edits an object directly: every button calls one `Bank` operation,
 | Domain research summary | Report section 1 |
 | Assumptions | Report section 2 (A1 to A36) |
 | Requirements interpretation | Report section 3 |
-| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams |
+| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; section 4.1: 6 flowcharts |
 | Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 73 domain classes, 96 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6 |
 | At least three rejected inheritances | Report section 7 (twelve given) |

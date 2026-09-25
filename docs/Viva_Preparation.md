@@ -74,8 +74,25 @@ A sole trader has no separate legal personality, so it is a `Person` in the `SOL
 **Where are the business rules - in the GUI or the model?**
 Only in the model. The GUI's `BankController.run` calls one `Bank` operation and translates the result: a `BankingError` becomes a red "blocked" banner naming the error class; a FAILED or DECLINED transaction becomes "refused, kept on record". The GUI never sets an attribute on a domain object.
 
+**What happens to the forms when you press "Reset data"?**
+They keep working on the new bank. The forms are built once, so they hold a `CurrentBank` stand-in that looks up `controller.bank` on every call instead of capturing the old object. The GUI smoke test resets the bank between its passes to check exactly this.
+
 **Why does the GUI have its own inheritance?**
 Every list screen has the same layout (table left, details right, refresh on show), so that lives once in `MasterDetailPage`; each subclass only declares its columns and how to draw one record. Same reasoning as `DepositAccount` in the model.
+
+## Flowcharts
+
+**What do your flowcharts add to the class diagrams?**
+The class diagrams show structure: which classes exist and what each level adds. The flowcharts show behaviour: the order in which a method checks its rules and where a refusal ends the flow. Six are given (report section 4.1): program overview, onboarding, transfer, card purchase, financing lifecycle and the GUI.
+
+**Why those shapes?**
+They are the standard flowchart symbols (ISO 5807): a stadium for start and end, a rectangle for a step, a diamond for a yes/no decision, a parallelogram for input or output, a double-sided rectangle for a named operation defined elsewhere (for example `post()`), and a cylinder for stored data (the ledger and audit log). Red terminators mark flows that a rule ended, and every diamond has exactly one Yes exit and one No exit.
+
+**How do you know the flowchart matches the code?**
+Each chart was traced from the method it describes. In Flowchart 3 the diamonds follow `initiate_transfer`: beneficiary, then authority (mandate and limit), then funds, then dual control, then the PKR 1,000,000 hold. Change the order in the code and the chart would be wrong, so they are drawn by a script (`tools/make_flowcharts.py`) kept next to the code.
+
+**Why does a refused card purchase end in a terminator but still reach the records?**
+Because the purchase is created before the checks run (`CardPayment` remembers the exact card), so a refusal changes its status to DECLINED instead of discarding it. The red terminator means the flow ended, not that the record disappeared.
 
 ## The code review
 

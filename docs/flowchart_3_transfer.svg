@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1490" height="2030" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="40" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Flowchart 3 - Transfer payment</text>
+<text x="40" y="60" font-size="12.5" fill="#5B6B69">initiate_transfer(), authorise_payment(), _complete_transfer() and release_transaction()</text>
+<polyline points="475,187 475,271" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,329 475,405" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,467 475,522" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,572 765,572 765,819" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,622 475,658" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,708 305,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,739 185,980 344,980" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,758 475,794" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,844 650,844" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,894 475,930" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,980 765,980 765,869" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1030 475,1066" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,1116 305,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1147 185,1202" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1302 185,1363" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,1252 344,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1166 475,1202" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,1252 645,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1283 765,1338" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="896,1388 940,1388" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1438 765,1493" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1555 765,1660 600,1660" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1302 475,1629" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1691 475,1763" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1829 475,1909" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="365" y="141" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="161" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Start: customer instructs a</text><text x="475" y="175" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">transfer</text>
+<polygon points="366,271 600,271 584,329 350,329" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="475" y="297" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Account, beneficiary, amount,</text><text x="475" y="311" text-anchor="middle" font-size="11.5" fill="#1D2B2A">person instructing, channel</text>
+<rect x="355" y="405" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Create TransferPayment; snapshot</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">the beneficiary&#x27;s current version</text>
+<polygon points="475,522 606,572 475,622 344,572" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Beneficiary active and</text><text x="475" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">owned by the account</text><text x="475" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">holder?</text>
+<polygon points="475,658 606,708 475,758 344,708" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Standing-order run?</text>
+<rect x="65" y="677" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="705" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Use the mandate checked when the</text><text x="185" y="719" text-anchor="middle" font-size="11.5" fill="#1D2B2A">order was set up</text>
+<polygon points="475,794 606,844 475,894 344,844" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="835" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Person restricted, or</text><text x="475" y="848" text-anchor="middle" font-size="11.5" fill="#1D2B2A">no live PAYMENTS</text><text x="475" y="862" text-anchor="middle" font-size="11.5" fill="#1D2B2A">mandate within limit?</text>
+<polygon points="475,930 606,980 475,1030 344,980" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="971" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Account active, not</text><text x="475" y="984" text-anchor="middle" font-size="11.5" fill="#1D2B2A">restricted, enough</text><text x="475" y="998" text-anchor="middle" font-size="11.5" fill="#1D2B2A">available balance?</text>
+<rect x="650" y="819" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="765" y="848" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">FAILED: kept with the reason</text>
+<polygon points="475,1066 606,1116 475,1166 344,1116" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1107" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Mandate needs a second</text><text x="475" y="1120" text-anchor="middle" font-size="11.5" fill="#1D2B2A">signatory for this</text><text x="475" y="1134" text-anchor="middle" font-size="11.5" fill="#1D2B2A">amount?</text>
+<rect x="65" y="1085" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="1120" text-anchor="middle" font-size="11.5" fill="#1D2B2A">AWAITING_AUTHORISATION</text>
+<polygon points="185,1202 316,1252 185,1302 54,1252" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="1236" text-anchor="middle" font-size="11.5" fill="#1D2B2A">A different person with</text><text x="185" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">a valid mandate</text><text x="185" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">authorises; funds still</text><text x="185" y="1276" text-anchor="middle" font-size="11.5" fill="#1D2B2A">there?</text>
+<rect x="70" y="1363" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="185" y="1385" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">AuthorityError (stays pending)</text><text x="185" y="1399" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">or FAILED</text>
+<polygon points="475,1202 606,1252 475,1302 344,1252" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1243" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Amount &gt;= PKR 1,000,000</text><text x="475" y="1256" text-anchor="middle" font-size="11.5" fill="#1D2B2A">and not a standing</text><text x="475" y="1270" text-anchor="middle" font-size="11.5" fill="#1D2B2A">order?</text>
+<rect x="645" y="1221" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="765" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Place a hold; HELD_FOR_REVIEW;</text><text x="765" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">raise a FraudAlert</text>
+<polygon points="765,1338 896,1388 765,1438 634,1388" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="765" y="1379" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Compliance employee</text><text x="765" y="1392" text-anchor="middle" font-size="11.5" fill="#1D2B2A">releases? (a teller is</text><text x="765" y="1406" text-anchor="middle" font-size="11.5" fill="#1D2B2A">refused)</text>
+<rect x="940" y="1363" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="1055" y="1392" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">REJECTED: hold released</text>
+<rect x="645" y="1493" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="765" y="1521" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Hold released, funds re-checked,</text><text x="765" y="1535" text-anchor="middle" font-size="11.5" fill="#1D2B2A">RELEASED</text>
+<rect x="350" y="1629" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="1629" x2="362" y2="1691" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="1629" x2="588" y2="1691" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="1651" text-anchor="middle" font-size="11.5" fill="#1D2B2A">post(): debit the account,</text><text x="475" y="1664" text-anchor="middle" font-size="11.5" fill="#1D2B2A">credit clearing 2100 (legs sum</text><text x="475" y="1678" text-anchor="middle" font-size="11.5" fill="#1D2B2A">to zero)</text>
+<path d="M360,1772 A115,9 0 0 1 590,1772 L590,1820 A115,9 0 0 1 360,1820 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M360,1772 A115,9 0 0 0 590,1772" fill="none" stroke="#6A4C93" stroke-width="1.5"/>
+<text x="475" y="1800" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Ledger entries and audit log</text>
+<rect x="365" y="1909" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="1936" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">End: POSTED</text>
+<text x="616" y="566" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="642" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="334" y="702" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="778" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="616" y="838" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="914" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="616" y="974" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="1050" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="334" y="1110" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="1322" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="1246" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="1186" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="616" y="1246" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="906" y="1382" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="772" y="1458" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="1322" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<rect x="1220" y="96" width="250" height="244" rx="6" fill="#FFFFFF" stroke="#D5E0DD"/><text x="1232" y="118" font-size="12" font-weight="bold" fill="#0B4F4A">Symbols</text><g transform="translate(1254,142) scale(0.22,0.34) translate(0,0)"><rect x="-110" y="-23" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="146" font-size="11" fill="#1D2B2A">Terminator: start / end</text><g transform="translate(1254,172) scale(0.22,0.34) translate(0,0)"><rect x="-115" y="-25" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/></g><text x="1292" y="176" font-size="11" fill="#1D2B2A">Terminator: ended by a rule</text><g transform="translate(1254,202) scale(0.22,0.34) translate(0,0)"><rect x="-120" y="-31" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/></g><text x="1292" y="206" font-size="11" fill="#1D2B2A">Process: a step</text><g transform="translate(1254,232) scale(0.22,0.34) translate(0,0)"><polygon points="0,-50 131,0 0,50 -131,0" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/></g><text x="1292" y="236" font-size="11" fill="#1D2B2A">Decision: yes / no</text><g transform="translate(1254,262) scale(0.22,0.34) translate(0,0)"><polygon points="-109,-29 125,-29 109,29 -125,29" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/></g><text x="1292" y="266" font-size="11" fill="#1D2B2A">Input / output</text><g transform="translate(1254,292) scale(0.22,0.34) translate(0,0)"><rect x="-125" y="-31" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="-113" y1="-31" x2="-113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/><line x1="113" y1="-31" x2="113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="296" font-size="11" fill="#1D2B2A">Predefined process</text><g transform="translate(1254,322) scale(0.22,0.34) translate(0,0)"><path d="M-115,-24 A115,9 0 0 1 115,-24 L115,24 A115,9 0 0 1 -115,24 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M-115,-24 A115,9 0 0 0 115,-24" fill="none" stroke="#6A4C93" stroke-width="1.5"/></g><text x="1292" y="326" font-size="11" fill="#1D2B2A">Data store</text>
+</svg>

@@ -1,0 +1,14 @@
+{
+  "name": "commercial-banking-doc-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Builds the Word report and the viva slide deck from the repository's docs",
+  "scripts": {
+    "docx": "node md2docx.js ../docs/Design_Report.md ../docs/Design_Report.docx",
+    "deck": "node make_deck.js"
+  },
+  "dependencies": {
+    "docx": "^9.7.2",
+    "pptxgenjs": "^4.0.1"
+  }
+}

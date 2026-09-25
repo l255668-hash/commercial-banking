@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1490" height="1894" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="40" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Flowchart 6 - Desktop console interaction (banking_gui.py)</text>
+<text x="40" y="60" font-size="12.5" fill="#5B6B69">every action calls one Bank operation; the result decides the banner colour</text>
+<polyline points="475,187 475,250" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,300 648,300" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="882,300 940,300" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,350 475,405" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,467 475,541" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,603 475,679" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,737 475,794" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,844 645,844" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,813 765,708 592,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,894 475,949" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1011 475,1066" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,1116 938,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="1055,1145 1055,1524 595,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1166 475,1202" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,1252 648,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1281 765,1524 595,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1302 475,1359" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1417 475,1493" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1555 475,1610" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,1660 243,1660 243,708 358,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1710 475,1773" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="365" y="141" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="168" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Start: python banking_gui.py</text>
+<polygon points="475,250 606,300 475,350 344,300" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="297" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Tkinter installed and a</text><text x="475" y="311" text-anchor="middle" font-size="11.5" fill="#1D2B2A">display available?</text>
+<polygon points="656,271 890,271 874,329 640,329" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="765" y="297" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print how to install Tkinter or</text><text x="765" y="311" text-anchor="middle" font-size="11.5" fill="#1D2B2A">use the text demo</text>
+<rect x="940" y="275" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="1055" y="304" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Exit</text>
+<rect x="350" y="405" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="405" x2="362" y2="467" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="405" x2="588" y2="467" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">BankController.reset(): run the</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">demo quietly to seed the bank</text>
+<rect x="355" y="541" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="569" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Build the window: sidebar, top</text><text x="475" y="583" text-anchor="middle" font-size="11.5" fill="#1D2B2A">bar, 13 screens; show Overview</text>
+<polygon points="366,679 600,679 584,737 350,737" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="475" y="699" text-anchor="middle" font-size="11.5" fill="#1D2B2A">User picks a screen, a form, a</text><text x="475" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">guided check, or a top-bar</text><text x="475" y="726" text-anchor="middle" font-size="11.5" fill="#1D2B2A">action</text>
+<polygon points="475,794 606,844 475,894 344,844" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="841" text-anchor="middle" font-size="11.5" fill="#1D2B2A">An operation or a</text><text x="475" y="855" text-anchor="middle" font-size="11.5" fill="#1D2B2A">check?</text>
+<rect x="645" y="813" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="765" y="841" text-anchor="middle" font-size="11.5" fill="#1D2B2A">page.refresh(): read the model and</text><text x="765" y="855" text-anchor="middle" font-size="11.5" fill="#1D2B2A">redraw the screen</text>
+<rect x="350" y="949" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="949" x2="362" y2="1011" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="949" x2="588" y2="1011" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="971" text-anchor="middle" font-size="11.5" fill="#1D2B2A">BankController.run(): call ONE</text><text x="475" y="984" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Bank operation (all rules live</text><text x="475" y="998" text-anchor="middle" font-size="11.5" fill="#1D2B2A">in the model)</text>
+<polygon points="475,1066 606,1116 475,1166 344,1116" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1120" text-anchor="middle" font-size="11.5" fill="#1D2B2A">BankingError raised?</text>
+<polygon points="946,1087 1180,1087 1164,1145 930,1145" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="1055" y="1113" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Red banner: the error class and</text><text x="1055" y="1127" text-anchor="middle" font-size="11.5" fill="#1D2B2A">message</text>
+<polygon points="475,1202 606,1252 475,1302 344,1252" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Transaction kept as</text><text x="475" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">FAILED or DECLINED?</text>
+<polygon points="656,1223 890,1223 874,1281 640,1281" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="765" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Amber banner: refused, kept on</text><text x="765" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">record</text>
+<polygon points="366,1359 600,1359 584,1417 350,1417" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="475" y="1385" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Green banner: done, with the</text><text x="475" y="1399" text-anchor="middle" font-size="11.5" fill="#1D2B2A">transaction story</text>
+<rect x="355" y="1493" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="1521" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Refresh the page and the top bar</text><text x="475" y="1535" text-anchor="middle" font-size="11.5" fill="#1D2B2A">(business date, books balance)</text>
+<polygon points="475,1610 606,1660 475,1710 344,1660" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1664" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Window closed?</text>
+<rect x="365" y="1773" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="1800" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">End</text>
+<text x="616" y="294" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="370" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="616" y="838" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="914" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="616" y="1110" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="1186" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="616" y="1246" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="1322" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="334" y="1654" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="1730" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<rect x="1220" y="96" width="250" height="244" rx="6" fill="#FFFFFF" stroke="#D5E0DD"/><text x="1232" y="118" font-size="12" font-weight="bold" fill="#0B4F4A">Symbols</text><g transform="translate(1254,142) scale(0.22,0.34) translate(0,0)"><rect x="-110" y="-23" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="146" font-size="11" fill="#1D2B2A">Terminator: start / end</text><g transform="translate(1254,172) scale(0.22,0.34) translate(0,0)"><rect x="-115" y="-25" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/></g><text x="1292" y="176" font-size="11" fill="#1D2B2A">Terminator: ended by a rule</text><g transform="translate(1254,202) scale(0.22,0.34) translate(0,0)"><rect x="-120" y="-31" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/></g><text x="1292" y="206" font-size="11" fill="#1D2B2A">Process: a step</text><g transform="translate(1254,232) scale(0.22,0.34) translate(0,0)"><polygon points="0,-50 131,0 0,50 -131,0" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/></g><text x="1292" y="236" font-size="11" fill="#1D2B2A">Decision: yes / no</text><g transform="translate(1254,262) scale(0.22,0.34) translate(0,0)"><polygon points="-109,-29 125,-29 109,29 -125,29" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/></g><text x="1292" y="266" font-size="11" fill="#1D2B2A">Input / output</text><g transform="translate(1254,292) scale(0.22,0.34) translate(0,0)"><rect x="-125" y="-31" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="-113" y1="-31" x2="-113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/><line x1="113" y1="-31" x2="113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="296" font-size="11" fill="#1D2B2A">Predefined process</text><g transform="translate(1254,322) scale(0.22,0.34) translate(0,0)"><path d="M-115,-24 A115,9 0 0 1 115,-24 L115,24 A115,9 0 0 1 -115,24 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M-115,-24 A115,9 0 0 0 115,-24" fill="none" stroke="#6A4C93" stroke-width="1.5"/></g><text x="1292" y="326" font-size="11" fill="#1D2B2A">Data store</text>
+</svg>

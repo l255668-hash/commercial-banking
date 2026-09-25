@@ -23,6 +23,7 @@ Design rules
                         -> MasterDetailPage          list on the left, details on the right
                              -> CustomersPage, AccountsPage, TransactionsPage, CardsPage,
                                 CasesPage, StaffPage, ProductsPage, ClassModelPage
+                        -> DiagramsPage              class, UML and flowchart images
       tk.Frame     -> StatCard, Panel                reusable widgets
       ttk.Frame    -> DataTable, DetailView          reusable widgets
       tk.Canvas    -> TimelineCanvas                 validity periods drawn as ribbons
@@ -35,8 +36,10 @@ import contextlib
 import gc
 import inspect
 import io
+import math
 import sys
 from datetime import date, timedelta
+from pathlib import Path
 
 try:
     import tkinter as tk
@@ -136,6 +139,22 @@ class Outcome:
         self.kind, self.title, self.detail = kind, title, detail      # kind: ok | refused | blocked
 
 
+class CurrentBank:
+    """Stands in for ``controller.bank`` inside long-lived callbacks.
+
+    The operation forms are built once, but "Reset data" replaces the Bank
+    object.  Capturing ``controller.bank`` directly would leave every form
+    acting on the discarded bank; this proxy looks the current one up on each
+    attribute access instead.
+    """
+
+    def __init__(self, controller):
+        self._controller = controller
+
+    def __getattr__(self, name):
+        return getattr(self._controller.bank, name)
+
+
 class BankController:
     """Builds the seeded bank, looks records up for the screens and runs operations."""
 
@@ -166,7 +185,11 @@ class BankController:
             return Outcome("ok", f"{label}: {result.txn_id} {result.status.current}", story)
         if isinstance(result, (list, tuple)):
             return Outcome("ok", f"{label}: done", "\n".join(map(str, result)))
-        return Outcome("ok", f"{label}: done", "" if result is None else str(result))
+        if isinstance(result, bs.VerificationCheck) and result.result != "PASS":
+            return Outcome("refused", f"{label}: check recorded as {result.result} ({result.note})", label_of(result))
+        if result is None:
+            return Outcome("ok", f"{label}: done")
+        return Outcome("ok", f"{label}: done", label_of(result) if not isinstance(result, str) else result)
 
     def advance(self, days):
         self.bank.advance_to(self.bank.today + timedelta(days=days))
@@ -288,6 +311,16 @@ def label_of(obj):
         return f"{obj.control_id} {obj.card.card_id} {obj.control_type}{'=' + obj.value if obj.value else ''}"
     if isinstance(obj, bs.Case):
         return f"{obj.case_id} {obj.summary}"
+    if isinstance(obj, bs.VerificationCheck):
+        return f"{obj.check_id} {obj.result} for {obj.party.name} against {obj.document}"
+    if isinstance(obj, bs.CustomerRelationship):
+        return f"{obj.party.name}: {obj.segment} customer since {obj.since}, home branch {obj.branch_history[-1][1]}"
+    if isinstance(obj, bs.IdentityDocument):
+        return f"{obj.document_id} {obj.doc_type} {obj.number} - {obj.party.name}"
+    if isinstance(obj, bs.Mandate):
+        return f"{obj.mandate_id} {obj.person.name} for {obj.organization.name}"
+    if isinstance(obj, bs.ProductDefinition):
+        return f"{obj.code} {obj.name} ({obj.category})"
     if isinstance(obj, bs.FinancingApplication):
         return f"{obj.application_id} {obj.applicant.name} {bs.fmt(obj.requested_amount)} [{obj.status.current}]"
     return str(obj)
@@ -1127,6 +1160,18 @@ class OperationSpec:
         self.group, self.label, self.fields, self.call, self.hint = group, label, fields, call, hint
 
 
+def _date(text, required=True):
+    """Parse YYYY-MM-DD from a form field (blank allowed when not required)."""
+    text = text.strip()
+    if not text and not required:
+        return None
+    return date.fromisoformat(text)
+
+
+def _optional_money(text):
+    return bs.money(text) if text.strip() else None
+
+
 class OperationsPage(Page):
     title = "Operations"
     subtitle = "Every form calls one Bank operation; refusals show the model's own rule"
@@ -1143,9 +1188,57 @@ class OperationsPage(Page):
 
     # --------------------------------------------------------------- forms
     def _specs(self):
-        b = self.ctl.bank
+        b = CurrentBank(self.ctl)          # "Reset data" swaps the bank; the forms must follow
         amt = bs.money
+        branch = ("staff", bs.Bank.BRANCH_ROLES)
         return [
+            OperationSpec("Customers", "Register a person",
+                          [("Full name", "text"), ("Date of birth (YYYY-MM-DD)", "text"), ("Registered by", branch)],
+                          lambda v: b.register_person(v[0], _date(v[1]), v[2]),
+                          "Creates one Person record; roles are added later, never as subclasses."),
+            OperationSpec("Customers", "Register a company",
+                          [("Legal name", "text"), ("Registration number", "text"), ("Registered address", "text"),
+                           ("Incorporated on (YYYY-MM-DD)", "text"), ("Registered by", branch)],
+                          lambda v: b.register_company(v[0], v[1], v[2], _date(v[3]), v[4])),
+            OperationSpec("Customers", "Add an identity document",
+                          [("Party", "party"), ("Document type", ("choice", ["CNIC", "PASSPORT", "INCORPORATION_CERT",
+                                                                              "TRUST_DEED", "SOURCE_OF_WEALTH"])),
+                           ("Number", "text"), ("Issued on (YYYY-MM-DD)", "text"),
+                           ("Expires on (blank = never)", "text"), ("Filed by", branch)],
+                          lambda v: b.add_identity_document(v[0], v[1], v[2], _date(v[3]), _date(v[4], False), v[5])),
+            OperationSpec("Customers", "Verify a party against a document",
+                          [("Document", "document"), ("Checked by", branch)],
+                          lambda v: b.verify_party(v[0].party, v[0], v[1]),
+                          "PASS only if the document is valid today; a FAIL is kept too."),
+            OperationSpec("Customers", "Appoint a director / trustee",
+                          [("Organisation", "org"), ("Person", "person"), ("Recorded by", branch)],
+                          lambda v: b.appoint_officer(v[0], v[1], v[2])),
+            OperationSpec("Customers", "Onboard as a customer",
+                          [("Party", "party"), ("Segment", ("choice", sorted(bs.Bank.SEGMENTS))),
+                           ("Trading name (sole traders)", "text"), ("Branch employee", branch)],
+                          lambda v: b.become_customer(v[0], v[3], v[1], v[2] or None),
+                          "Refused if the party or its directors/owners are not verified today."),
+            OperationSpec("Customers", "Open an account",
+                          [("Account type", ("choice", ["CurrentAccount", "SavingsAccount"])),
+                           ("Product", "deposit_product"), ("Holder", "customer"), ("Branch employee", branch)],
+                          lambda v: b.open_deposit_account(getattr(bs, v[0]), v[1], [v[2]], v[3])),
+            OperationSpec("Customers", "Grant a mandate",
+                          [("Organisation", "org"), ("Person", "person"),
+                           ("Capabilities", ("choice", ["PAYMENTS", "PAYMENTS,CARD", "PAYMENTS,BORROWING,CARD",
+                                                        "CARD", "VIEW"])),
+                           ("Limit (blank = unlimited)", "text"), ("Second signatory above (blank = never)", "text"),
+                           ("Granted by", branch)],
+                          lambda v: b.grant_mandate(v[0], v[1], set(v[2].split(",")), _optional_money(v[3]), v[5],
+                                                    _optional_money(v[4]))),
+            OperationSpec("Customers", "Revoke a mandate",
+                          [("Mandate", "mandate"), ("Reason", "text"), ("Recorded by", branch)],
+                          lambda v: b.revoke_mandate(v[0], v[1] or "authority withdrawn", v[2]),
+                          "The mandate's period closes; payments made under it stay provable."),
+            OperationSpec("Payments", "Add a beneficiary",
+                          [("Owner (customer)", "customer"), ("Nickname", "text"), ("Bank", "text"),
+                           ("Account number", "text"), ("Account title", "text"), ("Added by", "person")],
+                          lambda v: b.add_beneficiary(v[0], v[1] or "New payee", v[2] or "HBL", v[3] or "0000000000",
+                                                      v[4] or v[1] or "New payee", v[5])),
             OperationSpec("Payments", "Transfer to a beneficiary",
                           [("From account", "account"), ("Beneficiary", "beneficiary"), ("Amount", "amount"),
                            ("Instructed by", "person")],
@@ -1251,6 +1344,14 @@ class OperationsPage(Page):
             "restriction": ctl.live_restrictions(),
             "control": ctl.live_controls(),
             "application": [a for a in ctl.bank.applications.values() if a.status.current == "SUBMITTED"],
+            "party": sorted(ctl.bank.parties.values(), key=lambda p: p.name),
+            "org": sorted((p for p in ctl.bank.parties.values() if isinstance(p, bs.Organization)),
+                          key=lambda p: p.name),
+            "document": [d for p in ctl.bank.parties.values() for d in p.documents],
+            "mandate": [m for p in ctl.bank.parties.values() if isinstance(p, bs.Organization)
+                        for m in p.mandates if m.period.end is None],
+            "deposit_product": [p for p in ctl.bank.products.values()
+                                if p.category in ("CURRENT", "SAVINGS") and p.can_sell(ctl.bank.today)],
         }.get(kind)
         return None if source is None else [(label_of(x), x) for x in source]
 
@@ -1260,6 +1361,9 @@ class OperationsPage(Page):
         left = tk.Frame(frame, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
         left.grid(row=0, column=0, sticky="nsw", padx=(0, 12))
         self.op_tree = ttk.Treeview(left, show="tree", selectmode="browse", height=24)
+        ys = ttk.Scrollbar(left, orient="vertical", command=self.op_tree.yview)
+        self.op_tree.configure(yscrollcommand=ys.set)
+        ys.pack(side="right", fill="y")
         self.op_tree.column("#0", width=290)
         self.op_tree.pack(fill="both", expand=True, padx=4, pady=4)
         self.op_tree.bind("<<TreeviewSelect>>", self._pick_operation)
@@ -1269,7 +1373,7 @@ class OperationsPage(Page):
         groups = {}
         for spec in self._specs():
             if spec.group not in groups:
-                groups[spec.group] = self.op_tree.insert("", "end", text=spec.group, open=True)
+                groups[spec.group] = self.op_tree.insert("", "end", text=spec.group, open=spec.group != "Customers")
             iid = self.op_tree.insert(groups[spec.group], "end", text="   " + spec.label)
             self.specs[iid] = spec
 
@@ -1315,7 +1419,8 @@ class OperationsPage(Page):
         try:
             outcome = self.ctl.run(spec.label, lambda: spec.call(values))
         except (ValueError, ArithmeticError) as e:
-            messagebox.showwarning("Check the input", f"The input could not be read: {e}")
+            problem = "an amount or rate is not a number" if isinstance(e, ArithmeticError) else str(e)
+            messagebox.showwarning("Check the input", f"The input could not be read: {problem}")
             return
         self.app.show_outcome(outcome)
         self._render_form(spec)
@@ -1518,6 +1623,78 @@ class ScenarioLogPage(Page):
             self.view.text.yview(self.marks[sel[0]])
 
 
+# ----------------------------------------------------------------------------- diagrams
+class DiagramsPage(Page):
+    title = "Diagrams"
+    subtitle = "Class, UML and flowchart diagrams from the docs folder (generated from the code)"
+    DOCS = Path(__file__).resolve().parent / "docs"
+
+    def build(self):
+        self.content.columnconfigure(1, weight=1)
+        self.content.rowconfigure(0, weight=1)
+        left = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
+        left.grid(row=0, column=0, sticky="ns", padx=(0, 12))
+        self.list = tk.Listbox(left, width=34, bd=0, highlightthickness=0, activestyle="none",
+                               font=self.theme.f_body, fg=self.theme.INK, bg=self.theme.CARD,
+                               selectbackground=self.theme.SELECT, selectforeground=self.theme.INK)
+        self.list.pack(fill="both", expand=True, padx=6, pady=6)
+        self.list.bind("<<ListboxSelect>>", lambda _e: self._show())
+        self.fit = tk.BooleanVar(value=True)
+        ttk.Checkbutton(left, text="Fit to width", variable=self.fit, command=self._show).pack(anchor="w", padx=8,
+                                                                                               pady=(0, 8))
+        right = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
+        right.grid(row=0, column=1, sticky="nsew")
+        right.rowconfigure(0, weight=1)
+        right.columnconfigure(0, weight=1)
+        self.canvas = tk.Canvas(right, bg="#FFFFFF", highlightthickness=0)
+        xs = ttk.Scrollbar(right, orient="horizontal", command=self.canvas.xview)
+        ys = ttk.Scrollbar(right, orient="vertical", command=self.canvas.yview)
+        self.canvas.configure(xscrollcommand=xs.set, yscrollcommand=ys.set)
+        self.canvas.grid(row=0, column=0, sticky="nsew")
+        ys.grid(row=0, column=1, sticky="ns")
+        xs.grid(row=1, column=0, sticky="ew")
+        self.canvas.bind("<Configure>", lambda _e: self._show() if self.fit.get() else None)
+        for sequence, step in (("<MouseWheel>", None), ("<Button-4>", -3), ("<Button-5>", 3)):
+            self.canvas.bind(sequence, lambda e, step=step: self.canvas.yview_scroll(
+                step if step is not None else -int(e.delta / 120) or (-1 if e.delta > 0 else 1), "units"))
+        self.files, self.image = [], None
+
+    def refresh(self):
+        if self.files:
+            return
+        order = ["flowchart", "class_diagram", "uml_"]
+        found = sorted(self.DOCS.glob("*.png"),
+                       key=lambda p: (next((i for i, o in enumerate(order) if p.name.startswith(o)), 9), p.name))
+        self.files = found
+        for p in found:
+            self.list.insert("end", " " + p.stem.replace("_", " "))
+        if found:
+            self.list.selection_set(0)
+            self.after(50, self._show)
+        else:
+            self.canvas.create_text(20, 20, anchor="nw", text="No diagrams found in docs/", fill=self.theme.MUTED)
+
+    def _show(self):
+        sel = self.list.curselection()
+        if not sel:
+            return
+        try:
+            image = tk.PhotoImage(file=str(self.files[sel[0]]))
+        except tk.TclError as e:
+            self.canvas.delete("all")
+            self.canvas.create_text(20, 20, anchor="nw", text=f"Cannot open image: {e}", fill=self.theme.BAD)
+            return
+        if self.fit.get():
+            width = max(200, self.canvas.winfo_width())
+            factor = max(1, math.ceil(image.width() / width))
+            if factor > 1:
+                image = image.subsample(factor, factor)
+        self.image = image                       # keep a reference, or Tk discards the picture
+        self.canvas.delete("all")
+        self.canvas.create_image(0, 0, image=image, anchor="nw")
+        self.canvas.configure(scrollregion=(0, 0, image.width(), image.height()))
+
+
 # =============================================================================
 # The application window
 # =============================================================================
@@ -1528,7 +1705,8 @@ class BankingApp(tk.Tk):
     PAGES = [("Overview", DashboardPage), ("Operations", OperationsPage), ("Customers", CustomersPage),
              ("Accounts", AccountsPage), ("Transactions", TransactionsPage), ("Cards", CardsPage),
              ("Cases", CasesPage), ("Staff", StaffPage), ("Products & branches", ProductsPage),
-             ("Books & audit", BooksPage), ("Class model", ClassModelPage), ("Scenario log", ScenarioLogPage)]
+             ("Books & audit", BooksPage), ("Class model", ClassModelPage), ("Diagrams", DiagramsPage),
+             ("Scenario log", ScenarioLogPage)]
 
     def __init__(self):
         super().__init__()

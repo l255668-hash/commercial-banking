@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="2302" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="40" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Flowchart 2 - Customer onboarding and account opening</text>
+<text x="40" y="60" font-size="12.5" fill="#5B6B69">verify_party(), appoint_officer(), become_customer() and open_deposit_account()</text>
+<polyline points="185,187 185,271" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,329 185,405" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,467 185,541" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,603 185,658" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,708 355,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,677 475,436 305,436" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,758 185,813" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,875 185,930" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,980 355,980" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1011 475,1116 310,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1030 185,1085" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1147 185,1202" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,1252 360,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1302 185,1338" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,1388 355,1388" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="595,1388 666,1388 666,436 305,436" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1438 185,1493" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1555 185,1629" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1691 185,1746" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,1796 360,1796" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1846 185,1901" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1963 185,2035" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,2101 185,2181" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="75" y="141" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="155" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Start: a new person or</text><text x="185" y="168" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">organisation approaches the</text><text x="185" y="182" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">bank</text>
+<polygon points="76,271 310,271 294,329 60,329" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="185" y="291" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Register the party: Person,</text><text x="185" y="304" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Company or Charity (one record</text><text x="185" y="318" text-anchor="middle" font-size="11.5" fill="#1D2B2A">per real identity)</text>
+<rect x="65" y="405" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="427" text-anchor="middle" font-size="11.5" fill="#1D2B2A">File identity documents (CNIC,</text><text x="185" y="440" text-anchor="middle" font-size="11.5" fill="#1D2B2A">passport, incorporation</text><text x="185" y="454" text-anchor="middle" font-size="11.5" fill="#1D2B2A">certificate...)</text>
+<rect x="60" y="541" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="72" y1="541" x2="72" y2="603" stroke="#0B4F4A" stroke-width="1.5"/><line x1="298" y1="541" x2="298" y2="603" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">verify_party(): branch or</text><text x="185" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">compliance staff check one</text><text x="185" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">document</text>
+<polygon points="185,658 316,708 185,758 54,708" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="705" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Document issued and not</text><text x="185" y="719" text-anchor="middle" font-size="11.5" fill="#1D2B2A">expired today?</text>
+<rect x="355" y="677" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="705" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Record a FAIL check (kept, never</text><text x="475" y="719" text-anchor="middle" font-size="11.5" fill="#1D2B2A">deleted)</text>
+<rect x="65" y="813" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="848" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Record a PASS check</text>
+<polygon points="185,930 316,980 185,1030 54,980" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="977" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Is the party an</text><text x="185" y="991" text-anchor="middle" font-size="11.5" fill="#1D2B2A">organisation?</text>
+<rect x="355" y="949" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="971" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Appoint directors / trustees,</text><text x="475" y="984" text-anchor="middle" font-size="11.5" fill="#1D2B2A">record owners (25% threshold) and</text><text x="475" y="998" text-anchor="middle" font-size="11.5" fill="#1D2B2A">verify each person</text>
+<rect x="60" y="1085" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="72" y1="1085" x2="72" y2="1147" stroke="#0B4F4A" stroke-width="1.5"/><line x1="298" y1="1085" x2="298" y2="1147" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="1113" text-anchor="middle" font-size="11.5" fill="#1D2B2A">become_customer(): by a branch</text><text x="185" y="1127" text-anchor="middle" font-size="11.5" fill="#1D2B2A">employee, with a segment</text>
+<polygon points="185,1202 316,1252 185,1302 54,1252" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="1236" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Branch role? Segment</text><text x="185" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">valid for this party?</text><text x="185" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Sole trader has a</text><text x="185" y="1276" text-anchor="middle" font-size="11.5" fill="#1D2B2A">trading name?</text>
+<rect x="360" y="1227" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="475" y="1256" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">AuthorityError / BankingError</text>
+<polygon points="185,1338 316,1388 185,1438 54,1388" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="1372" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Any KYC gap today?</text><text x="185" y="1385" text-anchor="middle" font-size="11.5" fill="#1D2B2A">(party, directors,</text><text x="185" y="1399" text-anchor="middle" font-size="11.5" fill="#1D2B2A">owners, structure, EDD</text><text x="185" y="1412" text-anchor="middle" font-size="11.5" fill="#1D2B2A">for PRIVATE)</text>
+<rect x="355" y="1357" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="1385" text-anchor="middle" font-size="11.5" fill="#1D2B2A">KycIncomplete: onboarding blocked</text><text x="475" y="1399" text-anchor="middle" font-size="11.5" fill="#1D2B2A">and logged</text>
+<rect x="65" y="1493" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="1515" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Create CustomerRelationship with</text><text x="185" y="1528" text-anchor="middle" font-size="11.5" fill="#1D2B2A">dated home branch and relationship</text><text x="185" y="1542" text-anchor="middle" font-size="11.5" fill="#1D2B2A">manager</text>
+<rect x="60" y="1629" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="72" y1="1629" x2="72" y2="1691" stroke="#0B4F4A" stroke-width="1.5"/><line x1="298" y1="1629" x2="298" y2="1691" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="1651" text-anchor="middle" font-size="11.5" fill="#1D2B2A">open_deposit_account():</text><text x="185" y="1664" text-anchor="middle" font-size="11.5" fill="#1D2B2A">current, savings or term</text><text x="185" y="1678" text-anchor="middle" font-size="11.5" fill="#1D2B2A">deposit</text>
+<polygon points="185,1746 316,1796 185,1846 54,1796" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="1787" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Product on sale and</text><text x="185" y="1800" text-anchor="middle" font-size="11.5" fill="#1D2B2A">right type? Holders</text><text x="185" y="1814" text-anchor="middle" font-size="11.5" fill="#1D2B2A">onboarded and verified?</text>
+<rect x="360" y="1771" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="475" y="1793" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">ProductNotAvailable /</text><text x="475" y="1807" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">KycIncomplete</text>
+<rect x="65" y="1901" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="1929" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Account opened; the product terms</text><text x="185" y="1943" text-anchor="middle" font-size="11.5" fill="#1D2B2A">version in force is pinned</text>
+<path d="M70,2044 A115,9 0 0 1 300,2044 L300,2092 A115,9 0 0 1 70,2092 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M70,2044 A115,9 0 0 0 300,2044" fill="none" stroke="#6A4C93" stroke-width="1.5"/>
+<text x="185" y="2072" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Audit log</text>
+<rect x="75" y="2181" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="2201" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">End: the customer can</text><text x="185" y="2215" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">transact</text>
+<text x="326" y="702" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="192" y="778" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="326" y="974" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="1050" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="1246" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="192" y="1322" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="326" y="1382" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="605" y="1382" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">fix and re-verify</text>
+<text x="192" y="1458" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="1790" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="192" y="1866" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<rect x="930" y="96" width="250" height="244" rx="6" fill="#FFFFFF" stroke="#D5E0DD"/><text x="942" y="118" font-size="12" font-weight="bold" fill="#0B4F4A">Symbols</text><g transform="translate(964,142) scale(0.22,0.34) translate(0,0)"><rect x="-110" y="-23" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1002" y="146" font-size="11" fill="#1D2B2A">Terminator: start / end</text><g transform="translate(964,172) scale(0.22,0.34) translate(0,0)"><rect x="-115" y="-25" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/></g><text x="1002" y="176" font-size="11" fill="#1D2B2A">Terminator: ended by a rule</text><g transform="translate(964,202) scale(0.22,0.34) translate(0,0)"><rect x="-120" y="-31" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/></g><text x="1002" y="206" font-size="11" fill="#1D2B2A">Process: a step</text><g transform="translate(964,232) scale(0.22,0.34) translate(0,0)"><polygon points="0,-50 131,0 0,50 -131,0" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/></g><text x="1002" y="236" font-size="11" fill="#1D2B2A">Decision: yes / no</text><g transform="translate(964,262) scale(0.22,0.34) translate(0,0)"><polygon points="-109,-29 125,-29 109,29 -125,29" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/></g><text x="1002" y="266" font-size="11" fill="#1D2B2A">Input / output</text><g transform="translate(964,292) scale(0.22,0.34) translate(0,0)"><rect x="-125" y="-31" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="-113" y1="-31" x2="-113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/><line x1="113" y1="-31" x2="113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1002" y="296" font-size="11" fill="#1D2B2A">Predefined process</text><g transform="translate(964,322) scale(0.22,0.34) translate(0,0)"><path d="M-115,-24 A115,9 0 0 1 115,-24 L115,24 A115,9 0 0 1 -115,24 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M-115,-24 A115,9 0 0 0 115,-24" fill="none" stroke="#6A4C93" stroke-width="1.5"/></g><text x="1002" y="326" font-size="11" fill="#1D2B2A">Data store</text>
+</svg>

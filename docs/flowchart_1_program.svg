@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1490" height="1622" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="40" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Flowchart 1 - Program overview (banking_system.py)</text>
+<text x="40" y="60" font-size="12.5" fill="#5B6B69">main(): what happens for each command-line option; the default runs the seeded demonstration</text>
+<polyline points="185,187 185,271" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,329 185,386" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,436 350,436" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="600,436 648,436" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,486 185,522" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,572 355,572" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="595,572 648,572" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,622 185,658" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,708 355,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="595,708 648,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,758 185,813" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,875 185,949" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1011 185,1066" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="316,1116 355,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1147 475,1252 300,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1166 185,1219" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1285 185,1359" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,1417 185,1501" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="882,436 974,436 974,1524 295,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="882,572 974,572 974,1524 295,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="882,708 974,708 974,1524 295,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="75" y="141" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="161" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Start: python</text><text x="185" y="175" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">banking_system.py [option]</text>
+<polygon points="76,271 310,271 294,329 60,329" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="185" y="304" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Read the command-line option</text>
+<polygon points="185,386 316,436 185,486 54,436" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="440" text-anchor="middle" font-size="11.5" fill="#1D2B2A">--test ?</text>
+<rect x="350" y="405" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="405" x2="362" y2="467" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="405" x2="588" y2="467" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Run the 60 unittest tests (a</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">fresh small bank per test)</text>
+<polygon points="656,407 890,407 874,465 640,465" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="765" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print test results (OK /</text><text x="765" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">FAILED)</text>
+<polygon points="185,522 316,572 185,622 54,572" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">--classes ?</text>
+<rect x="355" y="541" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Walk the domain classes:</text><text x="475" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">inheritance tree, class and</text><text x="475" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">operation counts</text>
+<polygon points="656,543 890,543 874,601 640,601" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="765" y="569" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print tree: 73 classes, 7</text><text x="765" y="583" text-anchor="middle" font-size="11.5" fill="#1D2B2A">errors, 96 operations</text>
+<polygon points="185,658 316,708 185,758 54,708" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">--diagram DIR ?</text>
+<rect x="355" y="677" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="699" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Read classes and source code:</text><text x="475" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">class, UML hierarchy and</text><text x="475" y="726" text-anchor="middle" font-size="11.5" fill="#1D2B2A">association diagrams</text>
+<polygon points="656,679 890,679 874,737 640,737" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="765" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Write SVG files into DIR</text>
+<rect x="60" y="813" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="72" y1="813" x2="72" y2="875" stroke="#0B4F4A" stroke-width="1.5"/><line x1="298" y1="813" x2="298" y2="875" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="841" text-anchor="middle" font-size="11.5" fill="#1D2B2A">run_demo(): seed branches,</text><text x="185" y="855" text-anchor="middle" font-size="11.5" fill="#1D2B2A">staff, products, customers</text>
+<rect x="65" y="949" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="971" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Run 16 scenarios; advance_to()</text><text x="185" y="984" text-anchor="middle" font-size="11.5" fill="#1D2B2A">runs the end-of-day batch for each</text><text x="185" y="998" text-anchor="middle" font-size="11.5" fill="#1D2B2A">simulated day</text>
+<polygon points="185,1066 316,1116 185,1166 54,1116" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="185" y="1113" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Did an operation break</text><text x="185" y="1127" text-anchor="middle" font-size="11.5" fill="#1D2B2A">a business rule?</text>
+<rect x="355" y="1085" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="1107" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Refusal: BankingError raised, or</text><text x="475" y="1120" text-anchor="middle" font-size="11.5" fill="#1D2B2A">transaction kept as FAILED /</text><text x="475" y="1134" text-anchor="middle" font-size="11.5" fill="#1D2B2A">DECLINED; printed as [BLOCKED]</text>
+<path d="M70,1228 A115,9 0 0 1 300,1228 L300,1276 A115,9 0 0 1 70,1276 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M70,1228 A115,9 0 0 0 300,1228" fill="none" stroke="#6A4C93" stroke-width="1.5"/>
+<text x="185" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Ledger entries and audit log</text><text x="185" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">(append-only)</text>
+<polygon points="76,1359 310,1359 294,1417 60,1417" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
+<text x="185" y="1379" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print statement, daily audit</text><text x="185" y="1392" text-anchor="middle" font-size="11.5" fill="#1D2B2A">report and trial balance (total</text><text x="185" y="1406" text-anchor="middle" font-size="11.5" fill="#1D2B2A">0.00)</text>
+<rect x="75" y="1501" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="185" y="1528" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">End</text>
+<text x="326" y="430" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="506" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="566" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="642" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="702" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="778" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="326" y="1110" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="192" y="1186" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<rect x="1220" y="96" width="250" height="244" rx="6" fill="#FFFFFF" stroke="#D5E0DD"/><text x="1232" y="118" font-size="12" font-weight="bold" fill="#0B4F4A">Symbols</text><g transform="translate(1254,142) scale(0.22,0.34) translate(0,0)"><rect x="-110" y="-23" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="146" font-size="11" fill="#1D2B2A">Terminator: start / end</text><g transform="translate(1254,172) scale(0.22,0.34) translate(0,0)"><rect x="-115" y="-25" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/></g><text x="1292" y="176" font-size="11" fill="#1D2B2A">Terminator: ended by a rule</text><g transform="translate(1254,202) scale(0.22,0.34) translate(0,0)"><rect x="-120" y="-31" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/></g><text x="1292" y="206" font-size="11" fill="#1D2B2A">Process: a step</text><g transform="translate(1254,232) scale(0.22,0.34) translate(0,0)"><polygon points="0,-50 131,0 0,50 -131,0" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/></g><text x="1292" y="236" font-size="11" fill="#1D2B2A">Decision: yes / no</text><g transform="translate(1254,262) scale(0.22,0.34) translate(0,0)"><polygon points="-109,-29 125,-29 109,29 -125,29" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/></g><text x="1292" y="266" font-size="11" fill="#1D2B2A">Input / output</text><g transform="translate(1254,292) scale(0.22,0.34) translate(0,0)"><rect x="-125" y="-31" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="-113" y1="-31" x2="-113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/><line x1="113" y1="-31" x2="113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="296" font-size="11" fill="#1D2B2A">Predefined process</text><g transform="translate(1254,322) scale(0.22,0.34) translate(0,0)"><path d="M-115,-24 A115,9 0 0 1 115,-24 L115,24 A115,9 0 0 1 -115,24 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M-115,-24 A115,9 0 0 0 115,-24" fill="none" stroke="#6A4C93" stroke-width="1.5"/></g><text x="1292" y="326" font-size="11" fill="#1D2B2A">Data store</text>
+</svg>

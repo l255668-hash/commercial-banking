@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1490" height="1894" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="40" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Flowchart 5 - Financing lifecycle</text>
+<text x="40" y="60" font-size="12.5" fill="#5B6B69">application, delegated approval, conditions, disbursement, arrears and collections, restructure, settlement</text>
+<polyline points="475,187 475,269" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,331 475,386" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,436 305,436" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,405 185,300 350,300" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,486 475,522" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,572 650,572" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,622 475,677" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,739 475,794" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,844 305,844" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="185,813 185,708 355,708" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,894 475,949" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1011 475,1085" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1147 475,1202" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="606,1252 645,1252" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1283 765,1357" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="765,1419 765,1474" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="896,1524 930,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="1055,1493 1055,1116 595,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="634,1524 606,1524" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1302 475,1474" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="344,1524 243,1524 243,1116 355,1116" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1574 475,1629" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<polyline points="475,1691 475,1773" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<rect x="365" y="141" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="161" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">Start: the customer applies</text><text x="475" y="175" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">for financing</text>
+<rect x="350" y="269" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="269" x2="362" y2="331" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="269" x2="588" y2="331" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="297" text-anchor="middle" font-size="11.5" fill="#1D2B2A">submit_financing_application():</text><text x="475" y="311" text-anchor="middle" font-size="11.5" fill="#1D2B2A">needs a live BORROWING mandate</text>
+<polygon points="475,386 606,436 475,486 344,436" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="427" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Amount within the</text><text x="475" y="440" text-anchor="middle" font-size="11.5" fill="#1D2B2A">credit employee&#x27;s</text><text x="475" y="454" text-anchor="middle" font-size="11.5" fill="#1D2B2A">delegated limit?</text>
+<rect x="65" y="405" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">AuthorityError: refer to a higher</text><text x="185" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">authority (e.g. credit manager)</text>
+<polygon points="475,522 606,572 475,622 344,572" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Approve?</text>
+<rect x="650" y="547" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/>
+<text x="765" y="576" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">DECLINED (application kept)</text>
+<rect x="355" y="677" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="699" text-anchor="middle" font-size="11.5" fill="#1D2B2A">APPROVED or</text><text x="475" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">APPROVED_WITH_CONDITIONS; Approval</text><text x="475" y="726" text-anchor="middle" font-size="11.5" fill="#1D2B2A">freezes the role held</text>
+<polygon points="475,794 606,844 475,894 344,844" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="841" text-anchor="middle" font-size="11.5" fill="#1D2B2A">All pre-disbursement</text><text x="475" y="855" text-anchor="middle" font-size="11.5" fill="#1D2B2A">conditions satisfied?</text>
+<rect x="65" y="813" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="185" y="841" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Disbursement blocked: satisfy the</text><text x="185" y="855" text-anchor="middle" font-size="11.5" fill="#1D2B2A">conditions with evidence</text>
+<rect x="350" y="949" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="949" x2="362" y2="1011" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="949" x2="588" y2="1011" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="964" text-anchor="middle" font-size="11.5" fill="#1D2B2A">disburse_financing(): agreement</text><text x="475" y="977" text-anchor="middle" font-size="11.5" fill="#1D2B2A">and schedule v1; credit</text><text x="475" y="991" text-anchor="middle" font-size="11.5" fill="#1D2B2A">settlement account, debit loans</text><text x="475" y="1004" text-anchor="middle" font-size="11.5" fill="#1D2B2A">receivable</text>
+<rect x="355" y="1085" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="1107" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Repayments allocated: oldest</text><text x="475" y="1120" text-anchor="middle" font-size="11.5" fill="#1D2B2A">installment first, interest before</text><text x="475" y="1134" text-anchor="middle" font-size="11.5" fill="#1D2B2A">principal</text>
+<polygon points="475,1202 606,1252 475,1302 344,1252" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Daily batch: an</text><text x="475" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">installment overdue?</text>
+<rect x="645" y="1221" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="765" y="1249" text-anchor="middle" font-size="11.5" fill="#1D2B2A">IN_ARREARS; CollectionsCase</text><text x="765" y="1263" text-anchor="middle" font-size="11.5" fill="#1D2B2A">opened; notice sent</text>
+<rect x="645" y="1357" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="765" y="1385" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Collections officer records the</text><text x="765" y="1399" text-anchor="middle" font-size="11.5" fill="#1D2B2A">contact and a promise to pay</text>
+<polygon points="765,1474 896,1524 765,1574 634,1524" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="765" y="1515" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Promise kept by the</text><text x="765" y="1528" text-anchor="middle" font-size="11.5" fill="#1D2B2A">promised date? (marked</text><text x="765" y="1542" text-anchor="middle" font-size="11.5" fill="#1D2B2A">KEPT / BROKEN)</text>
+<rect x="930" y="1493" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="942" y1="1493" x2="942" y2="1555" stroke="#0B4F4A" stroke-width="1.5"/><line x1="1168" y1="1493" x2="1168" y2="1555" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="1055" y="1515" text-anchor="middle" font-size="11.5" fill="#1D2B2A">restructure_financing():</text><text x="1055" y="1528" text-anchor="middle" font-size="11.5" fill="#1D2B2A">schedule v2, overdue interest</text><text x="1055" y="1542" text-anchor="middle" font-size="11.5" fill="#1D2B2A">capitalised, v1 SUPERSEDED</text>
+<polygon points="475,1474 606,1524 475,1574 344,1524" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
+<text x="475" y="1521" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Settle early, or last</text><text x="475" y="1535" text-anchor="middle" font-size="11.5" fill="#1D2B2A">installment paid?</text>
+<rect x="355" y="1629" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
+<text x="475" y="1651" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Pay principal and interest due;</text><text x="475" y="1664" text-anchor="middle" font-size="11.5" fill="#1D2B2A">future interest waived; schedule</text><text x="475" y="1678" text-anchor="middle" font-size="11.5" fill="#1D2B2A">CLOSED</text>
+<rect x="365" y="1773" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/>
+<text x="475" y="1793" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">End: SETTLED (every version</text><text x="475" y="1807" text-anchor="middle" font-size="11.5" fill="#FFFFFF" font-weight="bold">and payment kept)</text>
+<text x="334" y="430" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="506" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="616" y="566" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="642" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="334" y="838" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="914" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="616" y="1246" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="906" y="1518" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="624" y="1518" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<text x="482" y="1322" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="334" y="1518" text-anchor="end" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">No</text>
+<text x="482" y="1594" text-anchor="start" font-size="11.5" font-weight="bold" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3" paint-order="stroke">Yes</text>
+<rect x="1220" y="96" width="250" height="244" rx="6" fill="#FFFFFF" stroke="#D5E0DD"/><text x="1232" y="118" font-size="12" font-weight="bold" fill="#0B4F4A">Symbols</text><g transform="translate(1254,142) scale(0.22,0.34) translate(0,0)"><rect x="-110" y="-23" width="220" height="46" rx="23.0" fill="#0B4F4A" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="146" font-size="11" fill="#1D2B2A">Terminator: start / end</text><g transform="translate(1254,172) scale(0.22,0.34) translate(0,0)"><rect x="-115" y="-25" width="230" height="50" rx="25.0" fill="#A33A1A" stroke="#A33A1A" stroke-width="1.5"/></g><text x="1292" y="176" font-size="11" fill="#1D2B2A">Terminator: ended by a rule</text><g transform="translate(1254,202) scale(0.22,0.34) translate(0,0)"><rect x="-120" y="-31" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/></g><text x="1292" y="206" font-size="11" fill="#1D2B2A">Process: a step</text><g transform="translate(1254,232) scale(0.22,0.34) translate(0,0)"><polygon points="0,-50 131,0 0,50 -131,0" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/></g><text x="1292" y="236" font-size="11" fill="#1D2B2A">Decision: yes / no</text><g transform="translate(1254,262) scale(0.22,0.34) translate(0,0)"><polygon points="-109,-29 125,-29 109,29 -125,29" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/></g><text x="1292" y="266" font-size="11" fill="#1D2B2A">Input / output</text><g transform="translate(1254,292) scale(0.22,0.34) translate(0,0)"><rect x="-125" y="-31" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="-113" y1="-31" x2="-113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/><line x1="113" y1="-31" x2="113" y2="31" stroke="#0B4F4A" stroke-width="1.5"/></g><text x="1292" y="296" font-size="11" fill="#1D2B2A">Predefined process</text><g transform="translate(1254,322) scale(0.22,0.34) translate(0,0)"><path d="M-115,-24 A115,9 0 0 1 115,-24 L115,24 A115,9 0 0 1 -115,24 Z" fill="#F1EAF7" stroke="#6A4C93" stroke-width="1.5"/><path d="M-115,-24 A115,9 0 0 0 115,-24" fill="none" stroke="#6A4C93" stroke-width="1.5"/></g><text x="1292" y="326" font-size="11" fill="#1D2B2A">Data store</text>
+</svg>
