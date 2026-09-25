@@ -51,6 +51,7 @@ import io
 import re
 import sys
 from datetime import date, timedelta
+from decimal import Decimal, InvalidOperation
 
 try:
     import tkinter as tk
@@ -129,7 +130,7 @@ class Theme:
         style.configure("Treeview", background=self.CARD, fieldbackground=self.CARD, foreground=self.INK,
                         rowheight=30, borderwidth=0, font=self.f_body)
         style.configure("Treeview.Heading", background="#F4F7F6", foreground=self.MUTED, font=self.f_bold,
-                        relief="flat", padding=(8, 7), bordercolor=self.LINE)
+                        relief="flat", padding=(4, 7), bordercolor=self.LINE)
         style.map("Treeview", background=[("selected", self.SELECT)], foreground=[("selected", self.INK)])
         style.map("Treeview.Heading", background=[("active", self.MIST)])
         style.configure("TButton", padding=(14, 7), font=self.f_bold, background="#F4F7F6",
@@ -177,10 +178,14 @@ for _cls, _attr, _lc in bs.lifecycle_classes():
     _CODE_WORDS |= set(_lc.states)
 _CODE_WORDS |= (bs.Bank.BRANCH_ROLES | bs.Bank.COMPLIANCE_ROLES | bs.Bank.CREDIT_ROLES | bs.Bank.CARD_ROLES
                 | bs.Bank.COLLECTIONS_ROLES | bs.Bank.AUDIT_ROLES | set(bs.Bank.SEGMENTS)
-                | set(bs.ProductDefinition.CATEGORIES) | {"KEPT", "BROKEN", "PASS", "FAIL", "UPHELD", "REJECTED",
-                                                          "DIGITAL", "BRANCH", "PHONE", "ONLINE", "INTERNATIONAL"})
+                | set(bs.ProductDefinition.CATEGORIES) | bs.Merchant.CATEGORIES | bs.Biller.CATEGORIES
+                | bs.Chargeback.REASON_CODES | bs.Mandate.CAPABILITIES | bs.CardControl.TYPES
+                | set(bs.Restriction.SCOPES) | {"DIRECTOR", "TRUSTEE", "KEPT", "BROKEN", "PASS", "FAIL", "UPHELD",
+                                                "REJECTED", "DIGITAL", "BRANCH", "PHONE", "DEBIT", "CREDIT",
+                                                "ARCHIVED"})
 _CODE_WORDS -= _ACRONYMS
-_CODE_RE = re.compile(r"\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b|\b[A-Z]{3,}\b")
+# a code is a whole word: never part of an ID such as CARD-004, TRF-026 or CUR-CLASSIC
+_CODE_RE = re.compile(r"(?<![-\w])(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+|[A-Z]{3,})(?![-\w])")
 
 
 def nice(text):
@@ -194,6 +199,44 @@ def nice(text):
             return word.replace("_", " ").capitalize()
         return word
     return _CODE_RE.sub(swap, str(text))
+
+
+# How a status reads at a glance: green = in good standing, red = refused or blocked,
+# amber = waiting on someone, blue = in progress, grey = finished and kept for history.
+STATE_KIND = {}
+for _kind, _states in (
+        ("ok", "ACTIVE POSTED RELEASED ON_SALE EMPLOYED APPROVED APPROVED_WITH_CONDITIONS DISBURSED SETTLED "
+               "KEPT AUTHORISED PASS"),
+        ("bad", "FAILED DECLINED REJECTED BLOCKED_LOST BLOCKED_STOLEN BLOCKED_DAMAGED DESTROYED IN_ARREARS "
+                "BROKEN CANCELLED DELETED FAIL"),
+        ("warn", "AWAITING_AUTHORISATION HELD_FOR_REVIEW PARTIALLY_REVERSED REVERSED CLOSED_TO_NEW INACTIVE"),
+        ("info", "OPEN INITIATED SUBMITTED"),
+        ("neutral", "CLOSED ENDED LEFT SUPERSEDED ARCHIVED")):
+    for _s in _states.split():
+        STATE_KIND[_s] = _kind
+
+
+def state_kind(state):
+    return STATE_KIND.get(str(state), "neutral")
+
+
+def terms_text(terms):
+    """{'monthly_fee': 750, 'annual_rate': '0.08'} -> 'Monthly fee PKR 750.00, annual rate 8.00%'."""
+    parts = []
+    for key, value in terms.items():
+        try:
+            number = Decimal(str(value))
+        except InvalidOperation:
+            number = None
+        if number is not None and ("rate" in key or "penalty" in key):
+            shown = f"{float(number):.2%}"
+        elif number is not None and any(w in key for w in ("fee", "limit", "amount", "overdraft")):
+            shown = bs.fmt(number)
+        else:
+            shown = nice(value)
+        parts.append(f"{key.replace('_', ' ')} {shown}")
+    text = ", ".join(parts)
+    return text[:1].upper() + text[1:] if text else "No fees or rates"
 
 
 ACTIONS = {
@@ -213,6 +256,12 @@ ACTIONS = {
 
 def action_text(code):
     return ACTIONS.get(code, code.replace("_", " ").lower())
+
+
+def short_money(v):
+    """12,565,000 -> '12.6m', 277,100 -> '277k'."""
+    v = float(v)
+    return f"{v / 1e6:,.1f}m" if abs(v) >= 1e6 else f"{v / 1e3:,.0f}k" if abs(v) >= 1e3 else f"{v:,.0f}"
 
 
 def initials(name):
@@ -629,18 +678,21 @@ class DataTable(ttk.Frame):
     size themselves to their content. rows are (object, [cell, ...], optional tag)."""
 
     MAX_COL = 420
+    NUMERIC = {"Amount", "Balance", "Paid", "Level", "Live objects"}     # right-aligned, like a statement
 
     def __init__(self, parent, theme, columns, on_select=None, height=12):
         super().__init__(parent, style="Card.TFrame")
         self.theme, self.on_select, self.objects = theme, on_select, {}
         self.base_widths = dict(columns)
         names = [c[0] for c in columns]
+        self.numeric = [name in self.NUMERIC for name in names]
         self.tree = ttk.Treeview(self, columns=names, show="headings", height=height, selectmode="browse")
         for i, (name, width) in enumerate(columns):
-            self.tree.heading(name, text=name)
+            anchor = "e" if self.numeric[i] else "w"
+            self.tree.heading(name, text=name, anchor=anchor)
             # only the last column stretches: the others keep their fitted width and the table
             # scrolls sideways when it is too narrow, instead of cutting every column short
-            self.tree.column(name, width=width, minwidth=40, stretch=i == len(columns) - 1, anchor="w")
+            self.tree.column(name, width=width, minwidth=40, stretch=i == len(columns) - 1, anchor=anchor)
         ys = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         xs = ttk.Scrollbar(self, orient="horizontal", command=self.tree.xview)
         self.tree.configure(yscrollcommand=_autohide(ys), xscrollcommand=_autohide(xs))
@@ -665,7 +717,7 @@ class DataTable(ttk.Frame):
         self.objects = {}
         texts = []
         for i, row in enumerate(rows):
-            obj, cells = row[0], [nice(c) for c in row[1]]
+            obj, cells = row[0], [nice(c) + ("   " if num else "") for c, num in zip(row[1], self.numeric)]
             tags = ["odd"] if i % 2 else []
             if len(row) > 2 and row[2]:
                 tags.append(row[2])
@@ -689,9 +741,13 @@ class DataTable(ttk.Frame):
             for cells in texts:
                 if i < len(cells):
                     widest = max(widest, self._font.measure(cells[i]))
-            fitted = min(self.MAX_COL, max(56, widest + 30))
+            fitted = min(self.MAX_COL, max(56, widest + 24))
             last = i == len(self.tree["columns"]) - 1
             self.tree.column(name, width=fitted, minwidth=fitted if last else 40)
+
+    def natural_width(self):
+        """The width at which every column shows in full."""
+        return sum(int(self.tree.column(c, "width")) for c in self.tree["columns"]) + 20
 
     def selected(self):
         sel = self.tree.selection()
@@ -741,8 +797,7 @@ class Chart(tk.Canvas):
         raise NotImplementedError
 
     def money_short(self, v):
-        v = float(v)
-        return f"{v / 1e6:,.1f}m" if abs(v) >= 1e6 else f"{v / 1e3:,.0f}k" if abs(v) >= 1e3 else f"{v:,.0f}"
+        return short_money(v)
 
 
 class BarChart(Chart):
@@ -848,36 +903,58 @@ class Banner(tk.Frame):
 
 
 class DetailView(ttk.Frame):
-    """A read-only rich-text pane with heading, key-value, table and status styles."""
+    """A read-only rich-text pane: headings, key-value lines, status steps drawn as coloured
+    chips, and tables set in the body font with tab stops fitted to the measured cells.
+    Status, role and category codes are shown in plain words (pass raw=True to keep them)."""
+
+    PAD = 18
 
     def __init__(self, parent, theme):
         super().__init__(parent, style="Card.TFrame")
         self.theme = theme
         self.text = tk.Text(self, wrap="word", relief="flat", bd=0, bg=theme.CARD, fg=theme.INK,
-                            font=theme.f_body, padx=18, pady=14, cursor="arrow", spacing1=1, spacing3=2)
+                            font=theme.f_body, padx=self.PAD, pady=14, cursor="arrow", spacing1=1, spacing3=2)
         ys = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
-        self.text.configure(yscrollcommand=ys.set)
+        self.text.configure(yscrollcommand=_autohide(ys))
         self.text.grid(row=0, column=0, sticky="nsew")
         ys.grid(row=0, column=1, sticky="ns")
         self.rowconfigure(0, weight=1)
         self.columnconfigure(0, weight=1)
+        self._font = tkfont.Font(font=theme.f_body)
+        self._bold = tkfont.Font(font=theme.f_bold)
+        self._tables = 0
         t = self.text
         t.tag_configure("h1", font=theme.f_h1, foreground=theme.TEAL, spacing3=4)
         t.tag_configure("sub", font=theme.f_body, foreground=theme.MUTED, spacing3=8)
-        t.tag_configure("h2", font=theme.f_h2, foreground=theme.TEAL, spacing1=12, spacing3=4)
+        t.tag_configure("h2", font=theme.f_h2, foreground=theme.TEAL, spacing1=14, spacing3=6)
         t.tag_configure("key", font=theme.f_bold, foreground=theme.MUTED)
         t.tag_configure("mono", font=theme.f_mono)
         t.tag_configure("ok", foreground=theme.OK, font=theme.f_bold)
         t.tag_configure("bad", foreground=theme.BAD, font=theme.f_bold)
         t.tag_configure("warn", foreground=theme.WARN, font=theme.f_bold)
         t.tag_configure("muted", foreground=theme.MUTED)
+        t.tag_configure("small", font=theme.f_small, foreground=theme.MUTED)
         t.tag_configure("chip", background=theme.MIST, foreground=theme.TEAL, font=theme.f_bold)
+        t.tag_configure("bullet", lmargin1=8, lmargin2=22)
+        t.tag_configure("th", background="#EEF3F2", foreground=theme.MUTED, font=theme.f_bold,
+                        spacing1=5, spacing3=5)
+        t.tag_configure("td", spacing1=4, spacing3=4)
+        t.tag_configure("stripe", background="#F7FAF9")
+        t.tag_configure("current", background=theme.MIST)
+        colours = {"ok": (theme.OK_BG, theme.OK), "bad": (theme.BAD_BG, theme.BAD), "warn": (theme.WARN_BG, theme.WARN),
+                   "info": (theme.INFO_BG, theme.INFO), "neutral": ("#ECEFEF", theme.MUTED)}
+        for kind, (bg, fg) in colours.items():
+            t.tag_configure("pill_" + kind, background=bg, foreground=fg, font=theme.f_bold)
+            t.tag_configure("cell_" + kind, foreground=fg if kind != "neutral" else theme.INK)
         t.configure(state="disabled")
 
     # writing helpers -------------------------------------------------------
     def clear(self):
         self.text.configure(state="normal")
         self.text.delete("1.0", "end")
+        for tag in self.text.tag_names():
+            if tag.startswith("tbl"):
+                self.text.tag_delete(tag)
 
     def done(self):
         self.text.configure(state="disabled")
@@ -894,23 +971,81 @@ class DetailView(ttk.Frame):
     def h2(self, text):
         self.write(text + "\n", "h2")
 
-    def kv(self, key, value, tag=None):
+    def kv(self, key, value, tag=None, raw=False):
         self.write(f"{key}:  ", "key")
-        self.write(f"{value}\n", *( [tag] if tag else []))
+        self.write(f"{value if raw else nice(value)}\n", *([tag] if tag else []))
 
-    def line(self, text="", tag=None):
-        self.write(text + "\n", *([tag] if tag else []))
+    def line(self, text="", tag=None, raw=False):
+        self.write((text if raw else nice(text)) + "\n", *([tag] if tag else []))
 
-    def table(self, header, rows):
-        """A monospaced table; widths are fitted to the content."""
+    def bullet(self, text, tag=None):
+        """One item of a list, indented, with a bullet."""
+        self.write("\u2022  ", "bullet", "muted")
+        self.write(nice(text) + "\n", "bullet", *([tag] if tag else []))
+
+    def pill(self, state):
+        """A status as a coloured chip: green, red, amber, blue or grey (see STATE_KIND)."""
+        self.write(f" {nice(state)} ".replace(" ", "\u00a0"), "pill_" + state_kind(state))
+
+    def trail(self, key, history):
+        """A StatusHistory as steps: each status as a chip with the date it began, oldest first."""
+        self.write(f"{key}:  ", "key")
+        for i, change in enumerate(history.changes):
+            if i:
+                self.write("  \u2192  ", "muted")
+            self.pill(change.status)
+            self.write("\u00a0" + change.on.strftime("%d %b %Y").replace(" ", "\u00a0"), "small")
+        self.write("\n")
+
+    def _clip(self, text, width, font):
+        if font.measure(text) <= width:
+            return text
+        while text and font.measure(text + "\u2026") > width:
+            text = text[:-1]
+        return text + "\u2026"
+
+    def table(self, header, rows, right=(), raw=False, highlight=None):
+        """A table in the body font: a shaded header, striped rows, tab stops fitted to the
+        widest cell of each column (shrunk to the pane if needed), status cells in colour.
+        right lists the column numbers to right-align (amounts); highlight is a row number."""
         rows = [[str(c) for c in r] for r in rows]
-        widths = [max([len(header[i])] + [len(r[i]) for r in rows]) for i in range(len(header))]
-        fmt_row = lambda r: "  ".join(c.ljust(widths[i]) for i, c in enumerate(r))
-        self.write(fmt_row(header) + "\n", "mono", "key")
-        for r in rows:
-            self.write(fmt_row(r) + "\n", "mono")
         if not rows:
-            self.write("(none)\n", "muted")
+            self.write("None recorded\n", "muted")
+            return
+        shown = [[c if raw else nice(c) for c in r] for r in rows]
+        n, gap = len(header), 18
+        widths = [max([self._bold.measure(header[i])] + [self._font.measure(r[i]) for r in shown])
+                  for i in range(n)]
+        widths = [min(w, 340) for w in widths]
+        room = self.text.winfo_width() - 2 * self.PAD - 16
+        room = room if room > 240 else 620
+        while sum(widths) + gap * (n - 1) > room and max(widths) > 80:
+            widest = widths.index(max(widths))
+            widths[widest] = max(80, widths[widest] - 8)
+        stops, x = [], 8
+        for i in range(n):
+            if i:
+                stops += [x + widths[i], "right"] if i in right else [x, "left"]
+            x += widths[i] + gap
+        self._tables += 1
+        tag = f"tbl{self._tables}"
+        self.text.tag_configure(tag, tabs=stops, wrap="none", lmargin1=8, lmargin2=8)
+        self.text.tag_raise(tag)
+
+        def row(cells, raw_cells, tags, fonts):
+            for i, cell in enumerate(cells):
+                if i:
+                    self.write("\t", tag, *tags)
+                cell_tags = [tag, *tags]
+                if raw_cells is not None and raw_cells[i] in STATE_KIND:
+                    cell_tags.append("cell_" + state_kind(raw_cells[i]))
+                self.write(self._clip(cell, widths[i], fonts), *cell_tags)
+            self.write("\n", tag, *tags)
+
+        row(header, None, ("th",), self._bold)
+        for k, (cells, raw_cells) in enumerate(zip(shown, rows)):
+            band = ("current",) if k == highlight else ("stripe",) if k % 2 else ()
+            row(cells, raw_cells, ("td", *band), self._font)
 
     def embed(self, widget):
         self.text.window_create("end", window=widget)
@@ -963,29 +1098,35 @@ class TimelineCanvas(tk.Canvas):
         span = max(1, (end - start).days)
         x_of = lambda d: left + (d - start).days / span * (width - left - 20)
         # month ticks
-        d = date(start.year, start.month, 1)
+        small = tkfont.Font(font=theme.f_small)
+        d, free_from = date(start.year, start.month, 1), left
         while d <= end:
             if d >= start:
                 x = x_of(d)
                 self.create_line(x, top - 6, x, height - 10, fill=theme.LINE)
-                if d.month in (1, 4, 7, 10):
-                    self.create_text(x + 2, top - 14, text=d.strftime("%b %Y"), anchor="w",
-                                     fill=theme.MUTED, font=theme.f_small)
+                label = d.strftime("%b %Y")
+                if d.month in (1, 4, 7, 10) and x >= free_from and x + small.measure(label) + 4 < width:
+                    self.create_text(x + 2, top - 14, text=label, anchor="w", fill=theme.MUTED, font=theme.f_small)
+                    free_from = x + small.measure(label) + 12
             d = bs.add_months(d, 1)
         tx = x_of(today)
         self.create_line(tx, top - 8, tx, height - 8, fill=theme.BRASS, width=2, dash=(4, 2))
-        self.create_text(tx + 3, height - 6, text="today", anchor="sw", fill=theme.BRASS, font=theme.f_small)
+        self.create_text(tx + 3 if tx + 40 < width else tx - 3, height - 6, text="today",
+                         anchor="sw" if tx + 40 < width else "se", fill=theme.BRASS, font=theme.f_small)
         for i, (label, kind, s, e) in enumerate(items):
             y = top + i * row_h
-            self.create_text(left - 10, y + 9, text=label[:38], anchor="e", fill=theme.INK, font=theme.f_small)
+            self.create_text(left - 10, y + 9, text=nice(label)[:38], anchor="e", fill=theme.INK, font=theme.f_small)
             x1, x2 = x_of(s), x_of(e or today)
             colour = self.COLOURS.get(kind, theme.TEAL)
             self.create_rectangle(x1, y + 2, max(x2, x1 + 3), y + 16, fill=colour, outline="")
             if e is None:
                 self.create_polygon(x2, y + 2, x2 + 8, y + 9, x2, y + 16, fill=colour, outline="")
-            else:
-                self.create_text(min(x2 + 4, width - 60), y + 9, text=f"ended {e}", anchor="w",
+            elif x2 + 100 < width:
+                self.create_text(x2 + 4, y + 9, text=f"ended {e:%b %Y}", anchor="w",
                                  fill=theme.MUTED, font=theme.f_small)
+            elif x2 - x1 > 100:
+                self.create_text(x2 - 4, y + 9, text=f"ended {e:%b %Y}", anchor="e",
+                                 fill="#FFFFFF", font=theme.f_small)
 
 
 # =============================================================================
@@ -1041,6 +1182,17 @@ class MasterDetailPage(Page):
         self.table.pack(fill="both", expand=True)
         self.detail = DetailView(right, self.theme)
         self.detail.pack(fill="both", expand=True)
+        self._detail_width, self._pending = 0, None
+        self.detail.text.bind("<Configure>", self._detail_resized, add="+")
+
+    def _detail_resized(self, event):
+        """Tables in the details are fitted to the pane, so redraw them when its width changes."""
+        if abs(event.width - self._detail_width) < 24:
+            return
+        self._detail_width = event.width
+        if self._pending:
+            self.after_cancel(self._pending)
+        self._pending = self.after(150, lambda: self._show_selected(self.table.selected()))
 
     def build_toolbar(self, bar):
         """Optional filters above the list (overridden where needed)."""
@@ -1057,11 +1209,13 @@ class MasterDetailPage(Page):
             self.after_idle(self._place_sash)
 
     def _place_sash(self):
-        """Split the list and the details in the page's proportions once the page has a size."""
+        """Split the list and the details once the page has a size: the page's proportions, but
+        wide enough for every column of the list when that leaves the details room to read."""
         width = self.panes.winfo_width()
         if width > 100:
             a, b = self.pane_weights
-            self.panes.sashpos(0, int(width * a / (a + b)))
+            share = int(width * a / (a + b))
+            self.panes.sashpos(0, min(max(share, self.table.natural_width()), int(width * 0.6)))
             self._sash_set = True
 
     def _show_selected(self, obj):
@@ -1111,8 +1265,8 @@ class DashboardPage(Page):
 
         lower = ttk.Frame(self.content)
         lower.pack(fill="both", expand=True, pady=(14, 0))
-        lower.columnconfigure(0, weight=5, uniform="lower")
-        lower.columnconfigure(1, weight=4, uniform="lower")
+        lower.columnconfigure(0, weight=3, uniform="lower")
+        lower.columnconfigure(1, weight=2, uniform="lower")
         lower.rowconfigure(0, weight=1)
 
         queue = Panel(lower, t, "Needs attention", "payments waiting for a 2nd signatory or held for review",
@@ -1120,6 +1274,7 @@ class DashboardPage(Page):
         queue.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
         self.queue = DataTable(queue.body, t, [("Reference", 80), ("Payment", 200), ("Amount", 120),
                                                ("Status", 170)], height=4)
+        self.queue.tree.bind("<Double-1>", lambda _e: self._open_payment())
         self.queue.pack(fill="both", expand=True)
         actions = tk.Frame(queue.body, bg=t.CARD)
         actions.pack(fill="x", pady=(10, 0))
@@ -1200,6 +1355,18 @@ class DashboardPage(Page):
             self.feed.insert("end", f"{e.subject}\n", "ref")
         self.feed.configure(state="disabled")
 
+    def _open_payment(self):
+        """Double-click a waiting payment: open it on the Transactions screen."""
+        txn = self.queue.selected()
+        if txn is not None:
+            self.app.show("Transactions")
+            page = self.app.pages["Transactions"]
+            for iid, obj in page.table.objects.items():
+                if obj is txn:
+                    page.table.tree.selection_set(iid)
+                    page.table.tree.see(iid)
+                    break
+
     def _officer(self):
         """Release/reject act as the signed-in employee; without a sign-in, the first compliance officer."""
         user = self.app.user
@@ -1273,22 +1440,24 @@ class CustomersPage(MasterDetailPage):
         caps = bank.capacities_of(p) if isinstance(p, bs.Person) else []
         if isinstance(p, bs.Organization) or not caps:
             caps = caps or [f"{r.title}: {r.person.name} {r.period}" for r in getattr(p, "officers", [])]
-        for c in caps or ["(none)"]:
-            d.line("  - " + c)
+        for c in caps or ["None"]:
+            d.bullet(c)
         d.h2("Dated roles and periods")
-        d.embed(TimelineCanvas(d.text, self.theme, self.ctl.timeline_items(p), bank.today))
+        width = max(560, d.text.winfo_width() - 2 * DetailView.PAD - 20)
+        d.embed(TimelineCanvas(d.text, self.theme, self.ctl.timeline_items(p), bank.today, width))
         if isinstance(p, bs.Organization):
             d.h2("Mandates")
             d.table(["Mandate", "Person", "Can", "Limit", "Valid"],
-                    [[m.mandate_id, m.person.name, ",".join(sorted(m.capabilities)),
-                      bs.fmt(m.limit) if m.limit is not None else "unlimited", str(m.period)] for m in p.mandates])
+                    [[m.mandate_id, m.person.name, ", ".join(sorted(m.capabilities)),
+                      bs.fmt(m.limit) if m.limit is not None else "No limit", str(m.period)] for m in p.mandates],
+                    right=(3,))
         d.h2("Identity checks (kept, never overwritten)")
         d.table(["Check", "On", "Result", "Document", "By"],
                 [[c.check_id, c.performed_on, c.result, str(c.document), c.performed_by] for c in p.checks])
         if p.corrections:
             d.h2("Corrections")
             for c in p.corrections:
-                d.line(f"  {c.on} {c.field}: '{c.old_value}' -> '{c.new_value}' ({c.reason}; by {c.by})")
+                d.bullet(f"{c.on} {c.field}: '{c.old_value}' -> '{c.new_value}' ({c.reason}; by {c.by})")
         holdings = [a for a in bank.arrangements.values() if p in a.holders]
         if holdings:
             d.h2("Products held")
@@ -1296,7 +1465,7 @@ class CustomersPage(MasterDetailPage):
         if p.relationship:
             d.h2("Relationship history")
             for line in bank.relationship_history(p):
-                d.line("  " + line, "mono")
+                d.bullet(line.strip())
         try:
             as_at = date.fromisoformat(self.as_at.get().strip())
         except ValueError:
@@ -1304,7 +1473,7 @@ class CustomersPage(MasterDetailPage):
         if as_at:
             d.h2(f"Time machine: the bank's view on {as_at}")
             for line in bank.party_snapshot(p, as_at):
-                d.line("  " + line)
+                d.bullet(line.strip())
 
 
 # ----------------------------------------------------------------------------- accounts
@@ -1322,7 +1491,7 @@ class AccountsPage(MasterDetailPage):
             tag = "muted" if a.status.current in ("CLOSED", "SETTLED") else (
                 "bad" if a.status.current == "IN_ARREARS" else None)
             out.append((a, [a.number, type(a).__name__, ", ".join(h.name for h in a.holders), bal,
-                            a.status.current + (" (archived)" if a.archived_on else "")], tag))
+                            "ARCHIVED" if a.archived_on else a.status.current], tag))
         return out
 
     def show(self, a):
@@ -1330,11 +1499,10 @@ class AccountsPage(MasterDetailPage):
         path = class_path(type(a))
         d.h1(f"{a.number}  {a.product.name}", f"class path: {path}")
         d.kv("Holders", ", ".join(h.name for h in a.holders))
-        d.kv("Status trail", a.status.trail())
+        d.trail("Status", a.status)
         d.kv("Opened", f"{a.opened_on} at {a.opened_at_branch}")
         d.kv("Servicing branch history", "; ".join(f"{b.code} {p}" for p, b in a.servicing_history))
-        d.kv("Terms in force", f"v{a.terms.version_no}  " + (", ".join(f"{k}={v}" for k, v in a.terms.terms.items())
-                                                               or "no fees or rates"))
+        d.kv("Terms in force", f"v{a.terms.version_no}: " + terms_text(a.terms.terms))
         d.kv("Terms history", "; ".join(f"from {s}: v{v.version_no}" for s, v in a.terms_history))
         if a.archived_on:
             d.kv("Archived", f"{a.archived_on}; retain until {bank.retention_until(a)}", "warn")
@@ -1350,19 +1518,20 @@ class AccountsPage(MasterDetailPage):
             if holds:
                 d.h2("Holds")
                 d.table(["Placed", "Amount", "Released", "Reason"],
-                        [[h.placed_on, bs.fmt(h.amount), h.released_on or "active", h.reason] for h in holds])
+                        [[h.placed_on, bs.fmt(h.amount), h.released_on or "Still held", h.reason] for h in holds],
+                        right=(1,))
             d.h2("Ledger (balances are derived from these entries, never stored)")
             running, rows = bs.ZERO, []
             for e in a.entries:
                 running += e.amount
                 rows.append([e.posted_on, f"{e.amount:,.2f}", f"{running:,.2f}", e.transaction.txn_id,
                              e.transaction.narrative[:48]])
-            d.table(["Date", "Amount", "Balance", "Txn", "Narrative"], rows[-60:])
+            d.table(["Date", "Amount", "Balance", "Txn", "Narrative"], rows[-60:], right=(1, 2))
             cards = [c for c in bank.cards.values() if c.account is a]
             if cards:
                 d.h2("Cards drawing on this account")
                 for c in cards:
-                    d.line("  " + label_of(c))
+                    d.bullet(label_of(c))
         else:
             app = a.application
             d.h2("Financing")
@@ -1372,10 +1541,11 @@ class AccountsPage(MasterDetailPage):
             d.kv("Conditions", "; ".join(f"{c.description} ({'met ' + str(c.satisfied_on) if c.is_met() else 'open'})"
                                          for c in app.conditions) or "none")
             for s in a.schedules:
-                d.h2(f"Schedule v{s.version} [{s.status.current}] - {s.reason}")
+                d.h2(f"Schedule v{s.version}: {s.reason}")
+                d.trail("Schedule status", s.status)
                 d.table(["#", "Due", "Principal", "Interest", "Outstanding", "Status"],
                         [[i.seq, i.due_on, f"{i.principal:,.2f}", f"{i.interest:,.2f}", f"{i.outstanding:,.2f}",
-                          i.status_on(bank.today)] for i in s.installments])
+                          i.status_on(bank.today)] for i in s.installments], right=(2, 3, 4))
 
 
 # ----------------------------------------------------------------------------- transactions
@@ -1430,13 +1600,15 @@ class TransactionsPage(MasterDetailPage):
         path = class_path(type(t))
         d.h1(f"{t.txn_id}  {bs.fmt(t.amount)}", f"class path: {path}")
         d.kv("Counterparty", t.counterparty())
-        st = t.status.current
-        d.kv("Status", st, "bad" if st in ("FAILED", "DECLINED") else "ok" if st == "POSTED" else "warn")
+        d.trail("Status", t.status)
         if t.failure_reason:
             d.kv("Refused because", t.failure_reason, "bad")
         d.h2("Story")
-        for line in bank.transaction_story(t):
-            d.line(line)
+        story = bank.transaction_story(t)
+        if story:
+            d.line(story[0])
+        for line in story[1:]:
+            d.bullet(line.strip())
         if isinstance(t, bs.TransferPayment):
             d.h2("Beneficiary: as sent vs today")
             d.kv("Sent to", str(t.beneficiary_version))
@@ -1448,7 +1620,7 @@ class TransactionsPage(MasterDetailPage):
             d.kv("Biller / reference", f"{t.biller.name} / {t.consumer_reference}")
         d.h2("Double-entry legs (sum to zero)")
         d.table(["Account", "Amount", "Posted"],
-                [[getattr(e.account, "number", "?"), f"{e.amount:,.2f}", e.posted_on] for e in t.entries])
+                [[getattr(e.account, "number", "?"), f"{e.amount:,.2f}", e.posted_on] for e in t.entries], right=(1,))
 
 
 # ----------------------------------------------------------------------------- cards
@@ -1464,25 +1636,27 @@ class CardsPage(MasterDetailPage):
     def show(self, c):
         d, bank = self.detail, self.ctl.bank
         d.h1(f"{c.card_id}  {c.masked_number}", f"{c.cardholder.name} on {c.account.number}")
-        d.kv("Status trail", c.status.trail())
+        d.trail("Status", c.status)
         d.kv("Daily limit history", "; ".join(f"from {s}: {bs.fmt(l)}" for s, l in c.limit_history))
-        d.h2("Replacement chain")
-        for x in c.lineage():
-            tag = "chip" if x is c else None
-            d.line(f"  {x.card_id} {x.masked_number} [{x.status.current}] issued {x.issued_on}", tag)
+        d.h2("Replacement chain (oldest first)")
+        chain = c.lineage()
+        d.table(["Card", "Number", "Issued", "Daily limit", "Status"],
+                [[x.card_id, "\u2022\u2022\u2022\u2022 " + x.masked_number[-4:], x.issued_on,
+                  bs.fmt(x.limit_history[-1][1]) if x.limit_history else "-", x.status.current] for x in chain],
+                right=(3,), highlight=chain.index(c))
         if c.controls:
             d.h2("Card controls (each with its period)")
             d.table(["Control", "Type", "Value", "Period"],
-                    [[k.control_id, k.control_type, k.value or "", str(k.period)] for k in c.controls])
+                    [[k.control_id, k.control_type, k.value or "-", str(k.period)] for k in c.controls])
         d.h2("Payments across the whole chain (search_transactions)")
         hits = bank.search_transactions(card=c)
         d.table(["Txn", "Date", "Card", "Amount", "Status", "Merchant"],
                 [[t.txn_id, t.initiated_on, t.card.card_id, f"{t.amount:,.2f}", t.status.current, t.merchant.name]
-                 for t in hits])
+                 for t in hits], right=(3,))
         if c.events:
             d.h2("Events")
             for on, text in c.events:
-                d.line(f"  {on}  {text}")
+                d.bullet(f"{on}  {text}")
 
 
 # ----------------------------------------------------------------------------- cases
@@ -1493,7 +1667,7 @@ class CasesPage(MasterDetailPage):
     pane_weights = (1, 1)
 
     def rows(self):
-        return [(c, [c.case_id, c.kind, c.opened_on, c.status.current + (" (archived)" if c.archived_on else "")],
+        return [(c, [c.case_id, c.kind, c.opened_on, "ARCHIVED" if c.archived_on else c.status.current],
                  None if c.is_open else "muted") for c in reversed(list(self.ctl.bank.cases.values()))]
 
     def show(self, c):
@@ -1502,7 +1676,7 @@ class CasesPage(MasterDetailPage):
         d.h1(f"{c.case_id}", f"class path: {path}")
         d.kv("Summary", c.summary)
         d.kv("Subject", label_of(c.subject))
-        d.kv("Status trail", c.status.trail())
+        d.trail("Status", c.status)
         if c.outcome:
             d.kv("Outcome", c.outcome)
         if c.assignments:
@@ -1519,8 +1693,8 @@ class CasesPage(MasterDetailPage):
                     [[r.restriction_id, r.scope, str(r.period), r.reason] for r in c.restrictions])
         if isinstance(c, bs.CollectionsCase) and c.promises:
             d.h2("Promises to pay")
-            d.table(["Amount", "Due", "Status"],
-                    [[bs.fmt(p.amount), p.due_on, p.status.current] for p in c.promises])
+            d.table(["Due", "Amount", "Status"],
+                    [[p.due_on, bs.fmt(p.amount), p.status.current] for p in c.promises], right=(1,))
         if c.evidence:
             d.h2("Evidence snapshots (never rewritten by later corrections)")
             for ev in c.evidence:
@@ -1534,7 +1708,7 @@ class CasesPage(MasterDetailPage):
         if c.notes:
             d.h2("Notes")
             for n in c.notes:
-                d.line(f"  {n.on} {n.by}: {n.text}")
+                d.bullet(f"{n.on} {n.by}: {n.text}")
 
 
 # ----------------------------------------------------------------------------- staff and products
@@ -1554,7 +1728,7 @@ class StaffPage(MasterDetailPage):
     def show(self, e):
         d, bank = self.detail, self.ctl.bank
         d.h1(e.person.name, f"{e.employee_no}, hired {e.hired_on}")
-        d.kv("Employment", e.status.trail())
+        d.trail("Employment", e.status)
         d.h2("Role history")
         d.table(["Role", "Branch", "Period"], [[a.role, a.branch.code, str(a.period)] for a in e.assignments])
         approvals = [a for a in bank.approvals if a.approver is e]
@@ -1565,7 +1739,8 @@ class StaffPage(MasterDetailPage):
                    if p.relationship and p.relationship.manager_on(bank.today) is e]
         if managed:
             d.h2("Customers managed today")
-            d.line("  " + ", ".join(managed))
+            for name in managed:
+                d.bullet(name)
 
 
 class ProductsPage(MasterDetailPage):
@@ -1584,7 +1759,7 @@ class ProductsPage(MasterDetailPage):
         d, bank = self.detail, self.ctl.bank
         if isinstance(x, bs.Branch):
             d.h1(str(x), x.city)
-            d.kv("Status trail", x.status.trail())
+            d.trail("Status", x.status)
             if x.merged_into:
                 d.kv("Merged into", str(x.merged_into))
             d.kv("Vault cash", bs.fmt(-x.vault.ledger_balance()))
@@ -1593,11 +1768,10 @@ class ProductsPage(MasterDetailPage):
             d.table(["Employee", "Role", "Period"],
                     [[e.person.name, a.role, str(a.period)] for e in staff for a in e.assignments if a.branch is x])
             return
-        d.h1(x.name, f"{x.code}  ({x.category})")
-        d.kv("Sale status", x.sale_status.trail())
+        d.h1(x.name, f"{x.code}  ({nice(x.category)})")
+        d.trail("Sale status", x.sale_status)
         d.h2("Terms versions")
-        d.table(["Version", "From", "Terms"], [[f"v{v.version_no}", v.effective_from,
-                                                ", ".join(f"{k}={val}" for k, val in v.terms.items())]
+        d.table(["Version", "From", "Terms"], [[f"v{v.version_no}", v.effective_from, terms_text(v.terms)]
                                                for v in x.terms_versions])
         holders = [a for a in bank.arrangements.values() if a.product is x]
         d.h2("Held by")
@@ -1622,7 +1796,7 @@ class ClassModelPage(MasterDetailPage):
 
         def walk(c, depth):
             name = c.__name__ + ("  «abstract»" if inspect.isabstract(c) else "")
-            out.append((c, [("    " * depth) + ("-> " if depth else "") + name, depth + 1,
+            out.append((c, [("     " * (depth - 1)) + ("\u2514\u2500 " if depth else "") + name, depth + 1,
                             counts.get(c, 0)], None if depth else "ok"))
             for s in children[c]:
                 walk(s, depth + 1)
@@ -1638,28 +1812,29 @@ class ClassModelPage(MasterDetailPage):
         d = self.detail
         chain = class_path(c)
         d.h1(c.__name__, f"inheritance: {chain}")
-        d.line(inspect.cleandoc(c.__doc__ or ""))
+        d.line(inspect.cleandoc(c.__doc__ or ""), raw=True)
         if inspect.isabstract(c):
             d.kv("Abstract", "cannot be created; subclasses must implement "
-                 + ", ".join(sorted(m + "()" for m in c.__abstractmethods__)), "warn")
+                 + ", ".join(sorted(m + "()" for m in c.__abstractmethods__)), "warn", raw=True)
         consts, methods = bs._own_members(c)
         attrs = bs._own_attributes(c)
         d.h2("Added at this level")
-        d.kv("Class constants", ", ".join(consts) or "-")
-        d.kv("Attributes", ", ".join(attrs) or "(inherits all attributes)")
-        d.kv("Methods", ", ".join(m for m in methods) or "(no new methods)")
+        d.kv("Class constants", ", ".join(consts) or "-", raw=True)
+        d.kv("Attributes", ", ".join(attrs) or "(inherits all attributes)", raw=True)
+        d.kv("Methods", ", ".join(m for m in methods) or "(no new methods)", raw=True)
         for attr in ("LIFECYCLE", "SALE_LIFECYCLE"):
             lifecycle = getattr(c, attr, None)
             if isinstance(lifecycle, bs.Lifecycle):
                 own = "declared here" if attr in c.__dict__ else "inherited"
                 d.h2(f"Lifecycle ({own}; enforced on every status change)")
-                for frm, moves in lifecycle.transitions.items():
-                    for to, trigger in moves.items():
-                        d.line(f"{frm} -> {to}   ({trigger})")
-                d.kv("Final", ", ".join(sorted(lifecycle.final)))
+                d.kv("Starts as", lifecycle.initial, raw=True)
+                d.table(["From", "To", "Caused by"],
+                        [[frm, to, trigger] for frm, moves in lifecycle.transitions.items()
+                         for to, trigger in moves.items()], raw=True)
+                d.kv("Final", ", ".join(sorted(lifecycle.final)), raw=True)
         subs = [s.__name__ for s in bs.domain_classes() if s.__bases__[0] is c]
         if subs:
-            d.kv("Subclasses", ", ".join(subs))
+            d.kv("Subclasses", ", ".join(subs), raw=True)
 
 
 # ----------------------------------------------------------------------------- operations
@@ -2399,8 +2574,8 @@ class BooksPage(Page):
     subtitle = "Double-entry trial balance on any date, and the append-only audit log"
 
     def build(self):
-        self.content.columnconfigure(0, weight=2, uniform="books")
-        self.content.columnconfigure(1, weight=3, uniform="books")
+        self.content.columnconfigure(0, weight=1, uniform="books")
+        self.content.columnconfigure(1, weight=1, uniform="books")
         self.content.rowconfigure(0, weight=1)
         tb = Panel(self.content, self.theme, "Trial balance", "credits positive, debits negative")
         tb.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
@@ -2424,8 +2599,8 @@ class BooksPage(Page):
         self.filter.pack(side="left", padx=8)
         self.filter.bind("<Return>", lambda _e: self.refresh())
         ttk.Button(bar2, text="Apply", command=self.refresh).pack(side="left")
-        self.log = DataTable(log.body, self.theme, [("Date", 85), ("Actor", 150), ("Action", 170),
-                                                    ("Subject", 90), ("Detail", 320)], height=18)
+        self.log = DataTable(log.body, self.theme, [("Date", 85), ("Who", 150), ("Did", 170),
+                                                    ("Record", 90), ("Detail", 320)], height=18)
         self.log.pack(fill="both", expand=True)
 
     def refresh(self):
@@ -2443,8 +2618,8 @@ class BooksPage(Page):
                           fg=self.theme.OK if total == 0 else self.theme.BAD)
         term = self.filter.get().strip().lower()
         events = [e for e in reversed(bank.audit)
-                  if not term or term in f"{e.on} {e.actor} {e.action} {e.subject} {e.detail}".lower()]
-        self.log.set_rows([(e, [e.on, e.actor, e.action, e.subject, e.detail],
+                  if not term or term in f"{e.on} {e.actor} {e.action} {action_text(e.action)} {e.subject} {e.detail}".lower()]
+        self.log.set_rows([(e, [e.on, e.actor, action_text(e.action).capitalize(), e.subject, e.detail],
                             "bad" if "REFUSED" in e.action or "FAILED" in e.action or "DECLINED" in e.action
                             or "BLOCKED" in e.action else None) for e in events[:600]])
 
@@ -2455,7 +2630,7 @@ class CounterpartiesPage(MasterDetailPage):
     subtitle = ("Merchants, billers and payees: external parties the bank pays or is paid by. "
                 "They are not customers, so the bank holds no KYC for them")
     columns = [("Kind", 70), ("Name", 172), ("Detail", 172), ("Paid", 44)]
-    pane_weights = (3, 2)
+    pane_weights = (1, 1)
 
     def rows(self):
         bank = self.ctl.bank
@@ -2479,7 +2654,7 @@ class CounterpartiesPage(MasterDetailPage):
             return
         self.detail.table(["Txn", "Date", "Amount", "Status", extra[0]],
                           [[t.txn_id, t.initiated_on, f"{t.amount:,.2f}", t.status.current, extra[1](t)]
-                           for t in payments])
+                           for t in payments], right=(2,))
 
     def show(self, x):
         d, bank = self.detail, self.ctl.bank
@@ -2492,20 +2667,20 @@ class CounterpartiesPage(MasterDetailPage):
             def after(t):
                 parts = [f"refund {r.txn_id}" for r in t.refunds]
                 parts += [f"{r.label} {r.txn_id}" for r in t.reversals]
-                return f"card {t.card.card_id}" + ("; " + ", ".join(parts) if parts else "")
-            self._payments(x.payments, ("Card and follow-ups", after))
+                return ", ".join([t.card.card_id] + parts)
+            self._payments(x.payments, ("Card, follow-ups", after))
         elif isinstance(x, bs.Biller):
             d.h1(x.name, f"{x.code}  class: Biller")
             d.kv("Category", x.category)
-            d.kv("Status trail", x.status.trail())
+            d.trail("Status", x.status)
             paid = [t for t in bank.transactions.values() if isinstance(t, bs.BillPayment) and t.biller is x]
             self._payments(paid, ("Consumer reference", lambda t: t.consumer_reference))
         else:
             d.h1(x.nickname, f"{x.beneficiary_id}  payee of {x.owner.name}  class: Beneficiary")
-            d.kv("Status trail", x.status.trail())
+            d.trail("Status", x.status)
             d.h2("Versions (details are never overwritten)")
             for v in x.versions:
-                d.line(f"  {v}")
+                d.bullet(str(v))
             paid = [t for t in bank.transactions.values() if isinstance(t, bs.TransferPayment) and t.beneficiary is x]
             self._payments(paid, ("Sent to version", lambda t: f"v{t.beneficiary_version.version}"))
 
@@ -2608,19 +2783,20 @@ class ReportsPage(Page):
         on = _date(on)
         held = self.ctl.bank.authority_on(org, person, on)
         self.out.kv("Question", f"What could {person.name} do for {org.name} on {on}?")
+        self.out.h2("Answer")
         if held:
             for m in held:
-                self.out.line(f"  {m}", "ok")
+                self.out.bullet(str(m), "ok")
         else:
-            self.out.line("  No mandate in force on that date.", "bad")
+            self.out.bullet("No mandate in force on that date.", "bad")
         self.out.h2("Every mandate this person has ever held here")
         for m in [m for m in org.mandates if m.person is person] or []:
-            self.out.line(f"  {m}")
+            self.out.bullet(str(m))
         offices = [r for r in org.officers if r.person is person]
         if offices:
             self.out.h2("Offices held")
             for r in offices:
-                self.out.line(f"  {r}")
+                self.out.bullet(str(r))
 
     def _audit(self, by, start, end):
         for line in self.ctl.bank.approvals_and_authority_audit(by, _date(start), _date(end)):
@@ -2630,7 +2806,7 @@ class ReportsPage(Page):
         lines = self.ctl.bank.daily_report(_date(on))
         self.out.kv("Events", len(lines))
         for line in lines:
-            self.out.line(line)
+            self.out.bullet(line.strip())
 
 
 # ----------------------------------------------------------------------------- scenario log
@@ -2640,25 +2816,32 @@ class ScenarioLogPage(Page):
                 "(16 scenarios on a simulated calendar)")
 
     def build(self):
-        self.content.columnconfigure(1, weight=1)
+        t = self.theme
+        self.content.columnconfigure(0, weight=2, uniform="log")
+        self.content.columnconfigure(1, weight=5, uniform="log")
         self.content.rowconfigure(0, weight=1)
-        left = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
-        left.grid(row=0, column=0, sticky="ns", padx=(0, 12))
-        self.sections = tk.Listbox(left, width=44, bd=0, highlightthickness=0, activestyle="none",
-                                   font=self.theme.f_body, fg=self.theme.INK, bg=self.theme.CARD,
-                                   selectbackground=self.theme.SELECT, selectforeground=self.theme.INK)
-        self.sections.pack(fill="both", expand=True, padx=6, pady=6)
-        self.sections.bind("<<ListboxSelect>>", self._jump)
-        right = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
+        left = Panel(self.content, t, "Contents", icon="log")
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        # a Text rather than a Listbox, so long scenario titles wrap instead of being cut off
+        self.sections = tk.Text(left.body, wrap="word", relief="flat", bd=0, bg=t.CARD, fg=t.INK, font=t.f_body,
+                                cursor="hand2", spacing1=4, spacing3=4, width=30)
+        self.sections.pack(fill="both", expand=True)
+        self.sections.tag_configure("num", foreground=t.BRASS, font=t.f_bold)
+        self.sections.tag_configure("item", lmargin1=4, lmargin2=34)
+        self.sections.tag_configure("hover", background=t.MIST)
+        right = tk.Frame(self.content, bg=t.CARD, highlightbackground=t.LINE, highlightthickness=1)
         right.grid(row=0, column=1, sticky="nsew")
-        self.view = DetailView(right, self.theme)
+        self.view = DetailView(right, t)
         self.view.pack(fill="both", expand=True)
+        for depth in range(1, 9):
+            self.view.text.tag_configure(f"ind{depth}", lmargin1=depth * 7, lmargin2=depth * 7 + 14)
         self.marks = []
 
     def refresh(self):
-        v = self.view
+        v, toc = self.view, self.sections
         v.clear()
-        self.sections.delete(0, "end")
+        toc.configure(state="normal")
+        toc.delete("1.0", "end")
         self.marks = []
         lines = self.ctl.scenario_log.splitlines()
         for i, line in enumerate(lines):
@@ -2669,21 +2852,33 @@ class ScenarioLogPage(Page):
                 v.text.mark_set(mark, "end-1c")
                 v.text.mark_gravity(mark, "left")
                 self.marks.append(mark)
-                self.sections.insert("end", " " + line.replace("SCENARIO", "Scenario")[:60])
-                v.write(line + "\n", "h2")
-            elif "[BLOCKED]" in line:
-                v.write(line + "\n", "bad")
+                self._toc_entry(line, len(self.marks) - 1)
+                v.write(line.replace("SCENARIO", "Scenario") + "\n", "h2")
+                continue
+            depth = min(8, (len(line) - len(line.lstrip(" "))) // 2)
+            indent = (f"ind{depth}",) if depth else ()
+            if "[BLOCKED]" in line:
+                v.write(line.strip() + "\n", "bad", *indent)
             elif "[OK]" in line:
-                v.write(line + "\n", "ok")
+                v.write(line.strip() + "\n", "ok", *indent)
             else:
-                v.write(line + "\n", "mono")
+                v.write(line.strip() + "\n", *indent)
+        toc.configure(state="disabled")
         v.done()
 
-    def _jump(self, _event=None):
-        sel = self.sections.curselection()
-        if sel:
-            self.view.text.see(self.marks[sel[0]])
-            self.view.text.yview(self.marks[sel[0]])
+    def _toc_entry(self, line, index):
+        toc = self.sections
+        head, _, rest = line.partition(":")
+        number = head.replace("SCENARIO", "").strip() if head.startswith("SCENARIO") else ""
+        tag, marker = f"s{index}", number or "\u2022"
+        toc.insert("end", f"{marker:>3}   ", ("num", "item", tag))
+        toc.insert("end", (rest.strip() if number else line.title()) + "\n", ("item", tag))
+        toc.tag_bind(tag, "<Button-1>", lambda _e, i=index: self._jump(i))
+        toc.tag_bind(tag, "<Enter>", lambda _e, t=tag: toc.tag_add("hover", f"{t}.first", f"{t}.last"))
+        toc.tag_bind(tag, "<Leave>", lambda _e: toc.tag_remove("hover", "1.0", "end"))
+
+    def _jump(self, index):
+        self.view.text.yview(self.marks[index])
 
 
 # =============================================================================
@@ -2745,9 +2940,12 @@ class SignInScreen(tk.Frame):
 
         people = Panel(cols, t, "Digital banking", "customers and authorised signatories", icon="phone")
         people.grid(row=0, column=1, sticky="nsew")
-        self.people_table = DataTable(people.body, t, [("Name", 150), ("Can use", 300)], height=12)
+        self.people_table = DataTable(people.body, t, [("Name", 150), ("Can use", 300)], self._describe, height=12)
         self.people_table.pack(fill="both", expand=True)
         self.people_table.tree.bind("<Double-1>", lambda _e: self._customer())
+        self.access = tk.Label(people.body, text="", bg=t.MIST, fg=t.INK, font=t.f_small, anchor="w",
+                               justify="left", wraplength=420, padx=10, pady=8)
+        self.access.pack(fill="x", pady=(10, 0))
         row = tk.Frame(people.body, bg=t.CARD)
         row.pack(fill="x", pady=(12, 0))
         ttk.Button(row, text="Sign in to digital banking", style="Accent.TButton",
@@ -2762,16 +2960,31 @@ class SignInScreen(tk.Frame):
         self.staff_table.set_rows(rows)
         people = []
         for p in self.ctl.digital_people():
-            uses = []
-            if p.relationship and p.relationship.status.current == "ACTIVE":
-                uses.append("own accounts")
-            for m in self.ctl.mandates_of(p):
-                uses.append(f"{m.organization.name} ({', '.join(sorted(m.capabilities)).lower()})")
+            uses = ["own accounts"] if p.relationship and p.relationship.status.current == "ACTIVE" else []
+            orgs = list(dict.fromkeys(m.organization.name.replace(" (Pvt) Ltd", "") for m in self.ctl.mandates_of(p)))
+            if orgs:
+                uses.append(", ".join(orgs) + (" (view only)" if all(m.capabilities == {"VIEW"}
+                                                                   for m in self.ctl.mandates_of(p)) else ""))
             people.append((p, [p.name, "; ".join(uses)]))
         self.people_table.set_rows(people)
         for table in (self.staff_table, self.people_table):
             if table.selected() is None:
                 table.select_first()
+        self._describe(self.people_table.selected())
+
+    def _describe(self, person):
+        """Spell out what the selected person may do, mandate by mandate."""
+        if person is None:
+            self.access.config(text="")
+            return
+        lines = []
+        if person.relationship and person.relationship.status.current == "ACTIVE":
+            lines.append(f"{person.name}: own accounts as a personal customer")
+        for m in self.ctl.mandates_of(person):
+            limit = f"up to {bs.fmt(m.limit)}" if m.limit is not None else "no limit"
+            dual = f", 2nd signatory above {bs.fmt(m.dual_control_above)}" if m.dual_control_above else ""
+            lines.append(f"For {m.organization.name}: {', '.join(sorted(m.capabilities)).lower()} ({limit}{dual})")
+        self.access.config(text="\n".join(lines))
 
     def _staff(self):
         e = self.staff_table.selected()
@@ -2849,8 +3062,25 @@ class HomeView(CustomerView):
         self.list_panel.grid(row=0, column=0, sticky="nsew", padx=(0, 16))
         self.cards_box = ScrollFrame(self.list_panel.body, t)
         self.cards_box.pack(fill="both", expand=True)
+        glance = tk.Frame(self.list_panel.body, bg=t.CARD)
+        glance.pack(fill="x", pady=(10, 0))
+        self.glance_title = tk.Label(glance, text="", bg=t.CARD, fg=t.MUTED, font=t.f_bold, anchor="w")
+        self.glance_title.pack(fill="x", pady=(0, 6))
+        tiles = tk.Frame(glance, bg=t.CARD)
+        tiles.pack(fill="x")
+        self.glance = {}
+        for i, (key, caption, colour) in enumerate((("in", "Money in", t.OK), ("out", "Money out", t.INK),
+                                                    ("wait", "Waiting for you", t.WARN))):
+            box = tk.Frame(tiles, bg=t.BG, highlightbackground=t.LINE, highlightthickness=1)
+            box.grid(row=0, column=i, sticky="nsew", padx=(0 if i == 0 else 8, 0))
+            tiles.columnconfigure(i, weight=1, uniform="glance")
+            value = tk.Label(box, text="-", bg=t.BG, fg=colour, font=t.f_h2, anchor="w")
+            value.pack(fill="x", padx=10, pady=(8, 0))
+            tk.Label(box, text=caption, bg=t.BG, fg=t.MUTED, font=t.f_small, anchor="w").pack(fill="x", padx=10,
+                                                                                              pady=(0, 8))
+            self.glance[key] = value
         quick = tk.Frame(self.list_panel.body, bg=t.CARD)
-        quick.pack(fill="x", pady=(10, 0))
+        quick.pack(fill="x", pady=(12, 0))
         tk.Label(quick, text="Quick actions", bg=t.CARD, fg=t.MUTED, font=t.f_bold).pack(anchor="w", pady=(0, 6))
         row = tk.Frame(quick, bg=t.CARD)
         row.pack(fill="x")
@@ -2916,11 +3146,20 @@ class HomeView(CustomerView):
 
     def _show_account(self):
         a = self.selected
+        waiting = len(self.ctl.awaiting_my_signature(self.person))
+        self.glance["wait"].config(text=str(waiting))
         if a is None:
             self.summary.config(text="")
             self.entries.set_rows([])
+            self.glance_title.config(text="")
             return
         today = self.ctl.today
+        recent = [e for e in a.entries if (today - e.posted_on).days < 30]
+        money_in = sum((e.amount for e in recent if e.amount > 0), bs.ZERO)
+        money_out = -sum((e.amount for e in recent if e.amount < 0), bs.ZERO)
+        self.glance_title.config(text=f"{a.number}, last 30 days")
+        self.glance["in"].config(text=f"+{short_money(money_in)}")
+        self.glance["out"].config(text=f"-{short_money(money_out)}")
         self.summary.config(text=f"{a.number} {a.product.name} held by {', '.join(h.name for h in a.holders)}.  "
                                  f"Balance PKR {a.ledger_balance():,.2f}; available PKR {a.available_balance(today):,.2f}"
                                  f"{'; on hold PKR ' + format(a.held_amount(today), ',.2f') if a.held_amount(today) else ''}.")
@@ -2931,11 +3170,34 @@ class HomeView(CustomerView):
         self.entries.set_rows(rows)
 
     def _statement(self):
+        """Produce a statement (a Statement record, logged) and show it in its own window."""
         if self.selected is None:
             return
         end = self.ctl.today
-        text = self.ctl.bank.generate_statement(self.selected, end - timedelta(days=30), end).render()
-        messagebox.showinfo("Statement", "\n".join(text) if isinstance(text, list) else str(text))
+        st = self.ctl.bank.generate_statement(self.selected, end - timedelta(days=30), end)
+        t = self.theme
+        win = tk.Toplevel(self)
+        win.title(f"Statement {st.statement_id}")
+        win.geometry("860x580")
+        win.configure(bg=t.CARD)
+        ttk.Button(win, text="Close", command=win.destroy).pack(side="bottom", anchor="e", padx=16, pady=10)
+        view = DetailView(win, t)
+        view.pack(fill="both", expand=True)
+        win.update_idletasks()                          # so the table is fitted to the window's width
+        view.clear()
+        view.h1(f"Statement {st.statement_id}", f"{st.account.number} {st.account.product.name}, "
+                                                f"{st.start:%d %b %Y} to {st.end:%d %b %Y}")
+        view.kv("Opening balance", bs.fmt(st.opening))
+        running, rows = st.opening, []
+        for e in st.lines:
+            running += e.amount
+            rows.append([e.posted_on, e.transaction.txn_id, e.transaction.narrative, f"{e.amount:+,.2f}",
+                         f"{running:,.2f}"])
+        view.h2("Entries")
+        view.table(["Date", "Reference", "Description", "Amount", "Balance"], rows, right=(3, 4))
+        view.kv("Closing balance", bs.fmt(st.closing), "ok")
+        view.line("A statement is itself a record: producing it is written to the audit log.", "muted")
+        view.done()
 
 
 class PayView(CustomerView):
@@ -3394,8 +3656,11 @@ class BankingApp(tk.Tk):
     def __init__(self, sign_in=True):
         super().__init__()
         self.title("Indus Commercial Bank")
-        self.geometry("1440x880")
-        self.minsize(1180, 720)
+        # 1440 x 880 where the screen allows it, otherwise the screen less room for the taskbar
+        width = min(1440, self.winfo_screenwidth() - 40)
+        height = min(880, self.winfo_screenheight() - 90)
+        self.geometry(f"{width}x{height}+{max(0, (self.winfo_screenwidth() - width) // 2)}+10")
+        self.minsize(min(1100, width), min(640, height))
         self.theme = Theme(self)
         self.configure(bg=self.theme.BG)
         self.ctl = BankController()
@@ -3600,6 +3865,13 @@ def main():
         print("The GUI needs a graphical desktop session. "
               "Without one, run: python banking_system.py", file=sys.stderr)
         return 1
+    if app.winfo_screenwidth() < 1500 or app.winfo_screenheight() < 950:
+        # a laptop screen: use all of it (Windows/macOS call this "zoomed", X11 window managers -zoomed)
+        try:
+            app.state("zoomed")
+        except tk.TclError:
+            with contextlib.suppress(tk.TclError):
+                app.attributes("-zoomed", True)
     app.mainloop()
     return 0
 

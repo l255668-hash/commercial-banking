@@ -302,6 +302,21 @@ def digital_banking_story(app):
     for name in ("Home", "Pay & transfer", "Approvals", "Cards", "Help"):
         app.digital.show(name)
     print(f"  ok       all {len(app.digital.views)} digital banking views refreshed for {ayesha.name}")
+    app.digital.show("Home")
+    statements = len(bank.statements)
+    app.digital.views["Home"]._statement()
+    windows, stack = [], list(app.winfo_children())
+    while stack:
+        w = stack.pop()
+        if isinstance(w, g.tk.Toplevel):
+            windows.append(w)
+        stack.extend(w.winfo_children())
+    if len(bank.statements) != statements + 1 or not windows:
+        problems.append("the statement was not produced and shown")
+    else:
+        print(f"  ok       statement {bank.statements[-1].statement_id} produced and shown in its own window")
+    for w in windows:
+        w.destroy()
     app.sign_out()
 
 
@@ -321,6 +336,16 @@ def main():
         digital_banking_story(app)
         app.sign_in_staff(None)
         print("== every screen refreshed")
+        app.show("Overview")
+        overview = app.pages["Overview"]
+        if overview.queue.tree.get_children():
+            overview.queue.select_first()
+            waiting = overview.queue.selected()
+            overview._open_payment()
+            if app.pages["Transactions"].table.selected() is not waiting:
+                problems.append("double-clicking a waiting payment did not open it")
+            else:
+                print(f"  ok       the overview opens {waiting.txn_id} on the Transactions screen")
         for name, _ in app.PAGES:
             app.show(name)
             app.update()

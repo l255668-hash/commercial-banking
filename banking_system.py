@@ -522,10 +522,13 @@ class Mandate:
         self.revocation_reason = reason
 
     def __str__(self):
-        lim = fmt(self.limit) if self.limit is not None else "unlimited"
+        if self.capabilities <= {"VIEW"}:
+            lim = ""
+        else:
+            lim = f" up to {fmt(self.limit)}" if self.limit is not None else " with no limit"
         dual = f", 2nd signatory above {fmt(self.dual_control_above)}" if self.dual_control_above else ""
         return (f"{self.mandate_id} {self.person.name} for {self.organization.name}: "
-                f"{','.join(sorted(self.capabilities))} up to {lim}{dual}, valid {self.period}")
+                f"{', '.join(sorted(self.capabilities))}{lim}{dual}, valid {self.period}")
 
 
 class PaymentAuthorisation:
@@ -3757,8 +3760,8 @@ def run_demo():
           f"today by {bilal_acct.servicing_branch_on(bank.today).code}",
           f"Asad on 1 Dec: {asad.role_on(date(2026, 12, 1)).branch.code}; today: {asad.role_on(bank.today).branch.code}",
           f"Branch status: {mall.status.trail()}")
-    _attempt("Hire a new teller at the closed branch",
-             lambda: bank.hire_employee(bank.register_person("Late Hire", date(1995, 1, 1), "HR"), "TELLER", mall))
+    _attempt("Hire Sana Mirza as a teller at the closed branch",
+             lambda: bank.hire_employee(bank.register_person("Sana Mirza", date(1995, 1, 1), "HR"), "TELLER", mall))
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 12: Savings withdrawal limit, then account closure (closure is not deletion)")

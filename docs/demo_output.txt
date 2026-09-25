@@ -44,7 +44,7 @@ SCENARIO 2: Large transfer: dual control, then held for review, branch contact, 
   TRF-002 TransferPayment PKR 1,500,000.00 [POSTED] transfer to Lahore Yarn Traders
     status trail: INITIATED(2026-03-02) > AWAITING_AUTHORISATION(2026-03-02) > AUTHORISED(2026-03-02) > HELD_FOR_REVIEW(2026-03-02) > RELEASED(2026-03-05) > POSTED(2026-03-05)
     initiated by Hamza Sheikh via DIGITAL
-    authority: MND-003 Hamza Sheikh for Ravi Textiles (Pvt) Ltd: CARD,PAYMENTS up to PKR 2,000,000.00, 2nd signatory above PKR 1,000,000.00, valid 2026-02-13 -> open
+    authority: MND-003 Hamza Sheikh for Ravi Textiles (Pvt) Ltd: CARD, PAYMENTS up to PKR 2,000,000.00, 2nd signatory above PKR 1,000,000.00, valid 2026-02-13 -> open
     authorised by Ayesha Khan under MND-001 on 2026-03-02
     beneficiary as sent: v1: Lahore Yarn Traders / Meezan Bank / ****5678
 
@@ -71,14 +71,14 @@ SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial c
   CRD-TX-005 CardPayment PKR 120,000.00 [REVERSED] card purchase at Packages Mall Electronics
     status trail: INITIATED(2026-03-20) > POSTED(2026-03-20) > REVERSED(2026-03-21)
     initiated by Usman Ali via CARD
-    authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD up to unlimited, valid 2026-02-13 -> open
+    authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD with no limit, valid 2026-02-13 -> open
     card used: CARD-002 4213 **** **** 7838 (Usman Ali)
     superseded by CRD-TX-006
     reversal REV-001 PKR 120,000.00: APR-001: REVERSAL by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-03-21
   CRD-TX-006 CardPayment PKR 105,000.00 [PARTIALLY_REVERSED] card purchase at Packages Mall Electronics
     status trail: INITIATED(2026-03-20) > POSTED(2026-03-21) > PARTIALLY_REVERSED(2026-04-09)
     initiated by Usman Ali via CARD
-    authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD up to unlimited, valid 2026-02-13 -> open
+    authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD with no limit, valid 2026-02-13 -> open
     card used: CARD-002 4213 **** **** 7838 (Usman Ali)
     corrects CRD-TX-005
     chargeback CHB-001 PKR 40,000.00: APR-002: CHARGEBACK by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-04-09
@@ -145,7 +145,7 @@ SCENARIO 7: Director leaves; old authority stays provable, new attempts fail
     - Holder of CUR-001 Classic Current (legacy) [ACTIVE]
     - DIRECTOR of Ravi Textiles (Pvt) Ltd, 2026-02-03 -> open
     - Owner 10% of Ravi Textiles (Pvt) Ltd, 2026-02-03 -> open
-    - Mandate MND-001 Ayesha Khan for Ravi Textiles (Pvt) Ltd: BORROWING,CARD,PAYMENTS up to unlimited, valid 2026-02-13 -> open
+    - Mandate MND-001 Ayesha Khan for Ravi Textiles (Pvt) Ltd: BORROWING, CARD, PAYMENTS with no limit, valid 2026-02-13 -> open
     - TRUSTEE of Roshni Education Trust, 2026-02-16 -> open
     - Mandate MND-006 Ayesha Khan for Roshni Education Trust: PAYMENTS up to PKR 500,000.00, valid 2026-02-16 -> open
   Time machine - Ravi Textiles as the bank saw it on 11 Apr 2026:
@@ -153,11 +153,11 @@ SCENARIO 7: Director leaves; old authority stays provable, new attempts fail
       registered address: Plot 12, Sundar Industrial Estate
       DIRECTOR: Ayesha Khan
       DIRECTOR: Bilal Ahmed
-      mandate: MND-001 Ayesha Khan for Ravi Textiles (Pvt) Ltd: BORROWING,CARD,PAYMENTS up to unlimited, valid 2026-02-13 -> open
+      mandate: MND-001 Ayesha Khan for Ravi Textiles (Pvt) Ltd: BORROWING, CARD, PAYMENTS with no limit, valid 2026-02-13 -> open
       mandate: MND-002 Bilal Ahmed for Ravi Textiles (Pvt) Ltd: PAYMENTS up to PKR 5,000,000.00, valid 2026-02-13 -> 2026-09-20
-      mandate: MND-003 Hamza Sheikh for Ravi Textiles (Pvt) Ltd: CARD,PAYMENTS up to PKR 2,000,000.00, 2nd signatory above PKR 1,000,000.00, valid 2026-02-13 -> open
-      mandate: MND-004 Noor Fatima for Ravi Textiles (Pvt) Ltd: VIEW up to unlimited, valid 2026-02-13 -> open
-      mandate: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD up to unlimited, valid 2026-02-13 -> open
+      mandate: MND-003 Hamza Sheikh for Ravi Textiles (Pvt) Ltd: CARD, PAYMENTS up to PKR 2,000,000.00, 2nd signatory above PKR 1,000,000.00, valid 2026-02-13 -> open
+      mandate: MND-004 Noor Fatima for Ravi Textiles (Pvt) Ltd: VIEW, valid 2026-02-13 -> open
+      mandate: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD with no limit, valid 2026-02-13 -> open
       restriction DEBIT_BLOCK: pending source-of-funds documents
       relationship ACTIVE, home branch Gulberg Branch (LHR-01), RM Omar Raza
 
@@ -196,7 +196,7 @@ SCENARIO 11: Branch closes; customers, accounts, staff and vault cash move; hist
   CUR-003 opened at LHR-02; served on 1 Dec by LHR-02, today by LHR-01
   Asad on 1 Dec: LHR-02; today: LHR-01
   Branch status: OPEN(2026-01-05) > CLOSED(2027-01-04)
-  [BLOCKED] Hire a new teller at the closed branch
+  [BLOCKED] Hire Sana Mirza as a teller at the closed branch
             -> InvalidStateError: Mall Road Branch (LHR-02) is CLOSED
 
 ==============================================================================
