@@ -286,6 +286,12 @@ class BankController:
         return counts
 
 
+def class_path(cls):
+    """Root-to-leaf inheritance chain of a domain class, e.g. Party > Organization > Company
+    (Python's own ABC and object are left out)."""
+    return " > ".join(k.__name__ for k in reversed(cls.__mro__) if k.__module__ == bs.__name__)
+
+
 def label_of(obj):
     """A short human label for any domain object (used in lists and dropdowns)."""
     if obj is None:
@@ -763,7 +769,7 @@ class CustomersPage(MasterDetailPage):
 
     def show(self, p):
         d, bank = self.detail, self.ctl.bank
-        path = " > ".join(c.__name__ for c in reversed(type(p).__mro__[:-1]))
+        path = class_path(type(p))
         d.h1(p.name, f"{p.party_id}   class path: {path}")
         if isinstance(p, bs.Organization):
             d.kv("Registration", p.registration_no)
@@ -820,10 +826,8 @@ class AccountsPage(MasterDetailPage):
     def rows(self):
         out = []
         for a in self.ctl.bank.arrangements.values():
-            if isinstance(a, bs.DepositAccount):
-                bal = bs.fmt(a.ledger_balance())
-            else:
-                bal = bs.fmt(a.outstanding_principal()) + " owed"
+            amount, meaning = a.position()          # polymorphic: held for deposits, owed for financing
+            bal = bs.fmt(amount) + (" owed" if meaning == "owed" else "")
             tag = "muted" if a.status.current in ("CLOSED", "SETTLED") else (
                 "bad" if a.status.current == "IN_ARREARS" else None)
             out.append((a, [a.number, type(a).__name__, ", ".join(h.name for h in a.holders), bal,
@@ -832,7 +836,7 @@ class AccountsPage(MasterDetailPage):
 
     def show(self, a):
         d, bank = self.detail, self.ctl.bank
-        path = " > ".join(c.__name__ for c in reversed(type(a).__mro__[:-1]))
+        path = class_path(type(a))
         d.h1(f"{a.number}  {a.product.name}", f"class path: {path}")
         d.kv("Holders", ", ".join(h.name for h in a.holders))
         d.kv("Status trail", a.status.trail())
@@ -932,8 +936,9 @@ class TransactionsPage(MasterDetailPage):
 
     def show(self, t):
         d, bank = self.detail, self.ctl.bank
-        path = " > ".join(c.__name__ for c in reversed(type(t).__mro__[:-1]))
+        path = class_path(type(t))
         d.h1(f"{t.txn_id}  {bs.fmt(t.amount)}", f"class path: {path}")
+        d.kv("Counterparty", t.counterparty())
         st = t.status.current
         d.kv("Status", st, "bad" if st in ("FAILED", "DECLINED") else "ok" if st == "POSTED" else "warn")
         if t.failure_reason:
@@ -1002,7 +1007,7 @@ class CasesPage(MasterDetailPage):
 
     def show(self, c):
         d = self.detail
-        path = " > ".join(k.__name__ for k in reversed(type(c).__mro__[:-1]))
+        path = class_path(type(c))
         d.h1(f"{c.case_id}", f"class path: {path}")
         d.kv("Summary", c.summary)
         d.kv("Subject", label_of(c.subject))
@@ -1124,7 +1129,8 @@ class ClassModelPage(MasterDetailPage):
         out = []
 
         def walk(c, depth):
-            out.append((c, [("    " * depth) + ("-> " if depth else "") + c.__name__, depth + 1,
+            name = c.__name__ + ("  «abstract»" if inspect.isabstract(c) else "")
+            out.append((c, [("    " * depth) + ("-> " if depth else "") + name, depth + 1,
                             counts.get(c, 0)], None if depth else "ok"))
             for s in children[c]:
                 walk(s, depth + 1)
@@ -1138,15 +1144,27 @@ class ClassModelPage(MasterDetailPage):
 
     def show(self, c):
         d = self.detail
-        chain = " > ".join(k.__name__ for k in reversed(c.__mro__[:-1]))
+        chain = class_path(c)
         d.h1(c.__name__, f"inheritance: {chain}")
         d.line(inspect.cleandoc(c.__doc__ or ""))
+        if inspect.isabstract(c):
+            d.kv("Abstract", "cannot be created; subclasses must implement "
+                 + ", ".join(sorted(m + "()" for m in c.__abstractmethods__)), "warn")
         consts, methods = bs._own_members(c)
         attrs = bs._own_attributes(c)
         d.h2("Added at this level")
         d.kv("Class constants", ", ".join(consts) or "-")
         d.kv("Attributes", ", ".join(attrs) or "(inherits all attributes)")
         d.kv("Methods", ", ".join(m for m in methods) or "(no new methods)")
+        for attr in ("LIFECYCLE", "SALE_LIFECYCLE"):
+            lifecycle = getattr(c, attr, None)
+            if isinstance(lifecycle, bs.Lifecycle):
+                own = "declared here" if attr in c.__dict__ else "inherited"
+                d.h2(f"Lifecycle ({own}; enforced on every status change)")
+                for frm, moves in lifecycle.transitions.items():
+                    for to, trigger in moves.items():
+                        d.line(f"{frm} -> {to}   ({trigger})")
+                d.kv("Final", ", ".join(sorted(lifecycle.final)))
         subs = [s.__name__ for s in bs.domain_classes() if s.__bases__[0] is c]
         if subs:
             d.kv("Subclasses", ", ".join(subs))
@@ -1662,7 +1680,7 @@ class DiagramsPage(Page):
     def refresh(self):
         if self.files:
             return
-        order = ["flowchart", "class_diagram", "uml_"]
+        order = ["flowchart", "state_", "class_diagram", "uml_"]
         found = sorted(self.DOCS.glob("*.png"),
                        key=lambda p: (next((i for i, o in enumerate(order) if p.name.startswith(o)), 9), p.name))
         self.files = found

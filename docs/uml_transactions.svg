@@ -1,158 +1,169 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="3257" height="722" font-family="Helvetica, Arial, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="3257" height="848" font-family="Helvetica, Arial, sans-serif" font-size="11">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#34495e"/></marker></defs>
-<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">BankTransaction hierarchy - what each level adds (- attribute, + class constant, () method)</text>
-<polyline points="154,370 154,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="824,370 824,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="422,554 422,531 824,531 824,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="690,554 690,531 824,531 824,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="958,554 958,531 824,531 824,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="1226,554 1226,531 824,531 824,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="1494,370 1494,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="1762,370 1762,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2030,370 2030,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2566,370 2566,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2298,554 2298,461 2566,461 2566,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2566,554 2566,461 2566,461 2566,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2834,554 2834,461 2566,461 2566,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="3102,370 3102,347 1628,347 1628,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<rect x="1503" y="60" width="250" height="264" fill="#f4f8fb" stroke="#34495e"/>
+<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">BankTransaction hierarchy - what each level adds (- attribute, + class constant, () method; italic = abstract)</text>
+<polyline points="154,440 154,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="824,440 824,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="422,652 422,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="690,652 690,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="958,652 958,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1226,652 1226,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1494,440 1494,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1762,440 1762,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2030,440 2030,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2566,440 2566,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2298,652 2298,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2566,652 2566,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2834,652 2834,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="3102,440 3102,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<rect x="1503" y="60" width="250" height="334" fill="#f4f8fb" stroke="#34495e"/>
 <rect x="1503" y="60" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="1628" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">BankTransaction</text>
+<text x="1628" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a" font-style="italic">«abstract» BankTransaction</text>
 <text x="1509" y="96" fill="#1d2b3a">+ prefix</text>
-<text x="1509" y="110" fill="#1d2b3a">- txn_id</text>
-<text x="1509" y="124" fill="#1d2b3a">- amount</text>
-<text x="1509" y="138" fill="#1d2b3a">- initiated_on</text>
-<text x="1509" y="152" fill="#1d2b3a">- narrative</text>
-<text x="1509" y="166" fill="#1d2b3a">- status</text>
-<text x="1509" y="180" fill="#1d2b3a">- entries</text>
-<text x="1509" y="194" fill="#1d2b3a">- reversals</text>
-<text x="1509" y="208" fill="#1d2b3a">- failure_reason</text>
-<text x="1509" y="222" fill="#1d2b3a">- supersedes</text>
-<text x="1509" y="236" fill="#1d2b3a">- superseded_by</text>
-<line x1="1503" y1="241" x2="1753" y2="241" stroke="#34495e"/>
-<text x="1509" y="254" fill="#1d2b3a">kind()</text>
-<text x="1509" y="268" fill="#1d2b3a">post()</text>
-<text x="1509" y="282" fill="#1d2b3a">reversed_amount()</text>
-<text x="1509" y="296" fill="#1d2b3a">net_amount()</text>
-<text x="1509" y="310" fill="#1d2b3a">summary()</text>
-<rect x="29" y="370" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="29" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="154" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CashTransaction</text>
-<text x="35" y="406" fill="#1d2b3a">+ prefix</text>
-<text x="35" y="420" fill="#1d2b3a">- account</text>
-<text x="35" y="434" fill="#1d2b3a">- direction</text>
-<text x="35" y="448" fill="#1d2b3a">- teller</text>
-<text x="35" y="462" fill="#1d2b3a">- presented_by</text>
-<text x="35" y="476" fill="#1d2b3a">- branch</text>
-<line x1="29" y1="481" x2="279" y2="481" stroke="#34495e"/>
-<text x="35" y="494" fill="#1d2b3a">(no new methods)</text>
-<rect x="699" y="370" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="699" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="824" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CustomerPayment</text>
-<text x="705" y="406" fill="#1d2b3a">- source_account</text>
-<text x="705" y="420" fill="#1d2b3a">- initiated_by</text>
-<text x="705" y="434" fill="#1d2b3a">- channel</text>
-<text x="705" y="448" fill="#1d2b3a">- mandate_used</text>
-<text x="705" y="462" fill="#1d2b3a">- authorisations</text>
-<text x="705" y="476" fill="#1d2b3a">- disputes</text>
-<line x1="699" y1="481" x2="949" y2="481" stroke="#34495e"/>
-<text x="705" y="494" fill="#1d2b3a">(no new methods)</text>
-<rect x="297" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="297" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="422" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">BillPayment</text>
-<text x="303" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="303" y="604" fill="#1d2b3a">- biller</text>
-<text x="303" y="618" fill="#1d2b3a">- consumer_reference</text>
-<line x1="297" y1="623" x2="547" y2="623" stroke="#34495e"/>
-<text x="303" y="636" fill="#1d2b3a">(no new methods)</text>
-<rect x="565" y="554" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="565" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="690" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CardPayment</text>
-<text x="571" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="571" y="604" fill="#1d2b3a">- card</text>
-<text x="571" y="618" fill="#1d2b3a">- merchant</text>
-<text x="571" y="632" fill="#1d2b3a">- card_channel</text>
-<text x="571" y="646" fill="#1d2b3a">- country</text>
-<text x="571" y="660" fill="#1d2b3a">- merchant_category</text>
-<line x1="565" y1="665" x2="815" y2="665" stroke="#34495e"/>
-<text x="571" y="678" fill="#1d2b3a">(no new methods)</text>
-<rect x="833" y="554" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="833" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="958" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">OwnAccountTransfer</text>
-<text x="839" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="839" y="604" fill="#1d2b3a">- target_account</text>
-<line x1="833" y1="609" x2="1083" y2="609" stroke="#34495e"/>
-<text x="839" y="622" fill="#1d2b3a">(no new methods)</text>
-<rect x="1101" y="554" width="250" height="124" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="1101" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="1226" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">TransferPayment</text>
-<text x="1107" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="1107" y="604" fill="#1d2b3a">- beneficiary</text>
-<text x="1107" y="618" fill="#1d2b3a">- beneficiary_version</text>
-<text x="1107" y="632" fill="#1d2b3a">- hold</text>
-<text x="1107" y="646" fill="#1d2b3a">- standing_order</text>
-<line x1="1101" y1="651" x2="1351" y2="651" stroke="#34495e"/>
-<text x="1107" y="664" fill="#1d2b3a">(no new methods)</text>
-<rect x="1369" y="370" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="1369" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="1494" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">FeeCharge</text>
-<text x="1375" y="406" fill="#1d2b3a">+ prefix</text>
-<text x="1375" y="420" fill="#1d2b3a">- account</text>
-<text x="1375" y="434" fill="#1d2b3a">- fee_code</text>
-<text x="1375" y="448" fill="#1d2b3a">- terms_version</text>
-<line x1="1369" y1="453" x2="1619" y2="453" stroke="#34495e"/>
-<text x="1375" y="466" fill="#1d2b3a">(no new methods)</text>
-<rect x="1637" y="370" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="1637" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="1762" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCredit</text>
-<text x="1643" y="406" fill="#1d2b3a">+ prefix</text>
-<text x="1643" y="420" fill="#1d2b3a">- account</text>
-<text x="1643" y="434" fill="#1d2b3a">- annual_rate</text>
-<line x1="1637" y1="439" x2="1887" y2="439" stroke="#34495e"/>
-<text x="1643" y="452" fill="#1d2b3a">(no new methods)</text>
-<rect x="1905" y="370" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="1905" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="2030" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InternalTransfer</text>
-<text x="1911" y="406" fill="#1d2b3a">+ prefix</text>
-<line x1="1905" y1="411" x2="2155" y2="411" stroke="#34495e"/>
-<text x="1911" y="424" fill="#1d2b3a">(no new methods)</text>
-<rect x="2441" y="370" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="2441" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="2566" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanTransaction</text>
-<text x="2447" y="406" fill="#1d2b3a">- agreement</text>
-<line x1="2441" y1="411" x2="2691" y2="411" stroke="#34495e"/>
-<text x="2447" y="424" fill="#1d2b3a">(no new methods)</text>
-<rect x="2173" y="554" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="2173" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="2298" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCapitalisation</text>
-<text x="2179" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="2179" y="604" fill="#1d2b3a">- approval</text>
-<line x1="2173" y1="609" x2="2423" y2="609" stroke="#34495e"/>
-<text x="2179" y="622" fill="#1d2b3a">(no new methods)</text>
-<rect x="2441" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="2441" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="2566" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanDisbursement</text>
-<text x="2447" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="2447" y="604" fill="#1d2b3a">- credit_account</text>
-<text x="2447" y="618" fill="#1d2b3a">- approval</text>
-<line x1="2441" y1="623" x2="2691" y2="623" stroke="#34495e"/>
-<text x="2447" y="636" fill="#1d2b3a">(no new methods)</text>
-<rect x="2709" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="2709" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="2834" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanRepayment</text>
-<text x="2715" y="590" fill="#1d2b3a">+ prefix</text>
-<text x="2715" y="604" fill="#1d2b3a">- debit_account</text>
-<text x="2715" y="618" fill="#1d2b3a">- allocations</text>
-<line x1="2709" y1="623" x2="2959" y2="623" stroke="#34495e"/>
-<text x="2715" y="636" fill="#1d2b3a">(no new methods)</text>
-<rect x="2977" y="370" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="2977" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="3102" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Reversal</text>
-<text x="2983" y="406" fill="#1d2b3a">+ prefix</text>
-<text x="2983" y="420" fill="#1d2b3a">- original</text>
-<text x="2983" y="434" fill="#1d2b3a">- reason</text>
-<text x="2983" y="448" fill="#1d2b3a">- approval</text>
-<line x1="2977" y1="453" x2="3227" y2="453" stroke="#34495e"/>
-<text x="2983" y="466" fill="#1d2b3a">(no new methods)</text>
+<text x="1509" y="110" fill="#1d2b3a">+ LIFECYCLE</text>
+<text x="1509" y="124" fill="#1d2b3a">- txn_id</text>
+<text x="1509" y="138" fill="#1d2b3a">- amount</text>
+<text x="1509" y="152" fill="#1d2b3a">- initiated_on</text>
+<text x="1509" y="166" fill="#1d2b3a">- narrative</text>
+<text x="1509" y="180" fill="#1d2b3a">- status</text>
+<text x="1509" y="194" fill="#1d2b3a">- entries</text>
+<text x="1509" y="208" fill="#1d2b3a">- reversals</text>
+<text x="1509" y="222" fill="#1d2b3a">- failure_reason</text>
+<text x="1509" y="236" fill="#1d2b3a">- supersedes</text>
+<text x="1509" y="250" fill="#1d2b3a">- superseded_by</text>
+<line x1="1503" y1="255" x2="1753" y2="255" stroke="#34495e"/>
+<text x="1509" y="268" fill="#1d2b3a">kind()</text>
+<text x="1509" y="282" fill="#1d2b3a">post()</text>
+<text x="1509" y="296" fill="#1d2b3a">reversed_amount()</text>
+<text x="1509" y="310" fill="#1d2b3a">net_amount()</text>
+<text x="1509" y="324" fill="#1d2b3a">summary()</text>
+<text x="1509" y="338" fill="#1d2b3a" font-style="italic">counterparty()  {abstract}</text>
+<text x="1509" y="352" fill="#1d2b3a">detail_lines()</text>
+<text x="1509" y="366" fill="#1d2b3a">case_lines()</text>
+<text x="1509" y="380" fill="#1d2b3a">story_lines()</text>
+<rect x="29" y="440" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="29" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="154" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CashTransaction</text>
+<text x="35" y="476" fill="#1d2b3a">+ prefix</text>
+<text x="35" y="490" fill="#1d2b3a">- account</text>
+<text x="35" y="504" fill="#1d2b3a">- direction</text>
+<text x="35" y="518" fill="#1d2b3a">- teller</text>
+<text x="35" y="532" fill="#1d2b3a">- presented_by</text>
+<text x="35" y="546" fill="#1d2b3a">- branch</text>
+<line x1="29" y1="551" x2="279" y2="551" stroke="#34495e"/>
+<text x="35" y="564" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="699" y="440" width="250" height="166" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="699" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="824" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a" font-style="italic">«abstract» CustomerPayment</text>
+<text x="705" y="476" fill="#1d2b3a">+ LIFECYCLE</text>
+<text x="705" y="490" fill="#1d2b3a">- source_account</text>
+<text x="705" y="504" fill="#1d2b3a">- initiated_by</text>
+<text x="705" y="518" fill="#1d2b3a">- channel</text>
+<text x="705" y="532" fill="#1d2b3a">- mandate_used</text>
+<text x="705" y="546" fill="#1d2b3a">- authorisations</text>
+<text x="705" y="560" fill="#1d2b3a">- disputes</text>
+<line x1="699" y1="565" x2="949" y2="565" stroke="#34495e"/>
+<text x="705" y="578" fill="#9c3d10">detail_lines()  [override]</text>
+<text x="705" y="592" fill="#9c3d10">case_lines()  [override]</text>
+<rect x="297" y="652" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="297" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="422" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">BillPayment</text>
+<text x="303" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="303" y="702" fill="#1d2b3a">- biller</text>
+<text x="303" y="716" fill="#1d2b3a">- consumer_reference</text>
+<line x1="297" y1="721" x2="547" y2="721" stroke="#34495e"/>
+<text x="303" y="734" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="565" y="652" width="250" height="166" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="565" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="690" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CardPayment</text>
+<text x="571" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="571" y="702" fill="#1d2b3a">+ LIFECYCLE</text>
+<text x="571" y="716" fill="#1d2b3a">- card</text>
+<text x="571" y="730" fill="#1d2b3a">- merchant</text>
+<text x="571" y="744" fill="#1d2b3a">- card_channel</text>
+<text x="571" y="758" fill="#1d2b3a">- country</text>
+<text x="571" y="772" fill="#1d2b3a">- merchant_category</text>
+<line x1="565" y1="777" x2="815" y2="777" stroke="#34495e"/>
+<text x="571" y="790" fill="#1f6f3a">counterparty()  [implements]</text>
+<text x="571" y="804" fill="#9c3d10">detail_lines()  [override]</text>
+<rect x="833" y="652" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="833" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="958" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">OwnAccountTransfer</text>
+<text x="839" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="839" y="702" fill="#1d2b3a">- target_account</text>
+<line x1="833" y1="707" x2="1083" y2="707" stroke="#34495e"/>
+<text x="839" y="720" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="1101" y="652" width="250" height="152" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1101" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1226" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">TransferPayment</text>
+<text x="1107" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="1107" y="702" fill="#1d2b3a">+ LIFECYCLE</text>
+<text x="1107" y="716" fill="#1d2b3a">- beneficiary</text>
+<text x="1107" y="730" fill="#1d2b3a">- beneficiary_version</text>
+<text x="1107" y="744" fill="#1d2b3a">- hold</text>
+<text x="1107" y="758" fill="#1d2b3a">- standing_order</text>
+<line x1="1101" y1="763" x2="1351" y2="763" stroke="#34495e"/>
+<text x="1107" y="776" fill="#1f6f3a">counterparty()  [implements]</text>
+<text x="1107" y="790" fill="#9c3d10">detail_lines()  [override]</text>
+<rect x="1369" y="440" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1369" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1494" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">FeeCharge</text>
+<text x="1375" y="476" fill="#1d2b3a">+ prefix</text>
+<text x="1375" y="490" fill="#1d2b3a">- account</text>
+<text x="1375" y="504" fill="#1d2b3a">- fee_code</text>
+<text x="1375" y="518" fill="#1d2b3a">- terms_version</text>
+<line x1="1369" y1="523" x2="1619" y2="523" stroke="#34495e"/>
+<text x="1375" y="536" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="1637" y="440" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1637" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1762" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCredit</text>
+<text x="1643" y="476" fill="#1d2b3a">+ prefix</text>
+<text x="1643" y="490" fill="#1d2b3a">- account</text>
+<text x="1643" y="504" fill="#1d2b3a">- annual_rate</text>
+<line x1="1637" y1="509" x2="1887" y2="509" stroke="#34495e"/>
+<text x="1643" y="522" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="1905" y="440" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1905" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2030" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InternalTransfer</text>
+<text x="1911" y="476" fill="#1d2b3a">+ prefix</text>
+<line x1="1905" y1="481" x2="2155" y2="481" stroke="#34495e"/>
+<text x="1911" y="494" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="2441" y="440" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2441" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2566" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a" font-style="italic">«abstract» LoanTransaction</text>
+<text x="2447" y="476" fill="#1d2b3a">- agreement</text>
+<line x1="2441" y1="481" x2="2691" y2="481" stroke="#34495e"/>
+<text x="2447" y="494" fill="#1d2b3a">(no new methods)</text>
+<rect x="2173" y="652" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2173" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2298" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCapitalisation</text>
+<text x="2179" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="2179" y="702" fill="#1d2b3a">- approval</text>
+<line x1="2173" y1="707" x2="2423" y2="707" stroke="#34495e"/>
+<text x="2179" y="720" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="2441" y="652" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2441" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2566" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanDisbursement</text>
+<text x="2447" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="2447" y="702" fill="#1d2b3a">- credit_account</text>
+<text x="2447" y="716" fill="#1d2b3a">- approval</text>
+<line x1="2441" y1="721" x2="2691" y2="721" stroke="#34495e"/>
+<text x="2447" y="734" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="2709" y="652" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2709" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2834" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanRepayment</text>
+<text x="2715" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="2715" y="702" fill="#1d2b3a">- debit_account</text>
+<text x="2715" y="716" fill="#1d2b3a">- allocations</text>
+<line x1="2709" y1="721" x2="2959" y2="721" stroke="#34495e"/>
+<text x="2715" y="734" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="2977" y="440" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2977" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="3102" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Reversal</text>
+<text x="2983" y="476" fill="#1d2b3a">+ prefix</text>
+<text x="2983" y="490" fill="#1d2b3a">- original</text>
+<text x="2983" y="504" fill="#1d2b3a">- reason</text>
+<text x="2983" y="518" fill="#1d2b3a">- approval</text>
+<line x1="2977" y1="523" x2="3227" y2="523" stroke="#34495e"/>
+<text x="2983" y="536" fill="#1f6f3a">counterparty()  [implements]</text>
 </svg>

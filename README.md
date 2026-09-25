@@ -1,5 +1,7 @@
 # Problem 4: Commercial Banking, Lending, Payments and Compliance
 
+[![tests](https://github.com/l255668-hash/commercial-banking/actions/workflows/tests.yml/badge.svg?branch=claude/reading-assistance-5l43go)](https://github.com/l255668-hash/commercial-banking/actions/workflows/tests.yml)
+
 An object-oriented model of a commercial bank (the fictional Indus Commercial Bank, Lahore), written for the OOP project brief, Problem 4. The assessed concepts are **classes and inheritance**. The model keeps a complete history: nothing is deleted, and any past state can be reconstructed.
 
 The model, demo and tests are in **one Python file**, `banking_system.py`, using the standard library only (Python 3.9 or later). There is nothing to install.
@@ -10,7 +12,7 @@ An optional desktop GUI, `banking_gui.py`, is a separate file that uses the mode
 
 ```
 python banking_system.py              # run the seeded demonstration (16 scenarios)
-python banking_system.py --test       # run the 60 automated tests
+python banking_system.py --test       # run the 69 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 python banking_gui.py                 # open the desktop operations console (GUI)
@@ -29,16 +31,26 @@ docs/
   uml_*.png/.svg               UML: four hierarchy diagrams (attributes, methods, overrides)
                                and three association diagrams
   flowchart_*.png/.svg         six flowcharts of the main workflows, standard symbols
+  state_*.png/.svg             four UML state machine diagrams, drawn from each class's LIFECYCLE
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
-  Viva_Presentation.pptx       14-slide viva deck with speaker notes
+  Viva_Presentation.pptx       15-slide viva deck with speaker notes
   Submission_Checklist.md      what to check and fill in before handing in
   screenshots/gui_*.png        screenshots of the desktop GUI
-tools/                         scripts that rebuild the flowcharts, PNGs, PDF, Word report,
+.github/workflows/tests.yml    CI: tests on Python 3.9 / 3.11 / 3.13, GUI smoke test, diagrams up to date
+tools/                         scripts that rebuild the flowcharts, state diagrams, PNGs, PDF, Word report,
                                slide deck and GUI screenshots, plus a GUI smoke test
                                (not needed to run the project; see tools/README.md)
 ```
+
+## Abstract classes, polymorphism and lifecycles
+
+- **Abstract base classes.** `Party`, `Organization`, `Arrangement`, `DepositAccount`, `BankTransaction`, `CustomerPayment`, `LoanTransaction` and `Case` use Python's `abc` and cannot be instantiated. Each concrete subclass implements the abstract methods whose answer differs by class: `structural_gaps` / `connected_persons` (KYC), `position` (money held or owed), `overdraft_limit`, `counterparty` and `handler_roles`. `python banking_system.py --classes` marks them "(abstract)"; the UML diagrams show them in italics.
+- **Polymorphism instead of type checks.** `Bank.transaction_story` and `Bank.assign_case` used `isinstance` chains; now each class answers for itself (`story_lines()` template method, `handler_roles()`).
+- **Declared state machines.** Every record with a status declares its `LIFECYCLE` once (initial status, allowed moves with the operation that causes each, final statuses). `StatusHistory` refuses anything else, and subclasses extend their parent's lifecycle: `BankTransaction` -> `CustomerPayment` (dual control) -> `TransferPayment` (compliance hold). The four state diagrams in `docs/state_*.png` are drawn from these declarations.
+
+![State machine 1 - TransferPayment](docs/state_1_payment.png)
 
 ## Flowcharts
 
@@ -71,7 +83,7 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | 11 | Statements and notices |
 | 12 | `Bank`: 96 operations (78 state-changing commands), each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
-| 14 | 60 automated tests |
+| 14 | 69 automated tests (including abstraction and lifecycle tests) |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## The desktop GUI (`banking_gui.py`)
@@ -89,8 +101,8 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | Cases | Customer, risk and collections cases, with evidence snapshots compared against the corrected record |
 | Staff / Products & branches | Role history and every approval with the role held then; products with terms versions and holders; branches and their history |
 | Books & audit | Trial balance on any date (always zero) and a searchable audit log |
-| Class model | The inheritance tree read from the code, what each level adds, and live object counts |
-| Diagrams | Every flowchart and UML diagram in `docs/`, viewable inside the program |
+| Class model | The inheritance tree read from the code (abstract classes marked), what each level adds, each class's lifecycle, and live object counts |
+| Diagrams | Every flowchart, state machine and UML diagram in `docs/`, viewable inside the program |
 | Scenario log | The 16 seeded scenarios with refusals highlighted |
 
 The GUI never edits an object directly: every button calls one `Bank` operation, so all rules, refusals and audit events are the model's own. The top bar advances the business date (running the end-of-day batch) or resets the seeded data. The GUI is itself built from classes and inheritance (`Page -> MasterDetailPage -> CustomersPage` and so on).
@@ -102,9 +114,9 @@ The GUI never edits an object directly: every button calls one `Bank` operation,
 | Domain research summary | Report section 1 |
 | Assumptions | Report section 2 (A1 to A36) |
 | Requirements interpretation | Report section 3 |
-| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; section 4.1: 6 flowcharts |
-| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 73 domain classes, 96 operations; report section 5 |
-| Multi-level inheritance explained | Report section 6 |
+| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams |
+| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 74 domain classes, 96 operations; report section 5 |
+| Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | At least three rejected inheritances | Report section 7 (twelve given) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |
 | At least five complex scenarios | 16 scenarios, report section 9 |

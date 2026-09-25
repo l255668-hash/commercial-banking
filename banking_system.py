@@ -39,6 +39,16 @@ as NEW data: status transitions, closed validity periods, new versions (terms,
 beneficiaries, repayment schedules), reversals and corrections. Any past state
 can therefore be reconstructed ("what did the bank know / allow on date X?").
 
+Abstraction and lifecycles
+--------------------------
+The root of every hierarchy (Party, Arrangement, BankTransaction, Case) is an
+abstract base class: it cannot be instantiated, and each concrete subclass
+must implement its abstract methods (e.g. BankTransaction.counterparty).
+Behaviour that differs by class lives in the class (polymorphism), not in
+isinstance chains in the Bank. Every record with a status declares its state
+machine once, as a LIFECYCLE class constant (a Lifecycle); StatusHistory
+refuses any move it does not allow, and subclasses extend their parent's.
+
 Money convention
 ----------------
 Every posting is double-entry: the legs of one transaction sum to zero.
@@ -50,8 +60,10 @@ All amounts are Pakistani rupees (PKR) held as Decimal, never float.
 """
 from __future__ import annotations
 
+import inspect
 import sys
 import unittest
+from abc import ABC, abstractmethod
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -158,10 +170,51 @@ class StatusChange:
         self.status, self.on, self.by, self.reason = status, on, str(by), reason
 
 
-class StatusHistory:
-    """Keeps every status a record has ever had, so 'status on date X' is answerable."""
+class Lifecycle:
+    """A state machine: the statuses one kind of record can be in and the moves allowed
+    between them, each labelled with the operation that causes it.
 
-    def __init__(self, initial, on, by="system", reason=""):
+    Declared ONCE per class as the LIFECYCLE class constant and enforced by
+    StatusHistory, so an illegal move (e.g. a DESTROYED card becoming ACTIVE) is
+    impossible from anywhere in the code. Subclasses extend() their parent's
+    lifecycle, so the state machines are inherited just like attributes, and the
+    UML state diagrams are drawn from these declarations.
+    """
+
+    def __init__(self, initial, transitions, final=()):
+        self.initial = initial
+        self.transitions = {frm: dict(moves) for frm, moves in transitions.items()}
+        self.final = frozenset(final)
+
+    def allows(self, frm, to):
+        return to in self.transitions.get(frm, {})
+
+    def extend(self, transitions, final=()):
+        """A new lifecycle with extra moves (and final statuses) added to this one."""
+        merged = {frm: dict(moves) for frm, moves in self.transitions.items()}
+        for frm, moves in transitions.items():
+            merged.setdefault(frm, {}).update(moves)
+        return Lifecycle(self.initial, merged, self.final | set(final))
+
+    @property
+    def states(self):
+        """Every status, in the order it first appears (initial first)."""
+        out = [self.initial]
+        for frm, moves in self.transitions.items():
+            for st in [frm, *moves]:
+                if st not in out:
+                    out.append(st)
+        return out
+
+
+class StatusHistory:
+    """Keeps every status a record has ever had, so 'status on date X' is answerable.
+    With a Lifecycle it also refuses any move the record's class does not allow."""
+
+    def __init__(self, initial, on, by="system", reason="", lifecycle=None):
+        if lifecycle is not None and initial != lifecycle.initial:
+            raise InvalidStateError(f"a new record starts as {lifecycle.initial}, not {initial}")
+        self.lifecycle = lifecycle
         self.changes = [StatusChange(initial, on, by, reason)]
 
     @property
@@ -173,6 +226,8 @@ class StatusHistory:
         """Append a new status. allowed_from lists the statuses it may move from."""
         if allowed_from and self.current not in allowed_from:
             raise InvalidStateError(f"cannot move from {self.current} to {status}")
+        if self.lifecycle is not None and not self.lifecycle.allows(self.current, status):
+            raise InvalidStateError(f"{self.current} -> {status} is not an allowed transition")
         self.changes.append(StatusChange(status, on, by, reason))
 
     def on(self, d):
@@ -203,12 +258,16 @@ class AuditEvent:
 # plays (separate objects with periods), never subclasses. One real person is
 # exactly one Person record, however many capacities they hold.
 # =============================================================================
-class Party:
+class Party(ABC):
     """Anyone the bank knows about: a legal identity, whether or not a customer.
 
     Holds what every party shares: identity documents, verification checks,
     corrections to recorded details, restrictions, and (optionally) a customer
     relationship. Recorded details are corrected, never silently overwritten.
+
+    Abstract: nobody is "just a party". kyc_gaps() is a template method; every
+    concrete class must say what its own structure requires (structural_gaps)
+    and whose identity it depends on (connected_persons).
     """
 
     id_prefix = "PTY"
@@ -255,11 +314,24 @@ class Party:
         return any(c.result == "PASS" and c.performed_on <= on and c.document.valid_on(on)
                    for c in self.checks)
 
+    @abstractmethod
+    def structural_gaps(self, on):
+        """Rules about the party's own make-up (e.g. a company needs a director)."""
+
+    @abstractmethod
+    def connected_persons(self, on):
+        """People whose verification this party's verification depends on."""
+
     def kyc_gaps(self, on):
-        """List every reason this party cannot be onboarded on a date (empty = ok)."""
-        if self.is_verified(on):
-            return []
-        return [f"{self.name}: no passing check against a document valid on {on}"]
+        """Template method: every reason this party cannot be onboarded on a date
+        (empty = ok). Own verification, then the subclass's structural rules, then
+        each connected person's own gaps."""
+        gaps = [] if self.is_verified(on) else [
+            f"{self.name}: no passing check against a document valid on {on}"]
+        gaps += self.structural_gaps(on)
+        for person in self.connected_persons(on):
+            gaps += person.kyc_gaps(on)
+        return gaps
 
     def __str__(self):
         return f"{self.name} [{self.party_id}]"
@@ -274,6 +346,12 @@ class Person(Party):
         super().__init__(name, registered_on)
         self.date_of_birth = date_of_birth
 
+    def structural_gaps(self, on):
+        return []                       # a person has no governance structure
+
+    def connected_persons(self, on):
+        return []                       # a person answers only for themselves
+
 
 class Organization(Party):
     """A non-human legal identity controlled by people through roles.
@@ -281,6 +359,9 @@ class Organization(Party):
     Adds officers, beneficial owners and mandates, and extends KYC: the
     organisation is only verified if its connected persons (active officers
     and owners at or above the threshold) are verified too.
+
+    Still abstract: structural_gaps() is left to Company and Charity, whose
+    governance rules differ.
     """
 
     id_prefix = "ORG"
@@ -305,16 +386,6 @@ class Organization(Party):
             if p not in unique:
                 unique.append(p)
         return unique
-
-    def structural_gaps(self, on):
-        """Rules about the organisation's own structure. Overridden by subclasses."""
-        return []
-
-    def kyc_gaps(self, on):
-        gaps = super().kyc_gaps(on) + self.structural_gaps(on)
-        for person in self.connected_persons(on):
-            gaps += person.kyc_gaps(on)
-        return gaps
 
     def find_mandate(self, person, capability, amount, on):
         """Return the mandate that lets a person do something on a date, or raise."""
@@ -470,11 +541,13 @@ class CustomerRelationship:
     periods, so a branch closure or an RM change never rewrites the past.
     """
 
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"ENDED": "end_relationship"}}, final={"ENDED"})
+
     def __init__(self, party, since, home_branch, segment, relationship_manager=None):
         self.party, self.since, self.segment = party, since, segment
         self.branch_history = [(Period(since), home_branch)]
         self.rm_history = []                     # [(Period, Employee)]
-        self.status = StatusHistory("ACTIVE", since, "system", "onboarded")
+        self.status = StatusHistory("ACTIVE", since, "system", "onboarded", lifecycle=self.LIFECYCLE)
         self.archived_on = None                  # set when moved to the retention archive
         if relationship_manager:
             self.set_manager(relationship_manager, since)
@@ -509,9 +582,11 @@ class CustomerRelationship:
 class Branch:
     """A branch of the bank. Closed branches are kept, with a pointer to their successor."""
 
+    LIFECYCLE = Lifecycle("OPEN", {"OPEN": {"CLOSED": "close_branch"}}, final={"CLOSED"})
+
     def __init__(self, code, name, city, opened_on):
         self.code, self.name, self.city = code, name, city
-        self.status = StatusHistory("OPEN", opened_on)
+        self.status = StatusHistory("OPEN", opened_on, lifecycle=self.LIFECYCLE)
         self.merged_into = None
         self.vault = None                        # GeneralLedgerAccount, set by Bank.open_branch
 
@@ -530,11 +605,13 @@ class Employee:
     RoleAssignment periods, so an old approval still shows the role held then.
     """
 
+    LIFECYCLE = Lifecycle("EMPLOYED", {"EMPLOYED": {"LEFT": "record_employee_exit"}}, final={"LEFT"})
+
     def __init__(self, person, hired_on):
         self.employee_no = next_id("EMP")
         self.person, self.hired_on = person, hired_on
         self.assignments: list[RoleAssignment] = []
-        self.status = StatusHistory("EMPLOYED", hired_on)
+        self.status = StatusHistory("EMPLOYED", hired_on, lifecycle=self.LIFECYCLE)
 
     def current_assignment(self):
         for a in reversed(self.assignments):
@@ -605,12 +682,14 @@ class ProductDefinition:
 
     CATEGORIES = {"CURRENT", "SAVINGS", "TERM_DEPOSIT", "FINANCING", "DEBIT_CARD"}
 
+    SALE_LIFECYCLE = Lifecycle("ON_SALE", {"ON_SALE": {"CLOSED_TO_NEW": "withdraw_from_sale"}}, final={"CLOSED_TO_NEW"})
+
     def __init__(self, code, name, category, launched_on):
         if category not in self.CATEGORIES:
             raise BankingError(f"unknown product category {category}")
         self.code, self.name, self.category = code, name, category
         self.terms_versions: list[ProductTermsVersion] = []
-        self.sale_status = StatusHistory("ON_SALE", launched_on)
+        self.sale_status = StatusHistory("ON_SALE", launched_on, lifecycle=self.SALE_LIFECYCLE)
 
     def add_terms(self, effective_from, **terms):
         """Publish a new terms version (older versions are kept)."""
@@ -642,18 +721,23 @@ class ProductTermsVersion:
         return f"{self.product.code} v{self.version_no} (from {self.effective_from}) {self.terms}"
 
 
-class Arrangement:
+class Arrangement(ABC):
     """A customer's actual instance of a product (an account or a financing agreement).
 
     Shared by every arrangement: the product, the terms version PINNED at
     opening (old customers do not silently inherit new terms), the holders,
     the branch it was opened at (fixed) and the servicing branch (can change),
     a status history, and restrictions.
+
+    Abstract: every concrete arrangement must say what its headline position
+    is (position()): money the bank holds for the customer, or money owed.
     """
 
     prefix = "ARR"
     PRODUCT_CATEGORY = None
     USABLE_STATUSES = {"ACTIVE"}
+
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"CLOSED": "close_account / maturity payout"}}, final={"CLOSED"})
 
     def __init__(self, product, holders, opened_on, branch, opened_by, terms_date=None):
         terms_date = terms_date or opened_on
@@ -670,7 +754,7 @@ class Arrangement:
         self.opened_on = opened_on
         self.opened_at_branch = branch                          # never changes
         self.servicing_history = [(Period(opened_on), branch)]  # can change
-        self.status = StatusHistory("ACTIVE", opened_on, opened_by, "opened")
+        self.status = StatusHistory("ACTIVE", opened_on, opened_by, "opened", lifecycle=self.LIFECYCLE)
         self.restrictions: list[Restriction] = []
         self.archived_on = None                  # set when moved to the retention archive
 
@@ -706,6 +790,10 @@ class Arrangement:
                 raise RestrictionViolation(f"{r.scope} on {r.target_label} since "
                                            f"{r.period.start}: {r.reason}")
 
+    @abstractmethod
+    def position(self, on=None):
+        """The headline figure as (amount, meaning), e.g. (Decimal('500.00'), 'held')."""
+
     def __str__(self):
         return f"{self.number} {self.product.name} ({', '.join(h.name for h in self.holders)})"
 
@@ -713,8 +801,9 @@ class Arrangement:
 class DepositAccount(Arrangement):
     """An account holding customer money. Balances are DERIVED from ledger entries.
 
-    Adds the ledger, holds, available balance and the debit check. It is never
-    instantiated directly: a deposit is always a current or a savings account.
+    Adds the ledger, holds, available balance and the debit check. Abstract: a
+    deposit is always a current, savings or term account, and each must state
+    its own overdraft policy (overdraft_limit).
     """
 
     prefix = "DEP"
@@ -731,8 +820,12 @@ class DepositAccount(Arrangement):
     def held_amount(self, on):
         return sum((h.amount for h in self.holds if h.active_on(on)), ZERO)
 
+    @abstractmethod
     def overdraft_limit(self):
-        return ZERO
+        """How far below zero this account may go."""
+
+    def position(self, on=None):
+        return self.ledger_balance(on), "held"
 
     def available_balance(self, on):
         """Ledger balance minus active holds plus any overdraft limit."""
@@ -761,6 +854,9 @@ class SavingsAccount(DepositAccount):
 
     prefix = "SAV"
     PRODUCT_CATEGORY = "SAVINGS"
+
+    def overdraft_limit(self):
+        return ZERO                     # savings never go overdrawn
 
     def withdrawals_in_month(self, on):
         """Count CUSTOMER-initiated debits this month. Bank fees and reversals do not
@@ -791,6 +887,9 @@ class FixedTermDeposit(DepositAccount):
         self.annual_rate = Decimal(str(self.terms.get("annual_rate", 0)))
         self.maturity_on = add_months(opened_on, self.term_months)
         self.payout_account: DepositAccount | None = None
+
+    def overdraft_limit(self):
+        return ZERO                     # the money is locked in, never overdrawn
 
     def principal(self):
         """The amount placed (the balance before any maturity payout)."""
@@ -902,6 +1001,11 @@ class FinancingAgreement(Arrangement):
     PRODUCT_CATEGORY = "FINANCING"
     USABLE_STATUSES = {"ACTIVE", "IN_ARREARS"}
 
+    LIFECYCLE = Lifecycle("ACTIVE", {                # replaces Arrangement's
+        "ACTIVE": {"IN_ARREARS": "arrears batch: installment overdue", "SETTLED": "settle_financing"},
+        "IN_ARREARS": {"ACTIVE": "arrears cleared / restructure_financing", "SETTLED": "settle_financing"},
+    }, final={"SETTLED"})
+
     def __init__(self, application, opened_on, branch, opened_by, settlement_account):
         super().__init__(application.product, [application.applicant], opened_on, branch,
                          opened_by, terms_date=application.submitted_on)
@@ -918,6 +1022,9 @@ class FinancingAgreement(Arrangement):
 
     def outstanding_principal(self):
         return sum((i.principal - i.principal_paid for i in self.current_schedule.installments), ZERO)
+
+    def position(self, on=None):
+        return self.outstanding_principal(), "owed"
 
     def outstanding_total(self):
         """Everything still payable on the current schedule (principal + interest)."""
@@ -977,6 +1084,9 @@ class FinancingAgreement(Arrangement):
 class RepaymentSchedule:
     """One version of a financing agreement's installment plan."""
 
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"SUPERSEDED": "restructure_financing", "CLOSED": "settle_financing"}},
+                          final={"SUPERSEDED", "CLOSED"})
+
     def __init__(self, agreement, version, created_on, reason, principal, annual_rate,
                  capitalised_interest):
         self.agreement, self.version = agreement, version
@@ -984,7 +1094,7 @@ class RepaymentSchedule:
         self.principal, self.annual_rate = principal, annual_rate
         self.capitalised_interest = capitalised_interest
         self.installments: list[Installment] = []
-        self.status = StatusHistory("ACTIVE", created_on, "system", reason)
+        self.status = StatusHistory("ACTIVE", created_on, "system", reason, lifecycle=self.LIFECYCLE)
 
 
 class Installment:
@@ -1019,6 +1129,13 @@ class FinancingApplication:
     evidence of why the bank lent.
     """
 
+    LIFECYCLE = Lifecycle("SUBMITTED", {
+        "SUBMITTED": {"APPROVED": "decide_application", "APPROVED_WITH_CONDITIONS": "decide_application",
+                      "DECLINED": "decide_application"},
+        "APPROVED": {"DISBURSED": "disburse_financing"},
+        "APPROVED_WITH_CONDITIONS": {"DISBURSED": "disburse_financing (conditions met)"},
+    }, final={"DECLINED", "DISBURSED"})
+
     def __init__(self, applicant, product, amount, term_months, purpose, submitted_on, submitted_by):
         if money(amount) <= 0 or term_months < 1:
             raise BankingError("amount and term must be positive")
@@ -1026,7 +1143,7 @@ class FinancingApplication:
         self.applicant, self.product = applicant, product
         self.requested_amount, self.term_months = money(amount), term_months
         self.purpose, self.submitted_on, self.submitted_by = purpose, submitted_on, submitted_by
-        self.status = StatusHistory("SUBMITTED", submitted_on, submitted_by.name, purpose)
+        self.status = StatusHistory("SUBMITTED", submitted_on, submitted_by.name, purpose, lifecycle=self.LIFECYCLE)
         self.decision: Approval | None = None
         self.approved_amount = self.annual_rate = None
         self.conditions: list[ApprovalCondition] = []
@@ -1055,11 +1172,14 @@ class ApprovalCondition:
 class Beneficiary:
     """A saved payee. Changing its bank details creates a new VERSION."""
 
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"INACTIVE": "deactivate_beneficiary", "DELETED": "delete_beneficiary"},
+                           "INACTIVE": {"DELETED": "delete_beneficiary"}}, final={"DELETED"})
+
     def __init__(self, owner, nickname, bank_name, account_no, title, created_on):
         self.beneficiary_id = next_id("BEN")
         self.owner, self.nickname = owner, nickname
         self.versions = [BeneficiaryVersion(self, 1, bank_name, account_no, title, created_on)]
-        self.status = StatusHistory("ACTIVE", created_on)
+        self.status = StatusHistory("ACTIVE", created_on, lifecycle=self.LIFECYCLE)
 
     @property
     def current_version(self):
@@ -1086,6 +1206,9 @@ class BeneficiaryVersion:
 class StandingOrder:
     """A recurring monthly transfer. Authority is checked once, when it is set up."""
 
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"CANCELLED": "cancel_standing_order / account closed"}},
+                          final={"CANCELLED"})
+
     def __init__(self, account, beneficiary, amount, day_of_month, start, created_by, mandate):
         if not 1 <= day_of_month <= 28:
             raise BankingError("standing orders run on day 1-28 so the day exists every month")
@@ -1096,7 +1219,7 @@ class StandingOrder:
         self.day_of_month, self.created_by, self.mandate_used = day_of_month, created_by, mandate
         first = start.replace(day=day_of_month)
         self.next_due = first if first >= start else add_months(first, 1)
-        self.status = StatusHistory("ACTIVE", start, created_by.name, "created")
+        self.status = StatusHistory("ACTIVE", start, created_by.name, "created", lifecycle=self.LIFECYCLE)
         self.payments: list[TransferPayment] = []
 
 
@@ -1109,11 +1232,13 @@ class Biller:
 
     CATEGORIES = {"UTILITY", "TELECOM", "TAX", "EDUCATION", "INSURANCE"}
 
+    LIFECYCLE = Lifecycle("ACTIVE", {"ACTIVE": {"INACTIVE": "deactivate_biller"}}, final={"INACTIVE"})
+
     def __init__(self, code, name, category, registered_on):
         if category not in self.CATEGORIES:
             raise BankingError(f"unknown biller category {category}")
         self.code, self.name, self.category = code, name, category
-        self.status = StatusHistory("ACTIVE", registered_on)
+        self.status = StatusHistory("ACTIVE", registered_on, lifecycle=self.LIFECYCLE)
 
     def __str__(self):
         return f"{self.name} ({self.category})"
@@ -1128,15 +1253,26 @@ class Biller:
 #                      InternalTransfer
 # A reversal never deletes the original; it is a new, counter-posting record.
 # =============================================================================
-class BankTransaction:
+class BankTransaction(ABC):
     """Any movement of money the bank records.
 
     Shared by all: amount, dates, narrative, status history, the ledger
     entries it produced, reversals against it and correction links.
     post() refuses legs that do not sum to zero (double-entry).
+
+    Abstract: every concrete transaction must name its counterparty (who or
+    what is on the other side). story_lines() is a template method whose
+    hooks, detail_lines() and case_lines(), subclasses extend.
     """
 
     prefix = "TXN"
+
+    LIFECYCLE = Lifecycle("INITIATED", {
+        "INITIATED": {"POSTED": "post()", "FAILED": "a rule refuses it"},
+        "POSTED": {"PARTIALLY_REVERSED": "reverse_transaction (part)", "REVERSED": "reverse_transaction (all)"},
+        "PARTIALLY_REVERSED": {"PARTIALLY_REVERSED": "reverse_transaction (part)",
+                               "REVERSED": "reverse_transaction (rest)"},
+    }, final={"FAILED", "REVERSED"})
 
     def __init__(self, amount, initiated_on, narrative):
         amount = money(amount)
@@ -1145,7 +1281,7 @@ class BankTransaction:
         self.txn_id = next_id(self.prefix)
         self.amount = amount
         self.initiated_on, self.narrative = initiated_on, narrative
-        self.status = StatusHistory("INITIATED", initiated_on, "system", narrative)
+        self.status = StatusHistory("INITIATED", initiated_on, "system", narrative, lifecycle=self.LIFECYCLE)
         self.entries: list[LedgerEntry] = []
         self.reversals: list[Reversal] = []
         self.failure_reason = None
@@ -1178,6 +1314,30 @@ class BankTransaction:
     def summary(self):
         return f"{self.txn_id} {self.kind} {fmt(self.amount)} [{self.status.current}] {self.narrative}"
 
+    @abstractmethod
+    def counterparty(self):
+        """Who or what is on the other side of this movement, in words."""
+
+    def detail_lines(self):
+        """Hook: facts only this kind of transaction has (extended by subclasses)."""
+        return []
+
+    def case_lines(self):
+        """Hook: cases raised about this transaction (only customer payments have any)."""
+        return []
+
+    def story_lines(self):
+        """Template method: the full, unedited story of this transaction."""
+        out = [self.summary(), f"  status trail: {self.status.trail()}"]
+        out += self.detail_lines()
+        if self.supersedes:
+            out.append(f"  corrects {self.supersedes.txn_id}")
+        if self.superseded_by:
+            out.append(f"  superseded by {self.superseded_by.txn_id}")
+        for r in self.reversals:
+            out.append(f"  reversal {r.txn_id} {fmt(r.amount)}: {r.approval}")
+        return out + self.case_lines()
+
 
 class CustomerPayment(BankTransaction):
     """A payment a customer (or someone acting for one) instructed.
@@ -1187,6 +1347,12 @@ class CustomerPayment(BankTransaction):
     Only customer payments can be disputed.
     """
 
+    LIFECYCLE = BankTransaction.LIFECYCLE.extend({
+        "INITIATED": {"AWAITING_AUTHORISATION": "needs a second signatory"},
+        "AWAITING_AUTHORISATION": {"AUTHORISED": "authorise_payment", "CANCELLED": "cancel_pending_payment"},
+        "AUTHORISED": {"POSTED": "post()", "FAILED": "funds re-check fails"},
+    }, final={"CANCELLED"})
+
     def __init__(self, amount, initiated_on, narrative, source_account, initiated_by, channel):
         super().__init__(amount, initiated_on, narrative)
         self.source_account, self.initiated_by, self.channel = source_account, initiated_by, channel
@@ -1194,11 +1360,28 @@ class CustomerPayment(BankTransaction):
         self.authorisations: list[PaymentAuthorisation] = []
         self.disputes: list[Dispute] = []
 
+    def detail_lines(self):
+        return super().detail_lines() + [
+            f"  initiated by {self.initiated_by.name} via {self.channel}",
+            f"  authority: {self.mandate_used or 'account holder'}",
+        ] + [f"  {a}" for a in self.authorisations]
+
+    def case_lines(self):
+        return [f"  dispute {d.case_id}: {d.outcome or 'open'}" for d in self.disputes]
+
 
 class TransferPayment(CustomerPayment):
     """A transfer to a beneficiary. Snapshots the beneficiary VERSION it was sent to."""
 
     prefix = "TRF"
+
+    LIFECYCLE = CustomerPayment.LIFECYCLE.extend({
+        "INITIATED": {"HELD_FOR_REVIEW": "amount >= review threshold"},
+        "AUTHORISED": {"HELD_FOR_REVIEW": "amount >= review threshold"},
+        "HELD_FOR_REVIEW": {"RELEASED": "release_transaction", "REJECTED": "reject_held_transaction",
+                            "FAILED": "funds re-check fails"},
+        "RELEASED": {"POSTED": "post()"},
+    }, final={"REJECTED"})
 
     def __init__(self, amount, initiated_on, source_account, beneficiary, initiated_by, channel):
         super().__init__(amount, initiated_on, f"transfer to {beneficiary.nickname}",
@@ -1208,11 +1391,20 @@ class TransferPayment(CustomerPayment):
         self.hold: AccountHold | None = None
         self.standing_order: StandingOrder | None = None
 
+    def counterparty(self):
+        return str(self.beneficiary_version)
+
+    def detail_lines(self):
+        return super().detail_lines() + [f"  beneficiary as sent: {self.beneficiary_version}"]
+
 
 class CardPayment(CustomerPayment):
     """A purchase with an issued card. Remembers the exact card used, forever."""
 
     prefix = "CRD-TX"
+
+    LIFECYCLE = CustomerPayment.LIFECYCLE.extend({"INITIATED": {"DECLINED": "card_purchase refused"}},
+                                               final={"DECLINED"})
 
     def __init__(self, amount, initiated_on, card, merchant, channel="POS", country="PK",
                  merchant_category="RETAIL"):
@@ -1220,6 +1412,12 @@ class CardPayment(CustomerPayment):
                          card.account, card.cardholder, "CARD")
         self.card, self.merchant = card, merchant
         self.card_channel, self.country, self.merchant_category = channel, country, merchant_category
+
+    def counterparty(self):
+        return f"{self.merchant} ({self.country})"
+
+    def detail_lines(self):
+        return super().detail_lines() + [f"  card used: {self.card}"]
 
 
 class BillPayment(CustomerPayment):
@@ -1233,6 +1431,9 @@ class BillPayment(CustomerPayment):
                          source_account, initiated_by, channel)
         self.biller, self.consumer_reference = biller, consumer_reference
 
+    def counterparty(self):
+        return f"{self.biller.name} ref {self.consumer_reference}"
+
 
 class OwnAccountTransfer(CustomerPayment):
     """A transfer between two accounts at this bank that the same customer controls
@@ -1244,6 +1445,9 @@ class OwnAccountTransfer(CustomerPayment):
         super().__init__(amount, initiated_on, f"transfer to own account {target_account.number}",
                          source_account, initiated_by, channel)
         self.target_account = target_account
+
+    def counterparty(self):
+        return f"own account {self.target_account.number}"
 
 
 class CashTransaction(BankTransaction):
@@ -1257,6 +1461,9 @@ class CashTransaction(BankTransaction):
         self.teller, self.presented_by = teller, presented_by
         self.branch = teller.role_on(initiated_on).branch
 
+    def counterparty(self):
+        return f"cash at {self.branch.name}"
+
 
 class FeeCharge(BankTransaction):
     """A fee, recording the terms version it was charged under."""
@@ -1266,6 +1473,9 @@ class FeeCharge(BankTransaction):
     def __init__(self, amount, initiated_on, account, fee_code, terms_version):
         super().__init__(amount, initiated_on, f"fee {fee_code}")
         self.account, self.fee_code, self.terms_version = account, fee_code, terms_version
+
+    def counterparty(self):
+        return f"bank fee income ({self.fee_code})"
 
 
 class InterestCredit(BankTransaction):
@@ -1277,6 +1487,9 @@ class InterestCredit(BankTransaction):
         super().__init__(amount, initiated_on, f"savings interest {month_label}")
         self.account, self.annual_rate = account, annual_rate
 
+    def counterparty(self):
+        return "bank interest expense"
+
 
 class Reversal(BankTransaction):
     """Counter-posts all or part of an original transaction, with an approval."""
@@ -1287,6 +1500,9 @@ class Reversal(BankTransaction):
         super().__init__(amount, initiated_on, f"reversal of {original.txn_id}: {reason}")
         self.original, self.reason, self.approval = original, reason, approval
 
+    def counterparty(self):
+        return f"reverses {self.original.txn_id} ({self.original.counterparty()})"
+
 
 class InternalTransfer(BankTransaction):
     """A bank-initiated movement no customer instructed: vault cash on branch closure,
@@ -1294,9 +1510,13 @@ class InternalTransfer(BankTransaction):
 
     prefix = "INTL"
 
+    def counterparty(self):
+        return "bank internal accounts"
+
 
 class LoanTransaction(BankTransaction):
-    """Any movement on a financing agreement. Adds the agreement it belongs to."""
+    """Any movement on a financing agreement. Adds the agreement it belongs to.
+    Still abstract: each kind of loan movement names its own counterparty."""
 
     def __init__(self, amount, initiated_on, narrative, agreement):
         super().__init__(amount, initiated_on, narrative)
@@ -1312,6 +1532,9 @@ class LoanDisbursement(LoanTransaction):
         super().__init__(amount, initiated_on, f"disbursement of {agreement.number}", agreement)
         self.credit_account, self.approval = credit_account, approval
 
+    def counterparty(self):
+        return f"paid into {self.credit_account.number}"
+
 
 class InterestCapitalisation(LoanTransaction):
     """Overdue interest added to principal on restructuring. Moves no customer cash,
@@ -1322,6 +1545,9 @@ class InterestCapitalisation(LoanTransaction):
     def __init__(self, amount, initiated_on, agreement, approval):
         super().__init__(amount, initiated_on, f"overdue interest capitalised on {agreement.number}", agreement)
         self.approval = approval
+
+    def counterparty(self):
+        return f"interest receivable on {self.agreement.number}"
 
 
 class LoanRepayment(LoanTransaction):
@@ -1334,6 +1560,9 @@ class LoanRepayment(LoanTransaction):
         self.debit_account = debit_account
         self.allocations = []
 
+    def counterparty(self):
+        return f"paid from {self.debit_account.number}"
+
 
 # =============================================================================
 # PART 9 - Cards: an issued card is a CREDENTIAL linked to an account, not an account
@@ -1345,13 +1574,21 @@ class IssuedCard:
     so the full chain is searchable and each card keeps its own payments.
     """
 
+    LIFECYCLE = Lifecycle("ACTIVE", {
+        "ACTIVE": {"BLOCKED_LOST": "report_card LOST", "BLOCKED_STOLEN": "report_card STOLEN",
+                   "BLOCKED_DAMAGED": "report_card DAMAGED", "CANCELLED": "close_account"},
+        "BLOCKED_LOST": {"ACTIVE": "reactivate_card", "DESTROYED": "record_card_found"},
+        "BLOCKED_STOLEN": {"DESTROYED": "record_card_found"},
+        "BLOCKED_DAMAGED": {"DESTROYED": "record_card_found"},
+    }, final={"DESTROYED", "CANCELLED"})
+
     def __init__(self, product, account, cardholder, issued_on, daily_limit, replaces=None):
         self.card_id = next_id("CARD")
         seq = int(self.card_id.split("-")[1])
         self.masked_number = f"4213 **** **** {(seq * 7919) % 9000 + 1000}"
         self.product, self.account, self.cardholder = product, account, cardholder
         self.issued_on, self.expires_on = issued_on, add_months(issued_on, 60)
-        self.status = StatusHistory("ACTIVE", issued_on, "card-ops", "issued")
+        self.status = StatusHistory("ACTIVE", issued_on, "card-ops", "issued", lifecycle=self.LIFECYCLE)
         self.limit_history = [(issued_on, money(daily_limit))]
         self.replaces, self.replaced_by = replaces, None
         self.payments: list[CardPayment] = []
@@ -1423,16 +1660,22 @@ class CardControl:
 #   Case -> RiskCase -> FraudAlert / ComplianceInvestigation              (multi-level)
 #   Case -> CollectionsCase
 # =============================================================================
-class Case:
-    """Any piece of tracked work: owner assignments, notes, evidence, links, outcome."""
+class Case(ABC):
+    """Any piece of tracked work: owner assignments, notes, evidence, links, outcome.
+
+    Abstract: every concrete case must say which staff roles may work it
+    (handler_roles), so the rule lives with the case, not in the Bank.
+    """
 
     prefix = "CASE"
+
+    LIFECYCLE = Lifecycle("OPEN", {"OPEN": {"CLOSED": "close_case"}}, final={"CLOSED"})
 
     def __init__(self, subject, opened_on, opened_by, summary):
         self.case_id = next_id(self.prefix)
         self.subject, self.summary = subject, summary
         self.opened_on, self.opened_by = opened_on, str(opened_by)
-        self.status = StatusHistory("OPEN", opened_on, opened_by, summary)
+        self.status = StatusHistory("OPEN", opened_on, opened_by, summary, lifecycle=self.LIFECYCLE)
         self.assignments: list[tuple] = []
         self.notes: list[CaseNote] = []
         self.evidence: list[CaseEvidence] = []
@@ -1447,6 +1690,10 @@ class Case:
     @property
     def is_open(self):
         return self.status.current != "CLOSED"
+
+    @abstractmethod
+    def handler_roles(self):
+        """The staff roles allowed to be assigned this case."""
 
     def assign(self, employee, on):
         self.assignments.append((on, employee))
@@ -1490,6 +1737,9 @@ class CustomerCase(Case):
         super().__init__(subject, opened_on, opened_by, summary)
         self.channel, self.contact_person = channel, contact_person
 
+    def handler_roles(self):
+        return Bank.BRANCH_ROLES | Bank.CARD_ROLES      # front-line service staff
+
 
 class Dispute(CustomerCase):
     """A customer challenges a payment; may end with a (partial) refund reversal."""
@@ -1531,6 +1781,9 @@ class RiskCase(Case):
         self.risk_level = risk_level
         self.restrictions: list[Restriction] = []
 
+    def handler_roles(self):
+        return Bank.COMPLIANCE_ROLES
+
     def close(self, outcome, on, by):
         live = [r for r in self.restrictions if r.period.contains(on)]
         if live:
@@ -1565,15 +1818,21 @@ class CollectionsCase(Case):
         self.agreement, self.overdue_at_opening = agreement, overdue_amount
         self.promises: list[PromiseToPay] = []
 
+    def handler_roles(self):
+        return Bank.COLLECTIONS_ROLES
+
 
 class PromiseToPay:
     """A customer's promise, recorded by collections staff, to pay an amount by a date.
     The arrears batch later marks it KEPT or BROKEN; the promise itself is never edited."""
 
+    LIFECYCLE = Lifecycle("OPEN", {"OPEN": {"KEPT": "arrears batch: paid in time", "BROKEN": "arrears batch: not paid"}},
+                          final={"KEPT", "BROKEN"})
+
     def __init__(self, case, amount, due_on, recorded_on, recorded_by):
         self.case, self.amount, self.due_on = case, money(amount), due_on
         self.recorded_on, self.recorded_by = recorded_on, str(recorded_by)
-        self.status = StatusHistory("OPEN", recorded_on, recorded_by, f"promise {fmt(self.amount)}")
+        self.status = StatusHistory("OPEN", recorded_on, recorded_by, f"promise {fmt(self.amount)}", lifecycle=self.LIFECYCLE)
 
 
 # =============================================================================
@@ -2764,10 +3023,7 @@ class Bank:
     # ---------------------------------------------------------------- collections
     def assign_case(self, case, employee, by):
         """Operation: give a case to an employee whose role fits the case type."""
-        roles = (self.COLLECTIONS_ROLES if isinstance(case, CollectionsCase)
-                 else self.COMPLIANCE_ROLES if isinstance(case, RiskCase)
-                 else self.BRANCH_ROLES | self.CARD_ROLES)
-        self._require_role(employee, roles, f"work {case.kind} cases")
+        self._require_role(employee, case.handler_roles(), f"work {case.kind} cases")
         if not case.is_open:
             raise InvalidStateError(f"{case.case_id} is closed")
         case.assign(employee, self.today)
@@ -2908,26 +3164,9 @@ class Bank:
         return out
 
     def transaction_story(self, txn):
-        """Report: the full, unedited story of a transaction."""
-        out = [txn.summary(), f"  status trail: {txn.status.trail()}"]
-        if isinstance(txn, CustomerPayment):
-            out.append(f"  initiated by {txn.initiated_by.name} via {txn.channel}")
-            out.append(f"  authority: {txn.mandate_used or 'account holder'}")
-            out += [f"  {a}" for a in txn.authorisations]
-        if isinstance(txn, TransferPayment):
-            out.append(f"  beneficiary as sent: {txn.beneficiary_version}")
-        if isinstance(txn, CardPayment):
-            out.append(f"  card used: {txn.card}")
-        if txn.supersedes:
-            out.append(f"  corrects {txn.supersedes.txn_id}")
-        if txn.superseded_by:
-            out.append(f"  superseded by {txn.superseded_by.txn_id}")
-        for r in txn.reversals:
-            out.append(f"  reversal {r.txn_id} {fmt(r.amount)}: {r.approval}")
-        if isinstance(txn, CustomerPayment):
-            for d in txn.disputes:
-                out.append(f"  dispute {d.case_id}: {d.outcome or 'open'}")
-        return out
+        """Report: the full, unedited story of a transaction. Each class adds its own
+        lines through the story_lines() template (polymorphism, no type checks)."""
+        return txn.story_lines()
 
     def daily_report(self, on):
         """Report: what changed on a day, who did it and why (from the audit log)."""
@@ -3743,7 +3982,7 @@ class PaymentTests(unittest.TestCase):
     def test_unbalanced_posting_is_refused(self):
         w = _World()
         with self.assertRaises(BankingError):
-            BankTransaction(100, w.bank.today, "bad").post([(w.acct, 100)], w.bank.today)
+            InternalTransfer(100, w.bank.today, "bad").post([(w.acct, 100)], w.bank.today)
 
     def test_trial_balance_is_always_zero(self):
         w = _World()
@@ -4137,7 +4376,9 @@ class ModelShapeTests(unittest.TestCase):
         for _, _, layout, edges in _ASSOC_DIAGRAMS:
             self.assertTrue(set(layout) <= names)
             self.assertTrue(all(a in layout and b in layout for a, b, _, _ in edges))
-        self.assertIn("overdraft_limit()  [override]", _own_members(CurrentAccount)[1])
+        self.assertIn("overdraft_limit()  [implements]", _own_members(CurrentAccount)[1])
+        self.assertIn("overdraft_limit()  {abstract}", _own_members(DepositAccount)[1])
+        self.assertIn("check_debit()  [override]", _own_members(SavingsAccount)[1])
         self.assertIn("holds", _own_attributes(DepositAccount))
 
     def test_the_whole_demo_runs_and_balances(self):
@@ -4147,6 +4388,125 @@ class ModelShapeTests(unittest.TestCase):
             bank = run_demo()
         self.assertEqual(bank.trial_balance()[1], 0)
 
+
+
+class AbstractionTests(unittest.TestCase):
+    """Abstract base classes and polymorphism: the base of each hierarchy cannot be
+    created, and behaviour that differs by class lives in the class, not in the Bank."""
+
+    ABSTRACT = (Party, Organization, Arrangement, DepositAccount, BankTransaction,
+                CustomerPayment, LoanTransaction, Case)
+
+    @classmethod
+    def setUpClass(cls):
+        import contextlib
+        import io
+        with contextlib.redirect_stdout(io.StringIO()):
+            cls.bank = run_demo()
+
+    def test_hierarchy_roots_are_abstract(self):
+        for base in self.ABSTRACT:
+            self.assertTrue(inspect.isabstract(base), base.__name__)
+        with self.assertRaises(TypeError):
+            BankTransaction(100, date(2026, 1, 1), "not a real kind of transaction")
+        with self.assertRaises(TypeError):
+            Party("Nobody in particular", date(2026, 1, 1))
+
+    def test_every_leaf_class_is_concrete(self):
+        for cls in domain_classes():
+            if not cls.__subclasses__():
+                self.assertFalse(inspect.isabstract(cls), cls.__name__)
+
+    def test_every_transaction_names_its_counterparty(self):
+        for txn in self.bank.transactions.values():
+            self.assertTrue(txn.counterparty(), txn.txn_id)
+
+    def test_position_is_polymorphic(self):
+        meanings = {type(a).__name__: a.position()[1] for a in self.bank.arrangements.values()}
+        self.assertEqual(meanings["CurrentAccount"], "held")
+        self.assertEqual(meanings["FinancingAgreement"], "owed")
+
+    def test_story_and_case_roles_need_no_type_checks(self):
+        for method in (Bank.transaction_story, Bank.assign_case):
+            self.assertNotIn("isinstance", inspect.getsource(method))
+        transfer = next(t for t in self.bank.transactions.values() if isinstance(t, TransferPayment))
+        self.assertTrue(any("beneficiary as sent" in line for line in transfer.story_lines()))
+        self.assertEqual(CollectionsCase.handler_roles(None), Bank.COLLECTIONS_ROLES)
+
+
+def lifecycle_classes():
+    """(class, attribute name, Lifecycle) for every class that declares its own state machine."""
+    out = []
+    for cls in domain_classes():
+        for attr in ("LIFECYCLE", "SALE_LIFECYCLE"):
+            if isinstance(cls.__dict__.get(attr), Lifecycle):
+                out.append((cls, attr, cls.__dict__[attr]))
+    return out
+
+
+class LifecycleTests(unittest.TestCase):
+    """Every status change in the model follows its class's declared state machine."""
+
+    @classmethod
+    def setUpClass(cls):
+        import contextlib
+        import io
+        with contextlib.redirect_stdout(io.StringIO()):
+            cls.bank = run_demo()
+
+    def _histories(self):
+        b = self.bank
+        records = [*b.parties.values(), *b.arrangements.values(), *b.transactions.values(),
+                   *b.cards.values(), *b.cases.values(), *b.employees.values(), *b.branches.values(),
+                   *b.standing_orders.values(), *b.applications.values(), *b.billers.values(),
+                   *b.beneficiaries.values(), *b.products.values()]
+        for r in records:
+            for attr in ("status", "sale_status"):
+                h = getattr(r, attr, None)
+                if isinstance(h, StatusHistory):
+                    yield r, h
+        for p in b.parties.values():
+            if p.relationship:
+                yield p.relationship, p.relationship.status
+
+    def test_every_history_is_checked_and_every_move_was_allowed(self):
+        seen = 0
+        for record, h in self._histories():
+            self.assertIsNotNone(h.lifecycle, type(record).__name__)
+            self.assertEqual(h.changes[0].status, h.lifecycle.initial)
+            for a, b in zip(h.changes, h.changes[1:]):
+                self.assertTrue(h.lifecycle.allows(a.status, b.status), (type(record).__name__, a.status, b.status))
+                seen += 1
+        self.assertGreater(seen, 50)
+
+    def test_an_illegal_move_is_refused_even_outside_the_bank(self):
+        w = _World()
+        w.bank.report_card(w.card, "STOLEN", w.b)
+        w.bank.record_card_found(w.card, w.cards, "handed in")
+        with self.assertRaises(InvalidStateError):
+            w.card.status.change("ACTIVE", w.bank.today, "anyone")      # bypassing reactivate_card
+
+    def test_lifecycles_are_inherited_and_extended(self):
+        base = BankTransaction.LIFECYCLE
+        for sub in (CustomerPayment, TransferPayment, CardPayment):
+            for frm, moves in base.transitions.items():
+                self.assertTrue(set(moves) <= set(sub.LIFECYCLE.transitions[frm]), sub.__name__)
+        self.assertIs(CashTransaction.LIFECYCLE, base)                  # inherited unchanged
+        self.assertIn("HELD_FOR_REVIEW", TransferPayment.LIFECYCLE.states)
+        self.assertNotIn("HELD_FOR_REVIEW", CardPayment.LIFECYCLE.states)
+        self.assertNotIn("CLOSED", FinancingAgreement.LIFECYCLE.states)  # replaced, not extended
+
+    def test_every_state_machine_is_well_formed(self):
+        for cls, _, lc in lifecycle_classes():
+            reachable, todo = {lc.initial}, [lc.initial]
+            while todo:
+                for nxt in lc.transitions.get(todo.pop(), {}):
+                    if nxt not in reachable:
+                        reachable.add(nxt)
+                        todo.append(nxt)
+            self.assertEqual(reachable, set(lc.states), cls.__name__)
+            for final in lc.final:
+                self.assertFalse(lc.transitions.get(final), f"{cls.__name__}: {final} is final")
 
 # =============================================================================
 # PART 15 - Introspection, class diagram and UML diagram generators
@@ -4181,7 +4541,8 @@ def inheritance_tree():
     lines, standalone = [], []
 
     def walk(cls, depth):
-        lines.append("    " * depth + ("" if depth == 0 else "-> ") + cls.__name__)
+        lines.append("    " * depth + ("" if depth == 0 else "-> ") + cls.__name__
+                     + ("  (abstract)" if inspect.isabstract(cls) else ""))
         for sub in sorted((c for c in classes if c.__bases__[0] is cls), key=lambda c: c.__name__):
             walk(sub, depth + 1)
 
@@ -4245,7 +4606,7 @@ def write_class_diagram(folder):
            f'font-family="Helvetica, Arial, sans-serif" font-size="12">',
            '<rect width="100%" height="100%" fill="#ffffff"/>',
            '<text x="20" y="32" font-size="20" font-weight="bold" fill="#1d2b3a">Problem 4 banking model - '
-           'inheritance hierarchies (arrow points to the parent class)</text>',
+           'inheritance hierarchies (arrow points to the parent class; italic = abstract)</text>',
            f'<text x="20" y="{top + 12:.0f}" font-size="15" font-weight="bold" fill="#1d2b3a">Standalone classes '
            '(related by composition / references, deliberately not inheritance)</text>',
            '<defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" '
@@ -4260,6 +4621,8 @@ def write_class_diagram(folder):
         is_root = c in roots
         fill = "#d8e6f3" if is_root else ("#eef3f8" if c not in standalone else "#f6f6f2")
         weight = ' font-weight="bold"' if is_root else ""
+        if inspect.isabstract(c):
+            weight += ' font-style="italic"'           # UML: abstract classes in italics
         svg.append(f'<rect x="{cx:.0f}" y="{cy:.0f}" width="{box_w}" height="{box_h}" rx="6" '
                    f'fill="{fill}" stroke="#4a6076"/>')
         svg.append(f'<text x="{cx + box_w / 2:.0f}" y="{cy + 19:.0f}" text-anchor="middle" '
@@ -4298,14 +4661,24 @@ def _own_attributes(cls):
 
 
 def _own_members(cls):
-    """(class constants, methods) defined or overridden at this level."""
+    """(class constants, methods) defined or overridden at this level. A method is
+    marked {abstract} if declared without a body here, [implements] if it fills in a
+    parent's abstract method, and [override] if it replaces or extends a parent's."""
     consts, methods = [], []
     for name, value in cls.__dict__.items():
         if name.startswith("__"):
             continue
         if callable(value) or isinstance(value, property):
-            parent_has = any(name in b.__dict__ for b in cls.__mro__[1:])
-            methods.append(name + "()" + ("  [override]" if parent_has else ""))
+            parent = next((b.__dict__[name] for b in cls.__mro__[1:] if name in b.__dict__), None)
+            if getattr(value, "__isabstractmethod__", False):
+                mark = "  {abstract}"
+            elif parent is None:
+                mark = ""
+            elif getattr(parent, "__isabstractmethod__", False):
+                mark = "  [implements]"
+            else:
+                mark = "  [override]"
+            methods.append(name + "()" + mark)
         elif name.isupper() or name in ("prefix", "id_prefix", "officer_title"):
             consts.append(name)
     return consts, methods
@@ -4373,7 +4746,8 @@ def write_uml_diagrams(folder):
                'markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" '
                'stroke="#34495e"/></marker></defs>',
                f'<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">{root.__name__} '
-               'hierarchy - what each level adds (- attribute, + class constant, () method)</text>']
+               'hierarchy - what each level adds (- attribute, + class constant, () method; '
+               'italic = abstract)</text>']
         for c in pos:
             if c is not root:
                 px, py = pos[c.__bases__[0]]
@@ -4390,8 +4764,11 @@ def write_uml_diagrams(folder):
                        f'stroke="#34495e"/>')
             svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{box_w}" height="22" fill="#d8e6f3" '
                        f'stroke="#34495e"/>')
+            abstract = inspect.isabstract(c)            # UML: abstract names in italics
+            style = ' font-style="italic"' if abstract else ""
+            label = ("«abstract» " if abstract else "") + head[0]
             svg.append(f'<text x="{x + box_w / 2:.0f}" y="{y + 15:.0f}" text-anchor="middle" '
-                       f'font-weight="bold" font-size="12" fill="#1d2b3a">{head[0]}</text>')
+                       f'font-weight="bold" font-size="12" fill="#1d2b3a"{style}>{label}</text>')
             ty = y + 22 + line_h
             for a in attrs or ["(inherits all attributes)"]:
                 svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="#1d2b3a">{_svg_text(a)}</text>')
@@ -4400,8 +4777,10 @@ def write_uml_diagrams(folder):
                        f'y2="{ty - line_h + 5:.0f}" stroke="#34495e"/>')
             ty += 4
             for m in methods or ["(no new methods)"]:
-                color = "#9c3d10" if "override" in m else "#1d2b3a"
-                svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="{color}">{_svg_text(m)}</text>')
+                color = ("#9c3d10" if "override" in m else "#1f6f3a" if "implements" in m
+                         else "#1d2b3a")
+                italic = ' font-style="italic"' if "{abstract}" in m else ""
+                svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="{color}"{italic}>{_svg_text(m)}</text>')
                 ty += line_h
         svg.append("</svg>")
         path = os.path.join(folder, fname + ".svg")

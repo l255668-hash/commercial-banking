@@ -26,7 +26,22 @@ Companies and charities both have officers, owners and mandates, and both are on
 For behaviour many unrelated classes need: `StatusHistory` and `Period`. Accounts, cards, cases, branches and employees all have lifecycles, but they are not the same kind of thing, so each has a `StatusHistory` rather than inheriting from a common base.
 
 **How many classes and operations, and how do you know?**
-Run `python banking_system.py --classes`: 73 domain classes, 7 error classes, 96 `Bank` operations (78 of them state-changing commands), counted from the code. A test (`ModelShapeTests`) fails if either count drops below 30.
+Run `python banking_system.py --classes`: 74 domain classes, 7 error classes, 96 `Bank` operations (78 of them state-changing commands), counted from the code. A test (`ModelShapeTests`) fails if either count drops below 30.
+
+**Which of your classes are abstract, and why?**
+The root of each hierarchy: `Party`, `Arrangement`, `BankTransaction`, `Case`, plus the middle levels `Organization`, `DepositAccount`, `CustomerPayment` and `LoanTransaction`. The bank never holds something that is only "a transaction" or only "a party", so creating one raises `TypeError`. Each has at least one abstract method whose answer genuinely differs by class, e.g. `DepositAccount.overdraft_limit()` (current accounts read it from the terms, savings and term deposits are zero) and `BankTransaction.counterparty()`. `CustomerCase` and `RiskCase` are concrete because each fully answers `handler_roles()`.
+
+**What is the difference between `[implements]` and `[override]` in your UML?**
+`[implements]` fills in a parent's abstract method, which has no body to reuse. `[override]` replaces or extends a working parent method, for example `SavingsAccount.check_debit` adds the withdrawal limit and then calls `super().check_debit`.
+
+**Show me polymorphism in your code.**
+`Bank.transaction_story(txn)` is now just `return txn.story_lines()`. `story_lines` is a template method in `BankTransaction`; `CustomerPayment.detail_lines` adds who initiated it and the mandate used, and `TransferPayment` and `CardPayment` extend that with `super()` to add the beneficiary snapshot or the card. The `Bank` no longer asks what type the transaction is. `assign_case` does the same with `case.handler_roles()`.
+
+**What stops a destroyed card being used again?**
+`IssuedCard.LIFECYCLE` declares the allowed moves, and `StatusHistory.change` refuses anything else. DESTROYED is a final state with no way out, so even code that bypasses `Bank.reactivate_card` and calls `card.status.change("ACTIVE", ...)` gets `InvalidStateError`. A test does exactly that.
+
+**How are state machines inherited?**
+`LIFECYCLE` is a class constant, so subclasses inherit it. `CashTransaction` uses `BankTransaction`'s as is; `CustomerPayment` calls `.extend(...)` to add dual control; `TransferPayment` extends that with the compliance hold. `FinancingAgreement` replaces `Arrangement`'s lifecycle completely, because a loan is settled, not closed. State machine 1 colours each status by the class that added it.
 
 ## Historical correctness
 

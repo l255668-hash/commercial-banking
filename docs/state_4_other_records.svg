@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2197" height="1478" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="30" y="34" font-size="20" font-weight="bold" fill="#0B4F4A">State machine 4 - the other records with a lifecycle</text>
+<text x="30" y="56" font-size="12.5" fill="#5B6B69">Nothing is deleted: closing, ending or cancelling is a move to a final state, and the history keeps every earlier status.</text>
+<circle cx="37" cy="76" r="6" fill="#1D2B2A"/>
+<text x="58" y="80" font-size="11.5" fill="#1D2B2A">initial state</text>
+<circle cx="158" cy="76" r="8" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.4"/><circle cx="158" cy="76" r="4.5" fill="#1D2B2A"/>
+<text x="179" y="80" font-size="11.5" fill="#1D2B2A">final state</text>
+<text x="180" y="152" font-size="14" font-weight="bold" fill="#1D2B2A">Deposit accounts (Arrangement)</text>
+<circle cx="330" cy="200" r="9" fill="#1D2B2A"/>
+<line x1="330.0" y1="209.0" x2="330.0" y2="250.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="330.0" y1="294.0" x2="330.0" y2="394.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="330.0" y1="438.0" x2="330.0" y2="477.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="330" cy="490" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="330" cy="490" r="7" fill="#1D2B2A"/>
+<rect x="228" y="250" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="330" y="276" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="228" y="394" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="330" y="420" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CLOSED</text>
+<text x="755" y="152" font-size="14" font-weight="bold" fill="#1D2B2A">Cases (Case)</text>
+<circle cx="905" cy="200" r="9" fill="#1D2B2A"/>
+<line x1="905.0" y1="209.0" x2="905.0" y2="250.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="905.0" y1="294.0" x2="905.0" y2="394.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="905.0" y1="438.0" x2="905.0" y2="477.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="905" cy="490" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="905" cy="490" r="7" fill="#1D2B2A"/>
+<rect x="803" y="250" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="905" y="276" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">OPEN</text>
+<rect x="803" y="394" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="905" y="420" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CLOSED</text>
+<text x="1330" y="152" font-size="14" font-weight="bold" fill="#1D2B2A">StandingOrder</text>
+<circle cx="1480" cy="200" r="9" fill="#1D2B2A"/>
+<line x1="1480.0" y1="209.0" x2="1480.0" y2="250.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1480.0" y1="294.0" x2="1480.0" y2="394.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1480.0" y1="438.0" x2="1480.0" y2="477.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1480" cy="490" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1480" cy="490" r="7" fill="#1D2B2A"/>
+<rect x="1378" y="250" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1480" y="276" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="1378" y="394" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1480" y="420" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CANCELLED</text>
+<text x="1905" y="152" font-size="14" font-weight="bold" fill="#1D2B2A">CustomerRelationship</text>
+<circle cx="2055" cy="200" r="9" fill="#1D2B2A"/>
+<line x1="2055.0" y1="209.0" x2="2055.0" y2="250.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="2055.0" y1="294.0" x2="2055.0" y2="394.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="2055.0" y1="438.0" x2="2055.0" y2="477.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="2055" cy="490" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="2055" cy="490" r="7" fill="#1D2B2A"/>
+<rect x="1953" y="250" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="2055" y="276" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="1953" y="394" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="2055" y="420" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ENDED</text>
+<text x="180" y="620" font-size="14" font-weight="bold" fill="#1D2B2A">Beneficiary</text>
+<circle cx="330" cy="668" r="9" fill="#1D2B2A"/>
+<line x1="330.0" y1="677.0" x2="330.0" y2="718.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="305.2" y1="762.0" x2="192.3" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="354.8" y1="762.0" x2="467.7" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="269.5" y1="884.0" x2="390.5" y2="884.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="492.5" y1="906.0" x2="492.5" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="492" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="492" cy="958" r="7" fill="#1D2B2A"/>
+<rect x="228" y="718" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="330" y="744" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="65" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="167" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">INACTIVE</text>
+<rect x="390" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="492" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">DELETED</text>
+<text x="755" y="620" font-size="14" font-weight="bold" fill="#1D2B2A">RepaymentSchedule</text>
+<circle cx="905" cy="668" r="9" fill="#1D2B2A"/>
+<line x1="905.0" y1="677.0" x2="905.0" y2="718.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="880.2" y1="762.0" x2="767.3" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="929.8" y1="762.0" x2="1042.7" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1067.5" y1="906.0" x2="1067.5" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1068" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1068" cy="958" r="7" fill="#1D2B2A"/>
+<line x1="742.5" y1="906.0" x2="742.5" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="742" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="742" cy="958" r="7" fill="#1D2B2A"/>
+<rect x="803" y="718" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="905" y="744" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="640" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="742" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">SUPERSEDED</text>
+<rect x="966" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1068" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CLOSED</text>
+<text x="1330" y="620" font-size="14" font-weight="bold" fill="#1D2B2A">PromiseToPay</text>
+<circle cx="1480" cy="668" r="9" fill="#1D2B2A"/>
+<line x1="1480.0" y1="677.0" x2="1480.0" y2="718.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1455.2" y1="762.0" x2="1342.3" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1504.8" y1="762.0" x2="1617.7" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1642.5" y1="906.0" x2="1642.5" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1642" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1642" cy="958" r="7" fill="#1D2B2A"/>
+<line x1="1317.5" y1="906.0" x2="1317.5" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1317" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1317" cy="958" r="7" fill="#1D2B2A"/>
+<rect x="1378" y="718" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1480" y="744" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">OPEN</text>
+<rect x="1215" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1317" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">KEPT</text>
+<rect x="1540" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1642" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">BROKEN</text>
+<text x="1905" y="620" font-size="14" font-weight="bold" fill="#1D2B2A">ProductDefinition (sale status)</text>
+<circle cx="2055" cy="668" r="9" fill="#1D2B2A"/>
+<line x1="2055.0" y1="677.0" x2="2055.0" y2="718.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="2055.0" y1="762.0" x2="2055.0" y2="862.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="2055.0" y1="906.0" x2="2055.0" y2="945.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="2055" cy="958" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="2055" cy="958" r="7" fill="#1D2B2A"/>
+<rect x="1953" y="718" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="2055" y="744" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ON_SALE</text>
+<rect x="1953" y="862" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="2055" y="888" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CLOSED_TO_NEW</text>
+<text x="180" y="1088" font-size="14" font-weight="bold" fill="#1D2B2A">Employee</text>
+<circle cx="330" cy="1136" r="9" fill="#1D2B2A"/>
+<line x1="330.0" y1="1145.0" x2="330.0" y2="1186.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="330.0" y1="1230.0" x2="330.0" y2="1330.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="330.0" y1="1374.0" x2="330.0" y2="1413.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="330" cy="1426" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="330" cy="1426" r="7" fill="#1D2B2A"/>
+<rect x="228" y="1186" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="330" y="1212" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">EMPLOYED</text>
+<rect x="228" y="1330" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="330" y="1356" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">LEFT</text>
+<text x="755" y="1088" font-size="14" font-weight="bold" fill="#1D2B2A">Branch</text>
+<circle cx="905" cy="1136" r="9" fill="#1D2B2A"/>
+<line x1="905.0" y1="1145.0" x2="905.0" y2="1186.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="905.0" y1="1230.0" x2="905.0" y2="1330.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="905.0" y1="1374.0" x2="905.0" y2="1413.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="905" cy="1426" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="905" cy="1426" r="7" fill="#1D2B2A"/>
+<rect x="803" y="1186" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="905" y="1212" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">OPEN</text>
+<rect x="803" y="1330" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="905" y="1356" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CLOSED</text>
+<text x="1330" y="1088" font-size="14" font-weight="bold" fill="#1D2B2A">Biller</text>
+<circle cx="1480" cy="1136" r="9" fill="#1D2B2A"/>
+<line x1="1480.0" y1="1145.0" x2="1480.0" y2="1186.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1480.0" y1="1230.0" x2="1480.0" y2="1330.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1480.0" y1="1374.0" x2="1480.0" y2="1413.4" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1480" cy="1426" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1480" cy="1426" r="7" fill="#1D2B2A"/>
+<rect x="1378" y="1186" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1480" y="1212" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="1378" y="1330" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="1480" y="1356" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">INACTIVE</text>
+<text x="337" y="348" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">close_account / maturity payout</text>
+<text x="912" y="348" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">close_case</text>
+<text x="1487" y="348" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">cancel_standing_order / account closed</text>
+<text x="2062" y="348" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">end_relationship</text>
+<text x="241" y="816" text-anchor="end" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">deactivate_beneficiary</text>
+<text x="419" y="816" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">delete_beneficiary</text>
+<text x="330" y="888" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">delete_beneficiary</text>
+<text x="816" y="816" text-anchor="end" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">restructure_financing</text>
+<text x="994" y="816" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">settle_financing</text>
+<text x="1391" y="816" text-anchor="end" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">arrears batch: paid in time</text>
+<text x="1569" y="816" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">arrears batch: not paid</text>
+<text x="2062" y="816" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">withdraw_from_sale</text>
+<text x="337" y="1284" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">record_employee_exit</text>
+<text x="912" y="1284" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">close_branch</text>
+<text x="1487" y="1284" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">deactivate_biller</text>
+</svg>

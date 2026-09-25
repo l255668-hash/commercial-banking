@@ -22,9 +22,9 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 60 tests ... OK
+python banking_system.py --test       # expect: Ran 69 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
-python banking_system.py --classes    # expect: 73 domain classes, 7 error classes, 96 Bank operations
+python banking_system.py --classes    # expect: 74 domain classes, 7 error classes, 96 Bank operations
 python banking_gui.py                 # the desktop console opens (Linux: sudo apt install python3-tk)
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)
 ```
@@ -36,6 +36,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 - [ ] Read `docs/Viva_Preparation.md` and answer each question aloud in your own words.
 - [ ] Be able to explain, line by line: `Arrangement`, `DepositAccount`, `SavingsAccount.check_debit`, `Bank.initiate_transfer`, `Bank.reverse_transaction`, `Bank.repay_financing`.
 - [ ] Rehearse the slides once (speaker notes are in the deck).
+- [ ] Be able to explain the abstract classes (`python banking_system.py --classes` marks them) and walk through State machine 1: which statuses `BankTransaction`, `CustomerPayment` and `TransferPayment` each added.
 - [ ] Be able to walk through Flowchart 3 (transfer payment) and Flowchart 2 (onboarding) decision by decision, and say which method each diamond comes from. Know the six symbols.
 - [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Diagrams shows the flowcharts during the viva.
 - [ ] If your course requires the single code file only, submit `banking_system.py`; `banking_gui.py` is an optional extra that needs it.
@@ -48,11 +49,12 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 | `banking_gui.py` | Optional desktop GUI (Tkinter); every button calls one Bank operation |
 | `README.md` | How to run, file map, requirement map |
 | `docs/Design_Report.pdf` / `.docx` / `.md` | Written submission, sections 1 to 10 of the brief (flowcharts in 4.1, GUI in 11) |
-| `docs/*.png`, `docs/*.svg` | Class overview, four UML hierarchy diagrams, three association diagrams, six flowcharts |
+| `docs/*.png`, `docs/*.svg` | Class overview, four UML hierarchy diagrams, three association diagrams, six flowcharts, four state machine diagrams |
 | `docs/demo_output.txt` | Captured output of the 16 scenarios |
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
-| `docs/Viva_Presentation.pptx` | 14-slide deck for the viva, with speaker notes |
+| `docs/Viva_Presentation.pptx` | 15-slide deck for the viva, with speaker notes |
 | `docs/Submission_Checklist.md` | This list |
 | `docs/screenshots/` | GUI screenshots used in report section 11 |
 | `tools/` | Optional build scripts that regenerate the flowcharts, PNGs, PDF, Word file, deck and screenshots, plus the GUI smoke test (see `tools/README.md`) |
+| `.github/workflows/tests.yml` | Runs the tests, demo, GUI smoke test and a diagrams-match-the-code check on GitHub for every push |

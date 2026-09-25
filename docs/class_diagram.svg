@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="2251" height="996" font-family="Helvetica, Arial, sans-serif" font-size="12">
 <rect width="100%" height="100%" fill="#ffffff"/>
-<text x="20" y="32" font-size="20" font-weight="bold" fill="#1d2b3a">Problem 4 banking model - inheritance hierarchies (arrow points to the parent class)</text>
+<text x="20" y="32" font-size="20" font-weight="bold" fill="#1d2b3a">Problem 4 banking model - inheritance hierarchies (arrow points to the parent class; italic = abstract)</text>
 <text x="20" y="770" font-size="15" font-weight="bold" fill="#1d2b3a">Standalone classes (related by composition / references, deliberately not inheritance)</text>
 <defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#4a6076"/></marker></defs>
 <line x1="480" y1="132" x2="296" y2="100" stroke="#4a6076" marker-end="url(#tri)"/>
@@ -35,9 +35,9 @@
 <line x1="848" y1="646" x2="940" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
 <line x1="112" y1="584" x2="572" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
 <rect x="211" y="70" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
-<text x="296" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Party</text>
+<text x="296" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">Party</text>
 <rect x="119" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
-<text x="204" y="151" text-anchor="middle" fill="#1d2b3a">Organization</text>
+<text x="204" y="151" text-anchor="middle" fill="#1d2b3a" font-style="italic">Organization</text>
 <rect x="27" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="112" y="213" text-anchor="middle" fill="#1d2b3a">Charity</text>
 <rect x="211" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -45,9 +45,9 @@
 <rect x="395" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="480" y="151" text-anchor="middle" fill="#1d2b3a">Person</text>
 <rect x="885" y="70" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
-<text x="970" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Arrangement</text>
+<text x="970" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">Arrangement</text>
 <rect x="793" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
-<text x="878" y="151" text-anchor="middle" fill="#1d2b3a">DepositAccount</text>
+<text x="878" y="151" text-anchor="middle" fill="#1d2b3a" font-style="italic">DepositAccount</text>
 <rect x="609" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="694" y="213" text-anchor="middle" fill="#1d2b3a">CurrentAccount</text>
 <rect x="793" y="194" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -57,11 +57,11 @@
 <rect x="1161" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="1246" y="151" text-anchor="middle" fill="#1d2b3a">FinancingAgreement</text>
 <rect x="1039" y="296" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
-<text x="1124" y="315" text-anchor="middle" fill="#1d2b3a" font-weight="bold">BankTransaction</text>
+<text x="1124" y="315" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">BankTransaction</text>
 <rect x="27" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="112" y="377" text-anchor="middle" fill="#1d2b3a">CashTransaction</text>
 <rect x="487" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
-<text x="572" y="377" text-anchor="middle" fill="#1d2b3a">CustomerPayment</text>
+<text x="572" y="377" text-anchor="middle" fill="#1d2b3a" font-style="italic">CustomerPayment</text>
 <rect x="211" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="296" y="439" text-anchor="middle" fill="#1d2b3a">BillPayment</text>
 <rect x="395" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -77,7 +77,7 @@
 <rect x="1315" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="1400" y="377" text-anchor="middle" fill="#1d2b3a">InternalTransfer</text>
 <rect x="1683" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
-<text x="1768" y="377" text-anchor="middle" fill="#1d2b3a">LoanTransaction</text>
+<text x="1768" y="377" text-anchor="middle" fill="#1d2b3a" font-style="italic">LoanTransaction</text>
 <rect x="1499" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="1584" y="439" text-anchor="middle" fill="#1d2b3a">InterestCapitalisation</text>
 <rect x="1683" y="420" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -87,7 +87,7 @@
 <rect x="2051" y="358" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="2136" y="377" text-anchor="middle" fill="#1d2b3a">Reversal</text>
 <rect x="487" y="522" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
-<text x="572" y="541" text-anchor="middle" fill="#1d2b3a" font-weight="bold">Case</text>
+<text x="572" y="541" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">Case</text>
 <rect x="27" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="112" y="603" text-anchor="middle" fill="#1d2b3a">CollectionsCase</text>
 <rect x="395" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -149,35 +149,37 @@
 <rect x="204" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
 <text x="289" y="899" text-anchor="middle" fill="#1d2b3a">LedgerEntry</text>
 <rect x="388" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="473" y="899" text-anchor="middle" fill="#1d2b3a">Mandate</text>
+<text x="473" y="899" text-anchor="middle" fill="#1d2b3a">Lifecycle</text>
 <rect x="572" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="657" y="899" text-anchor="middle" fill="#1d2b3a">Notice</text>
+<text x="657" y="899" text-anchor="middle" fill="#1d2b3a">Mandate</text>
 <rect x="756" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="841" y="899" text-anchor="middle" fill="#1d2b3a">OfficerRole</text>
+<text x="841" y="899" text-anchor="middle" fill="#1d2b3a">Notice</text>
 <rect x="940" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1025" y="899" text-anchor="middle" fill="#1d2b3a">PaymentAuthorisation</text>
+<text x="1025" y="899" text-anchor="middle" fill="#1d2b3a">OfficerRole</text>
 <rect x="1124" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1209" y="899" text-anchor="middle" fill="#1d2b3a">Period</text>
+<text x="1209" y="899" text-anchor="middle" fill="#1d2b3a">PaymentAuthorisation</text>
 <rect x="1308" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1393" y="899" text-anchor="middle" fill="#1d2b3a">ProductDefinition</text>
+<text x="1393" y="899" text-anchor="middle" fill="#1d2b3a">Period</text>
 <rect x="1492" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1577" y="899" text-anchor="middle" fill="#1d2b3a">ProductTermsVersion</text>
+<text x="1577" y="899" text-anchor="middle" fill="#1d2b3a">ProductDefinition</text>
 <rect x="1676" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1761" y="899" text-anchor="middle" fill="#1d2b3a">PromiseToPay</text>
+<text x="1761" y="899" text-anchor="middle" fill="#1d2b3a">ProductTermsVersion</text>
 <rect x="20" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="105" y="945" text-anchor="middle" fill="#1d2b3a">RepaymentSchedule</text>
+<text x="105" y="945" text-anchor="middle" fill="#1d2b3a">PromiseToPay</text>
 <rect x="204" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="289" y="945" text-anchor="middle" fill="#1d2b3a">Restriction</text>
+<text x="289" y="945" text-anchor="middle" fill="#1d2b3a">RepaymentSchedule</text>
 <rect x="388" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="473" y="945" text-anchor="middle" fill="#1d2b3a">RoleAssignment</text>
+<text x="473" y="945" text-anchor="middle" fill="#1d2b3a">Restriction</text>
 <rect x="572" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="657" y="945" text-anchor="middle" fill="#1d2b3a">StandingOrder</text>
+<text x="657" y="945" text-anchor="middle" fill="#1d2b3a">RoleAssignment</text>
 <rect x="756" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="841" y="945" text-anchor="middle" fill="#1d2b3a">Statement</text>
+<text x="841" y="945" text-anchor="middle" fill="#1d2b3a">StandingOrder</text>
 <rect x="940" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1025" y="945" text-anchor="middle" fill="#1d2b3a">StatusChange</text>
+<text x="1025" y="945" text-anchor="middle" fill="#1d2b3a">Statement</text>
 <rect x="1124" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1209" y="945" text-anchor="middle" fill="#1d2b3a">StatusHistory</text>
+<text x="1209" y="945" text-anchor="middle" fill="#1d2b3a">StatusChange</text>
 <rect x="1308" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1393" y="945" text-anchor="middle" fill="#1d2b3a">VerificationCheck</text>
+<text x="1393" y="945" text-anchor="middle" fill="#1d2b3a">StatusHistory</text>
+<rect x="1492" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1577" y="945" text-anchor="middle" fill="#1d2b3a">VerificationCheck</text>
 </svg>

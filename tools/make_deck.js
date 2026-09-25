@@ -50,7 +50,7 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "The project at a glance", "One Python file, standard library only - banking_system.py");
-const stats = [["73", "domain classes"], ["96", "Bank operations (78 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["60", "automated tests"], ["0.00", "trial balance total"]];
+const stats = [["74", "domain classes"], ["96", "Bank operations (78 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["69", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
@@ -104,6 +104,18 @@ title(s, "Case -> CustomerCase / RiskCase", "Separate, linked records: the branc
 fitImage(s, "uml_cases.png", 0.4, 1.35, 9.2, 2.6);
 bullets(s, ["CustomerCase: arrives through a channel from a contact person (dispute, complaint, service request)", "RiskCase: bank-initiated; overrides close() so it cannot close while its restrictions are live", "CollectionsCase: opened by the arrears batch"], 0.5, 4.05, 9, 1.3, 12.5);
 s.addNotes("Scenario 5 shows the override: closing the investigation is refused until the debit block is lifted.");
+
+// 7b. Abstraction and state machines --------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Abstract classes and inherited state machines");
+bullets(s, ["Hierarchy roots are abstract (abc): no \"plain\" transaction or party can exist",
+  "Abstract methods differ by class: counterparty(), overdraft_limit(), position(), handler_roles()",
+  "Type checks replaced by polymorphism: transaction_story is txn.story_lines()",
+  "Each class declares its LIFECYCLE; StatusHistory refuses any other move",
+  "Subclasses extend it: CustomerPayment adds dual control, TransferPayment the review hold"], 0.5, 1.2, 4.1, 3.9, 13);
+card(s, 4.85, 1.1, 4.65, 4.15, "F4F8F7");
+fitImage(s, "state_1_payment.png", 4.95, 1.2, 4.45, 3.95);
+s.addNotes("Colours on the state diagram show which class introduced each status: blue BankTransaction, green CustomerPayment, amber TransferPayment. The diagram is drawn from the LIFECYCLE declarations, the same objects the code enforces, and CI fails if the committed diagram differs from the code.");
 
 // 8. Rejected ------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };

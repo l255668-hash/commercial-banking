@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1272" height="738" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker></defs>
+<text x="30" y="34" font-size="20" font-weight="bold" fill="#0B4F4A">State machine 2 - IssuedCard</text>
+<text x="30" y="56" font-size="12.5" fill="#5B6B69">A card is a credential, not an account: once DESTROYED or CANCELLED it can never be used again; a replacement is a new card.</text>
+<circle cx="37" cy="76" r="6" fill="#1D2B2A"/>
+<text x="58" y="80" font-size="11.5" fill="#1D2B2A">initial state</text>
+<circle cx="158" cy="76" r="8" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.4"/><circle cx="158" cy="76" r="4.5" fill="#1D2B2A"/>
+<text x="179" y="80" font-size="11.5" fill="#1D2B2A">final state</text>
+<circle cx="530" cy="140" r="9" fill="#1D2B2A"/>
+<line x1="530.0" y1="149.0" x2="530.0" y2="208.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="489.2" y1="246.0" x2="238.7" y2="394.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="530.0" y1="252.0" x2="530.0" y2="400.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="567.2" y1="252.0" x2="817.8" y2="400.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="632.0" y1="230.0" x2="828.0" y2="230.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="245.8" y1="406.0" x2="496.3" y2="258.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="247.6" y1="444.0" x2="487.4" y2="568.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="530.0" y1="444.0" x2="530.0" y2="568.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="812.4" y1="444.0" x2="572.6" y2="568.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<line x1="1032.0" y1="230.0" x2="1117.0" y2="230.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="1130" cy="230" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="1130" cy="230" r="7" fill="#1D2B2A"/>
+<line x1="530.0" y1="612.0" x2="530.0" y2="673.0" stroke="#34495E" stroke-width="1.4" marker-end="url(#arrow)"/>
+<circle cx="530" cy="686" r="12" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><circle cx="530" cy="686" r="7" fill="#1D2B2A"/>
+<rect x="428" y="208" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="530" y="234" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">ACTIVE</text>
+<rect x="828" y="208" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="930" y="234" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">CANCELLED</text>
+<rect x="103" y="400" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="205" y="426" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">BLOCKED_LOST</text>
+<rect x="428" y="400" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="530" y="426" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">BLOCKED_STOLEN</text>
+<rect x="753" y="400" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="855" y="426" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">BLOCKED_DAMAGED</text>
+<rect x="428" y="568" width="204" height="44" rx="14" fill="#E3EEF9" stroke="#3D5A80" stroke-width="1.6"/>
+<text x="530" y="594" text-anchor="middle" font-size="12" font-weight="bold" fill="#1D2B2A">DESTROYED</text>
+<text x="360" y="317" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">report_card LOST</text>
+<text x="537" y="300" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">report_card STOLEN</text>
+<text x="723" y="348" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">report_card DAMAGED</text>
+<text x="730" y="234" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">close_account</text>
+<text x="375" y="343" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">reactivate_card</text>
+<text x="368" y="510" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">record_card_found</text>
+<text x="537" y="510" text-anchor="start" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">record_card_found</text>
+<text x="692" y="510" text-anchor="middle" font-size="11" fill="#8A5A00" stroke="#FFFFFF" stroke-width="3.5" paint-order="stroke">record_card_found</text>
+</svg>

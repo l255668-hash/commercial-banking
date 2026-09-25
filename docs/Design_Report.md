@@ -8,11 +8,11 @@
 | Roll number | ______________________________ |
 | Course and instructor | ______________________________ |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 60 automated tests and generators for the class and UML diagrams.
+The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 69 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 60 automated tests
+python banking_system.py --test       # run the 69 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -22,9 +22,9 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 1. Domain research summary, sources and terminology | Section 1 |
 | 2. Assumptions | Section 2 (A1 to A36) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
-| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); section 4.1 adds six flowcharts of the main workflows |
-| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (73 domain classes, 96 operations, 78 of them state-changing commands) |
-| 6. Explanation of every inheritance relationship | Section 6 |
+| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
+| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (74 domain classes, 96 operations, 78 of them state-changing commands) |
+| 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | 7. At least three tempting inheritances rejected | Section 7 (twelve given) |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
@@ -184,7 +184,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 
 ## 4. Class model
 
-73 domain classes plus 7 business-rule error classes.
+74 domain classes plus 7 business-rule error classes.
 
 All diagrams are generated from the live classes by `python banking_system.py --diagram docs`: the attributes and methods are read from the source code itself, so the diagrams cannot drift from the implementation.
 
@@ -257,7 +257,7 @@ Complete class list by area:
 
 | Area | Classes |
 |---|---|
-| Time and audit | `Period`, `StatusChange`, `StatusHistory`, `AuditEvent` |
+| Time, lifecycles and audit | `Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent` |
 | Parties and KYC | `Party`, `Person`, `Organization`, `Company`, `Charity`, `IdentityDocument`, `VerificationCheck`, `Correction`, `OfficerRole`, `BeneficialOwnership`, `Mandate`, `PaymentAuthorisation`, `CustomerRelationship` |
 | Bank organisation | `Branch`, `Employee`, `RoleAssignment`, `Approval` |
 | Bank's own books | `GeneralLedgerAccount` |
@@ -310,6 +310,27 @@ The class diagrams above show the structure. These six flowcharts show the behav
 
 ![Flowchart 6 - Desktop console](flowchart_6_gui.png)
 
+
+### 4.2 Lifecycles as UML state machine diagrams
+
+The flowcharts show what an operation checks. These diagrams show what can happen to a record over its whole life. They are drawn by `tools/make_state_diagrams.py` directly from each class's `LIFECYCLE` declaration (section 6.2), the same object that `StatusHistory` enforces, so a move that is not on the diagram cannot happen in the code. Notation: filled circle = initial state, rounded rectangle = state, labelled arrow = transition with the operation that causes it, ringed circle = final state. In State machine 1 the colour of each state shows which class level introduced it.
+
+**State machine 1. TransferPayment:** statuses inherited from `BankTransaction` (blue) and `CustomerPayment` (green), plus the compliance hold added by `TransferPayment` (amber).
+
+![State machine 1 - TransferPayment](state_1_payment.png)
+
+**State machine 2. IssuedCard:** only a card reported lost can be reactivated; a destroyed or cancelled card is final.
+
+![State machine 2 - IssuedCard](state_2_card.png)
+
+**State machine 3. FinancingApplication and FinancingAgreement.**
+
+![State machine 3 - Financing](state_3_financing.png)
+
+**State machine 4. The other records with a lifecycle.** Closing, ending, cancelling or deleting is always a move to a final state; the earlier statuses stay in the history.
+
+![State machine 4 - Other records](state_4_other_records.png)
+
 ---
 
 ## 5. Implementation and operations
@@ -343,13 +364,13 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 60 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), and four tests that check the brief's own requirements from the code: at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance.
+**Automated tests.** 69 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), five abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
 ## 6. Inheritance relationships explained
 
-**Party -> Person / Organization -> Company / Charity (multi-level).** Every party has an identity, documents, verification checks, corrections, restrictions and possibly a customer relationship, so these live in `Party`. `Organization` adds what only legal entities have: registration number, officers, beneficial owners, mandates and a stricter KYC rule (the organisation *and* every connected person must be verified), so it overrides `kyc_gaps`. `Company` and `Charity` differ in real governance: a company needs an active director and a charity at least two trustees, and the officer title differs. Each overrides `structural_gaps` with the rule true at that level. That is why the hierarchy has three levels rather than two.
+**Party -> Person / Organization -> Company / Charity (multi-level).** Every party has an identity, documents, verification checks, corrections, restrictions and possibly a customer relationship, so these live in `Party`. `Party.kyc_gaps` is a template method: the party's own verification, then two abstract hooks, `structural_gaps` (rules about its make-up) and `connected_persons` (people whose verification it depends on). `Person` implements both as "nothing": a person has no governance structure and answers only for itself. `Organization` adds what only legal entities have (registration number, officers, beneficial owners, mandates) and implements `connected_persons` as its active officers and owners at or above 25%, which gives the stricter KYC rule for free. It is still abstract, because `Company` and `Charity` differ in real governance: a company needs an active director and a charity at least two trustees. Each implements `structural_gaps` with the rule true at that level. That is why the hierarchy has three levels rather than two.
 
 **Arrangement -> DepositAccount -> CurrentAccount / SavingsAccount / FixedTermDeposit (multi-level), and Arrangement -> FinancingAgreement.** Everything a customer holds has a product, pinned terms and terms history, holders, an opening branch, a servicing-branch history, a status and restrictions: that is `Arrangement`. Only deposit accounts hold customer money, so ledger entries, holds and ledger/available balance belong to `DepositAccount`. A current account adds an overdraft (overrides `overdraft_limit`); a savings account adds a monthly withdrawal limit (overrides `check_debit`); a fixed-term deposit adds a term, rate and maturity date, refuses debits before maturity (overrides `check_debit`) and accepts only one credit, the placement (overrides `ensure_usable`). All three still reuse the parent's ledger and balance logic unchanged. A financing agreement is also an arrangement (terms, holders, status), but it holds no customer money; it has schedules and installments instead, so it sits beside `DepositAccount`, not under it.
 
@@ -362,6 +383,25 @@ Two conventions worth defending: payments that break a rule return a transaction
 **Case -> CustomerCase -> ServiceRequest / Dispute / Complaint; Case -> RiskCase -> FraudAlert / ComplianceInvestigation (multi-level); Case -> CollectionsCase.** All cases have a subject, status history, assignments, notes, evidence and links. Customer cases arrive through a service channel from a contact person. Risk cases are bank-initiated, carry a risk level and the restrictions they imposed, and override `close()` so they cannot close while those restrictions are in force. This split lets the scenario keep the branch complaint and the compliance investigation as separate, linked records.
 
 **BankingError -> specific errors.** Every rule violation is a banking error; the subclasses let the demonstration and the tests name *which* rule stopped an action.
+
+### 6.1 Abstract classes and polymorphism
+
+A real bank never holds "a party", "an arrangement", "a transaction" or "a case" that is not some specific kind, so the root of each hierarchy is an abstract base class (Python `abc`). Trying to create one raises `TypeError`, and a new subclass that forgets a required method cannot be instantiated at all. Each abstract method is one whose answer genuinely differs by class:
+
+| Abstract class | Abstract method | Implemented by | Replaces |
+|---|---|---|---|
+| `Party` | `structural_gaps()`, `connected_persons()` (hooks of the `kyc_gaps` template) | `Person`; `Organization` (connected persons); `Company`, `Charity` (structure) | An `Organization.kyc_gaps` override |
+| `Organization` | `structural_gaps()` (still open) | `Company`, `Charity` | A do-nothing default |
+| `Arrangement` | `position()`: money held or owed | `DepositAccount` (ledger balance, held), `FinancingAgreement` (principal, owed) | A type check in the GUI |
+| `DepositAccount` | `overdraft_limit()` | `CurrentAccount` (from terms), `SavingsAccount` and `FixedTermDeposit` (zero) | A silent zero default |
+| `BankTransaction`, `CustomerPayment`, `LoanTransaction` | `counterparty()`: who is on the other side | all 12 concrete transaction classes | (new) |
+| `Case` | `handler_roles()`: staff allowed to work it | `CustomerCase`, `RiskCase`, `CollectionsCase` | An `isinstance` chain in `Bank.assign_case` |
+
+`BankTransaction.story_lines()` is also a template method: common lines first, then the hooks `detail_lines()` (extended by `CustomerPayment`, then by `TransferPayment` and `CardPayment` with `super()`) and `case_lines()` (disputes, only on customer payments). `Bank.transaction_story` used to test the transaction's type three times; it is now one line, `return txn.story_lines()`, and a test checks that neither it nor `assign_case` contains `isinstance`. In the UML diagrams, abstract classes and methods are in italics (the UML convention) and each method is marked `{abstract}`, `[implements]` (fills in a parent's abstract method) or `[override]` (replaces or extends a parent's working method).
+
+### 6.2 Inherited state machines
+
+Each class with a status declares its lifecycle once, as a `LIFECYCLE` class constant: the initial status, every allowed move labelled with the operation that causes it, and the final statuses. `StatusHistory` enforces it on every change, so an illegal move (a destroyed card becoming active again, a posted payment going back to pending) is refused wherever it is attempted, even by code that bypasses the `Bank`. Lifecycles are inherited like any other class attribute: `CashTransaction` uses `BankTransaction`'s unchanged, `CustomerPayment` extends it with dual control (`AWAITING_AUTHORISATION`, `AUTHORISED`, `CANCELLED`), `TransferPayment` extends that with the compliance hold and `CardPayment` with `DECLINED`. `FinancingAgreement` instead replaces `Arrangement`'s lifecycle, because a loan is never "closed" like an account; it is settled. The state diagrams in section 4.2 are drawn from these declarations.
 
 ---
 
@@ -449,7 +489,7 @@ The brief assesses classes and inheritance, so the interface was built to make t
 | `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
 | `BankController`, `CurrentBank`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a stand-in that always forwards to the current bank (so "Reset data" reaches every form); a result in words; a form definition; colours, fonts and styles |
 
-**What it covers.** 13 screens. The Operations screen has 30 forms in seven groups (Customers 9, Payments 7, Cards 5, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Diagrams screen shows every flowchart and UML diagram in `docs/`, so the design can be explained from inside the running program. `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
+**What it covers.** 13 screens. The Operations screen has 30 forms in seven groups (Customers 9, Payments 7, Cards 5, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. The Diagrams screen shows every flowchart, state machine and UML diagram in `docs/`, so the design can be explained from inside the running program. `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
 
 `MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
 
