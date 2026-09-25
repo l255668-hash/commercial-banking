@@ -3,8 +3,8 @@
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py --all /tmp/shots
 
-The default run rewrites the seven report figures in docs/screenshots/
-(gui_01 to gui_07). ``--all DIR`` instead saves every screen to DIR, for
+The default run rewrites the nine report figures in docs/screenshots/
+(gui_01 to gui_09). ``--all DIR`` instead saves every screen to DIR, for
 checking the layout after a change.
 
 The whole X screen is grabbed with ``xwd`` and converted with netpbm
@@ -52,9 +52,15 @@ def show_class_model(app):
     select(app.pages["Class model"], lambda c: c is g.bs.CustomerPayment)
 
 
+def show_counterparty(app):
+    app.show("Counterparties")
+    select(app.pages["Counterparties"], lambda x: getattr(x, "name", "") == "Imtiaz Auto Parts")
+
+
 def show_onboarding_form(app):
     app.show("Operations")
     ops = app.pages["Operations"]
+    ops.content.winfo_children()[0].select(0)          # the forms tab, not the guided checks
     iid = next(i for i, s in ops.specs.items() if s.label == "Register a person")
     ops.op_tree.item(ops.op_tree.parent(iid), open=True)
     ops.op_tree.selection_set(iid)
@@ -78,7 +84,9 @@ def main(argv):
                  ("gui_04_card_chain.png", show_page("Cards")),
                  ("gui_05_books_audit.png", show_page("Books & audit")),
                  ("gui_06_class_model.png", show_class_model),
-                 ("gui_07_onboarding_form.png", show_onboarding_form)]
+                 ("gui_07_onboarding_form.png", show_onboarding_form),
+                 ("gui_08_reports.png", show_page("Reports")),
+                 ("gui_09_counterparties.png", show_counterparty)]
     queue = list(steps)
 
     def step():

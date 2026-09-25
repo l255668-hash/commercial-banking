@@ -8,11 +8,11 @@
 | Roll number | ______________________________ |
 | Course and instructor | ______________________________ |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 70 automated tests and generators for the class and UML diagrams.
+The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 73 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 70 automated tests
+python banking_system.py --test       # run the 73 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -23,9 +23,9 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 2. Assumptions | Section 2 (A1 to A36) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
 | 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
-| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (69 business classes plus 6 supporting, 97 operations, 79 of them state-changing commands) |
+| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (71 business classes plus 6 supporting, 98 operations, 80 of them state-changing commands) |
 | 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
-| 7. At least three tempting inheritances rejected | Section 7 (twelve given) |
+| 7. At least three tempting inheritances rejected | Section 7 (fourteen given); 7.1 compares the design with a plausible alternative |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
 | 10. Limitations and scaling | Section 10 |
@@ -59,7 +59,11 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | Ledger vs available balance | Ledger balance = sum of posted entries. Available = ledger - holds + overdraft. A held payment reduces the available balance without posting. |
 | Hold | Funds reserved but not yet debited (`AccountHold`). |
 | Posting | Writing an immutable entry to the ledger (`LedgerEntry`). Balances are derived, never stored. |
-| Reversal / chargeback | Undoing a posted transaction by posting an equal and opposite one; the original remains. `Reversal`. |
+| Reversal | The bank undoes all or part of one of its own postings by posting equal and opposite entries under a staff approval; the original remains, marked (partially) reversed. `Reversal`. |
+| Issuer, acquirer, card scheme | In a card payment the customer's bank is the *issuer*, the merchant's bank is the *acquirer*, and the scheme (Visa, Mastercard, PayPak) connects them and sets the dispute rules. This bank is the issuer, so it holds no KYC on merchants. `Merchant` is a counterparty, not a `Party`. |
+| Merchant refund | The merchant voluntarily sends money back (goods returned, order cancelled). It is a new credit through the scheme; the original purchase stays posted and simply has less left to dispute. `MerchantRefund`, deliberately *not* a `Reversal`. |
+| Chargeback | After upholding a cardholder's dispute, the issuer claims the money back from the merchant through the scheme, quoting a scheme reason code (fraud, not received, not as described, duplicate, incorrect amount...). It is a reversal of the card payment with extra obligations, so `Chargeback` is a subclass of `Reversal`. |
+| Dispute reason code | Schemes group disputes into reason categories that decide what evidence is needed. Every `Dispute` records one, and its chargeback carries it. |
 | Standing order | A customer's recurring payment instruction. Authority is given once, when the instruction is created. |
 | Conditions precedent | Requirements that must be met before approved financing can be disbursed. `ApprovalCondition`. |
 | Amortisation schedule | The installment plan of principal and interest. `RepaymentSchedule` + `Installment`. |
@@ -74,6 +78,21 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | Biller / bill payment | An organisation the bank collects payments for (utility, telecom, tax). `Biller`, `BillPayment` with the customer's consumer reference. |
 | Promise to pay | A collections outcome: the customer commits to pay an amount by a date; later marked kept or broken. `PromiseToPay`. |
 | Record retention | Financial records must be kept for years after the relationship or product ends; "deletion" becomes archiving. `archive_record`, `retention_until`. |
+
+### What the research changed in the design
+
+The research was done before the class model was fixed, and several first ideas did not survive it. Each row is a design decision that would have been different without the source named.
+
+| First idea (before research) | What the research showed | Design adopted |
+|---|---|---|
+| `Customer`, `Director` and `Signatory` as subclasses of `Person` | CDD rules (sources 1 to 3) treat customer, controller, beneficial owner and authorised representative as *roles* of one natural person, each verified and time-bounded | One `Person`; `CustomerRelationship`, `OfficerRole`, `BeneficialOwnership`, `Mandate` as dated role objects (A1) |
+| An organisation is verified when its own documents are | Beneficial-ownership rules (source 1, Recs. 24-25) require the people who own or control a legal person to be verified too, usually above 25% | `Party.kyc_gaps` is a template that includes `connected_persons()`; owners below 25% are recorded but do not block (A2) |
+| A payment is either done or not done | Payment messaging (source 4) moves an instruction through statuses: accepted, pending, settled, rejected, returned | Declared lifecycles with `AWAITING_AUTHORISATION`, `HELD_FOR_REVIEW`, `FAILED`...; refused payments are kept as records (A7) |
+| A disputed payment gets a `refunded` flag | Scheme dispute rules (source 5) separate an issuer's reversal, a merchant's voluntary refund and a chargeback with a reason code | Three classes: `Reversal`, `Chargeback(Reversal)`, `MerchantRefund`; `Dispute.reason` (A27) |
+| Restructuring edits the loan's installments | Loan modification guidance (source 6) treats a restructure as a modification of the original agreement whose history must remain | A new `RepaymentSchedule` version; the old one is `SUPERSEDED` and paid installments stay `PAID` (A13) |
+| A product and a customer's account are one class | The BIAN landscape (source 7) separates the product directory from the customer's product agreement | `ProductDefinition` with versioned terms vs `Arrangement` that pins its version (A10) |
+| Store the current value and overwrite on change | Temporal patterns (source 8): effective dating, audit logs and "as at" queries | `Period`, `StatusHistory`, versions and `Correction`; `party_snapshot(party, date)` |
+| A card is a kind of account | Card issuing practice: a card is a credential linked to an account; replacements get new numbers and old transactions keep the old card | `IssuedCard` linked to a `DepositAccount`, with a replacement chain (rejected inheritance 2) |
 
 ---
 
@@ -175,7 +194,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | Financing: application to settlement | `FinancingApplication` ... `settle_financing`; scenario 6 |
 | Branch operations, employee/customer relationships | `Branch`, `Employee`, `RoleAssignment`, RM history; scenarios 11, 13 |
 | Fraud alerts, compliance cases, restrictions, review outcomes, evidence | `FraudAlert`, `ComplianceInvestigation`, `Restriction`, `CaseEvidence` snapshots; scenarios 2, 5, 9 |
-| Disputes, complaints, reversals, refunds, case histories | `Dispute`, `Complaint`, `Reversal`, `repost_card_payment`; scenario 4 |
+| Disputes, complaints, reversals, refunds, case histories | `Dispute` (with a scheme reason code), `Complaint`, `Reversal`, `Chargeback(Reversal)`, `MerchantRefund`, `repost_card_payment`; scenarios 4, 15 |
 | Fees, statements, notices, customer service requests | `FeeCharge` (pinned terms), `Statement`, `Notice`, `ServiceRequest` |
 | Record retention when customers, signatories, employees or products change | Periods, status histories, archive and retention rules; scenarios 7, 10, 12, 13, 16 |
 | Historical reporting and audit of approvals and authority changes | `party_snapshot`, `transaction_story`, `approvals_and_authority_audit`; scenarios 7, 16 |
@@ -184,7 +203,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 
 ## 4. Class model
 
-75 classes plus 7 business-rule error classes. 69 of the 75 are business classes; the other 6 are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, and the `Bank` application service). The brief discounts artificial classes, so the business count is the one to judge, and `python banking_system.py --classes` prints both.
+77 classes plus 7 business-rule error classes. 71 of the 77 are business classes; the other 6 are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, and the `Bank` application service). The brief discounts artificial classes, so the business count is the one to judge, and `python banking_system.py --classes` prints both.
 
 All diagrams are generated from the live classes by `python banking_system.py --diagram docs`: the attributes and methods are read from the source code itself, so the diagrams cannot drift from the implementation.
 
@@ -264,7 +283,7 @@ Complete class list by area:
 | Products | `ProductDefinition`, `ProductTermsVersion` |
 | Arrangements | `Arrangement`, `DepositAccount`, `CurrentAccount`, `SavingsAccount`, `FixedTermDeposit`, `FinancingAgreement`, `LedgerEntry`, `AccountHold`, `Restriction` |
 | Financing | `FinancingApplication`, `ApprovalCondition`, `RepaymentSchedule`, `Installment` |
-| Payments | `Beneficiary`, `BeneficiaryVersion`, `StandingOrder`, `Biller`, `Merchant`, `BankTransaction`, `CustomerPayment`, `TransferPayment`, `CardPayment`, `BillPayment`, `OwnAccountTransfer`, `CashTransaction`, `FeeCharge`, `InterestCredit`, `Reversal`, `InternalTransfer`, `LoanTransaction`, `LoanDisbursement`, `LoanRepayment`, `InterestCapitalisation` |
+| Payments | `Beneficiary`, `BeneficiaryVersion`, `StandingOrder`, `Biller`, `Merchant`, `BankTransaction`, `CustomerPayment`, `TransferPayment`, `CardPayment`, `BillPayment`, `OwnAccountTransfer`, `CashTransaction`, `FeeCharge`, `InterestCredit`, `Reversal`, `Chargeback`, `MerchantRefund`, `InternalTransfer`, `LoanTransaction`, `LoanDisbursement`, `LoanRepayment`, `InterestCapitalisation` |
 | Cards | `IssuedCard`, `CardControl` |
 | Cases | `Case`, `CaseNote`, `CaseEvidence`, `CustomerCase`, `ServiceRequest`, `Dispute`, `Complaint`, `RiskCase`, `FraudAlert`, `ComplianceInvestigation`, `CollectionsCase`, `PromiseToPay` |
 | Communications | `Statement`, `Notice` |
@@ -337,15 +356,15 @@ The flowcharts show what an operation checks. These diagrams show what can happe
 
 `banking_system.py` is organised in 16 numbered parts (model, service, demo, tests, diagram, command line), each with a header comment. Every class and every public operation has a docstring that states the rule it enforces.
 
-`Bank` exposes 97 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`. The brief says trivial operations do not count, so they are classified honestly:
+`Bank` exposes 98 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`. The brief says trivial operations do not count, so they are classified honestly:
 
 | Kind | Count | Operations |
 |---|---|---|
-| Commands (create, update, assign, approve, cancel, transfer, close, retire, archive, delete, status change) | 79 | every operation in the table below except those in the next two rows |
+| Commands (create, update, assign, approve, cancel, transfer, close, retire, archive, delete, status change) | 80 | every operation in the table below except those in the next two rows |
 | Batch processes run by the simulated clock | 6 | `advance_to`, `run_standing_orders`, `run_arrears_check`, `charge_monthly_fees`, `credit_savings_interest`, `run_term_deposit_maturity` |
 | Views, historical queries and reports | 12 | `authority_on`, `capacities_of`, `transaction_story`, `daily_report`, `trial_balance`, `relationship_history`, `party_snapshot`, `approvals_and_authority_audit`, `search_transactions`, `retention_until`, `active_customers`, `active_arrangements` |
 
-Even counting only the 79 commands, the model is more than twice the brief's minimum of 30. The brief's verbs are all present: create (`register_person`, `open_deposit_account`), view (the query row), update (`amend_beneficiary`, `correct_party_detail`), delete (`delete_beneficiary`, `request_deletion`), assign (`assign_case`, `assign_relationship_manager`), cancel (`cancel_pending_payment`, `cancel_standing_order`), transfer (`transfer_between_accounts`, `close_branch`), approve (`decide_application`, `authorise_payment`), retire (`withdraw_from_sale`, `deactivate_biller`), archive (`archive_record`) and status management (`report_card`, `impose_restriction`).
+Even counting only the 80 commands, the model is more than twice the brief's minimum of 30. The brief's verbs are all present: create (`register_person`, `open_deposit_account`), view (the query row), update (`amend_beneficiary`, `correct_party_detail`), delete (`delete_beneficiary`, `request_deletion`), assign (`assign_case`, `assign_relationship_manager`), cancel (`cancel_pending_payment`, `cancel_standing_order`), transfer (`transfer_between_accounts`, `close_branch`), approve (`decide_application`, `authorise_payment`), retire (`withdraw_from_sale`, `deactivate_biller`), archive (`archive_record`) and status management (`report_card`, `impose_restriction`).
 
 | Group | Operations |
 |---|---|
@@ -354,7 +373,7 @@ Even counting only the 79 commands, the model is more than twice the brief's min
 | Products | `define_product`, `revise_product_terms`, `withdraw_from_sale`, `migrate_terms` |
 | Accounts, deposits and cash | `open_deposit_account`, `close_account`, `deposit_cash`, `withdraw_cash`, `transfer_between_accounts`, `break_term_deposit`, `run_term_deposit_maturity`, `charge_fee`, `charge_monthly_fees`, `credit_savings_interest`, `generate_statement` |
 | Payments | `add_beneficiary`, `amend_beneficiary`, `deactivate_beneficiary`, `delete_beneficiary`, `initiate_transfer`, `authorise_payment`, `cancel_pending_payment`, `release_transaction`, `reject_held_transaction`, `reverse_transaction`, `repost_card_payment`, `create_standing_order`, `cancel_standing_order`, `run_standing_orders`, `register_biller`, `deactivate_biller`, `pay_bill` |
-| Cards | `issue_card`, `record_merchant`, `card_purchase`, `report_card`, `replace_card`, `record_card_found`, `reactivate_card`, `change_card_limit`, `add_card_control`, `remove_card_control` |
+| Cards | `issue_card`, `record_merchant`, `card_purchase`, `merchant_refund`, `report_card`, `replace_card`, `record_card_found`, `reactivate_card`, `change_card_limit`, `add_card_control`, `remove_card_control` |
 | Financing and collections | `submit_financing_application`, `attach_application_document`, `decide_application`, `satisfy_condition`, `disburse_financing`, `repay_financing`, `run_arrears_check`, `restructure_financing`, `settle_financing`, `record_collections_contact` |
 | Cases | `raise_service_request`, `raise_fraud_alert`, `open_investigation`, `assign_case`, `add_evidence`, `impose_restriction`, `lift_restriction`, `log_complaint`, `open_dispute`, `resolve_dispute`, `close_case` |
 | Retention | `archive_record`, `request_deletion`, `retention_until`, `active_customers`, `active_arrangements` |
@@ -364,7 +383,7 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 70 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), six abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, and a merchant is a counterparty linked to every card payment made there) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
+**Automated tests.** 73 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
@@ -378,7 +397,9 @@ Two conventions worth defending: payments that break a rule return a transaction
 
 **BankTransaction -> LoanTransaction -> LoanDisbursement / LoanRepayment / InterestCapitalisation (multi-level).** All three belong to a financing agreement and move the bank's loans-receivable balance. A disbursement carries its approval, a repayment its installment allocations, and a capitalisation records overdue interest added to principal on restructuring (no customer cash moves, but the books must change).
 
-**BankTransaction -> CashTransaction / FeeCharge / InterestCredit / Reversal / InternalTransfer.** These are transactions (they post and have statuses) but share nothing further with each other. A reversal is a transaction in its own right, not a flag on the original. `InternalTransfer` is a bank-initiated movement no customer instructed (vault cash on branch closure, term-deposit payout).
+**BankTransaction -> CashTransaction / FeeCharge / InterestCredit / Reversal / MerchantRefund / InternalTransfer.** These are transactions (they post and have statuses) but share nothing further with each other. A reversal is a transaction in its own right, not a flag on the original. A merchant refund is money the merchant sends back through the card scheme; it points to the purchase and its merchant. `InternalTransfer` is a bank-initiated movement no customer instructed (vault cash on branch closure, term-deposit payout).
+
+**BankTransaction -> Reversal -> Chargeback (multi-level).** Everything a reversal has, a chargeback has too: an original transaction, counter-entries that mirror it, a staff approval, the rule that it cannot itself be reversed, and the effect of marking the original (partially) reversed. So `Chargeback` inherits all of it, and `Bank._counter_post` is shared by both. What a chargeback adds is only true at that level: it exists only for a *card* payment, only because a `Dispute` was upheld, it is claimed from a specific `Merchant` through the card scheme, and it carries the scheme reason code. `resolve_dispute` therefore posts a `Chargeback` for a card payment and a plain `Reversal` for any other customer payment. The level was found by research (source 5), not by looking for shared fields.
 
 **Case -> CustomerCase -> ServiceRequest / Dispute / Complaint; Case -> RiskCase -> FraudAlert / ComplianceInvestigation (multi-level); Case -> CollectionsCase.** All cases have a subject, status history, assignments, notes, evidence and links. Customer cases arrive through a service channel from a contact person. Risk cases are bank-initiated, carry a risk level and the restrictions they imposed, and override `close()` so they cannot close while those restrictions are in force. This split lets the scenario keep the branch complaint and the compliance investigation as separate, linked records.
 
@@ -421,14 +442,33 @@ Each class with a status declares its lifecycle once, as a `LIFECYCLE` class con
 10. **`SoleTrader(Organization)`.** A sole trader has no separate legal personality, so this would misrepresent liability and KYC (A5).
 11. **`Biller(Organization)` or `Merchant(Party)`.** Billers and merchants are counterparties, not customers: the bank holds no KYC, mandates or relationship for them. Making them parties would pull in documents, checks and restrictions that never apply. `Biller` and `Merchant` are small standalone classes. A shared `Counterparty` superclass for the two was also rejected: they share only a name, and their rules differ (a biller has a collection arrangement and can be deactivated; a merchant is recorded as the card network presents it, with the category and country that card controls check).
 12. **Card controls as extra card statuses (`BLOCKED_ONLINE`, ...).** A card can have several controls at once, each switched on and off at different times, and a control is not the card's lifecycle state. Separate `CardControl` objects with periods keep the status meaningful and the control history answerable.
+13. **`MerchantRefund(Reversal)`.** A refund also gives money back and points to the original purchase, so it looks like a reversal. But the merchant starts it, no bank employee approves it, and the purchase is *not* undone: it stays `POSTED`, and only the amount the customer can still dispute goes down. Inheriting from `Reversal` would give it an approval it does not have and would mark the purchase reversed. It is a sibling under `BankTransaction`. `Chargeback` passed the same test that `MerchantRefund` failed.
+14. **`Chargeback` as a flag or a `reason` field on `Reversal`.** A chargeback needs a dispute, a merchant and a reason code that an ordinary reversal must not have. As optional fields on `Reversal`, every reversal would carry three empty attributes and no rule could insist they are filled. A subclass makes them mandatory exactly where they apply.
 
-**Why this design beats the obvious alternative.** The obvious model is "everything is an account" with a customer class holding flags (`is_director`, `card_number`, `interest_rate`, `is_blocked`). It fails every critical case in the brief: changing a flag destroys the fact that it was once different, one card number cannot represent a replacement chain, and one rate cannot represent a customer pinned to old terms. The chosen design keeps inheritance only where behaviour genuinely differs and uses dated composition everywhere else, so every historical question stays answerable.
+### 7.1 Why this design is better than a plausible alternative
+
+The most plausible alternative, and the one most legacy systems resemble, is an **account-centric model**: a `Customer` class with personal details and flags (`is_director`, `is_signatory`, `is_blocked`), an `Account` class with a `type` field for current, savings, loan and card, and transactions that are edited or deleted when they are corrected. It is simpler and would satisfy the minimum class count. The table tests both designs against the brief's critical cases.
+
+| Critical case in the brief | Account-centric alternative | This design |
+|---|---|---|
+| A person is a customer and represents several organisations | Duplicate customer rows, or one row with flags that cannot say *which* organisation | One `Person` with several dated role objects |
+| Posted, reversed, re-posted, disputed | The amount is edited; the original posting is lost | `Reversal`, a linked re-post and a `Chargeback`, each a separate record |
+| Product withdrawn but valid for existing customers | A single `is_active` flag either blocks existing accounts or keeps selling | Sale status on `ProductDefinition`; arrangements pin their terms version |
+| Signing authority lost; history must still show it | `is_signatory = False` erases the past | `Mandate` with a `Period`; payments store the mandate used |
+| Restricted, then cleared | `is_blocked` toggled; no record of when or why | `Restriction` objects with periods and a `RiskCase` |
+| Card replaced several times | One `card_number` field overwritten | `IssuedCard` chain; each payment keeps its card |
+| Loan restructured after payments | Installments rewritten in place | Schedule versions; paid installments stay `PAID` |
+| Beneficiary details change | Old transfers now show the new details | `BeneficiaryVersion` snapshot on each transfer |
+| Branch closes | Accounts re-pointed; the original branch is lost | `opened_at_branch` fixed; servicing branch history |
+| Case evidence later corrected | Evidence reads the corrected value | Frozen `CaseEvidence` snapshot and `Correction` records |
+
+The alternative fails all ten. The cost of this design is more classes and the discipline of never updating in place. That is the right trade for a bank, where "what did we know, and who was allowed to do it, on that date?" is a routine question from auditors, regulators and courts. The design also uses inheritance *less* than the alternative's `type` field invites: only where behaviour really differs by level (the four hierarchies of section 6), with dated composition everywhere else.
 
 ---
 
 ## 8. Seeded demonstration
 
-`run_demo()` creates one bank with three branches, ten staff (including a collections officer and an auditor), eight products, twenty people (ten of them staff), a sole trader, a high-value customer, one company, one charity, eight deposit accounts (including two term deposits), five cards, two billers, beneficiaries, a standing order and a financing facility. It then runs a simulated calendar from January 2026 to August 2027; the daily batch runs standing orders, arrears checks, promise-to-pay checks, term-deposit maturities, month-end fees and savings interest automatically. The full output is in `docs/demo_output.txt`: 108 transactions, 10 cases, 284 audit events, 27 refused actions, each naming the rule, and a zero trial balance.
+`run_demo()` creates one bank with three branches, ten staff (including a collections officer and an auditor), eight products, twenty people (ten of them staff), a sole trader, a high-value customer, one company, one charity, eight deposit accounts (including two term deposits), five cards, two billers, beneficiaries, a standing order and a financing facility. It then runs a simulated calendar from January 2026 to August 2027; the daily batch runs standing orders, arrears checks, promise-to-pay checks, term-deposit maturities, month-end fees and savings interest automatically. The full output is in `docs/demo_output.txt`: 109 transactions, 10 cases, 294 audit events, 28 refused actions, each naming the rule, and a zero trial balance.
 
 The seeded company matches the brief's scenario: two directors (Ayesha, Bilal), one beneficial owner (Sara, 40%; Ayesha's 10% is recorded but below the 25% threshold), and three employees with different powers (Hamza pays with dual control above PKR 1m, Noor may only view, Usman may use a card). Ayesha and Bilal already bank personally.
 
@@ -443,7 +483,7 @@ The run leaves three items of live work at the end: a PKR 1,200,000 transfer wai
 | 1 | Business onboarding | A director's CNIC expires between verification and onboarding; a charity has too few trustees | Customer is personal and a representative of several organisations |
 | 2 | Large transfer | Needs a second signatory (initiator and view-only user refused); held for review; a teller cannot release it; customer complains at the branch while compliance investigates separately; released | Temporary hold, separate cases |
 | 3 | Card lifecycle | Card stolen, replaced with a lower limit, thief declined, card found and destroyed, second replacement | Card replaced multiple times |
-| 4 | Card correction and dispute | Posted, reversed, re-posted at a new amount, disputed, partially refunded; a second dispute and a second resolution are refused | Posted, reversed, re-posted, disputed |
+| 4 | Card correction and dispute | Posted, reversed, re-posted at a new amount, disputed ("not as described"), partially upheld as a `Chargeback` claimed from the merchant; a second dispute and a second resolution are refused | Posted, reversed, re-posted, disputed |
 | 5 | Customer restriction | Debit block stops a transfer and the standing order; the director's personal account is unaffected; the case cannot close until the block is lifted | Temporarily restricted then cleared |
 | 6 | Financing | Unauthorised applicant blocked; credit officer's delegated limit forces an 8m request to be declined; disbursement blocked by conditions; an overpayment is refused without changing anything; missed installment opens a collections case, worked by the collections officer (a teller is refused); the customer's promise to pay is broken; restructure; approver promoted; early settlement; restructuring the settled loan refused | Restructured after installments paid |
 | 7 | Director leaves | Old transfer still proves valid authority on its date; new attempt fails; standing order continues; the "time machine" rebuilds the company as at 11 Apr 2026 | Person loses signing authority |
@@ -454,7 +494,7 @@ The run leaves three items of live work at the end: a PKR 1,200,000 transfer wai
 | 12 | Savings rules | Third monthly withdrawal refused; closure refused with a balance (including month-end interest); closed later with entries retained | Deletion vs closure |
 | 13 | People leave | A relationship manager cannot resign until customers are handed over; old KYC checks still name him; a customer with an open account cannot leave; one with no products can | Record retention when customers and employees change |
 | 14 | Sole trader, high-value customer, term deposits | Sole trader refused without a trading name; high-value customer refused until source of wealth is verified; withdrawal and top-up of a term deposit refused; one deposit broken early with a penalty, the other paid out at maturity | Customer types in the brief's background; savings vs investment facilities |
-| 15 | Card controls, bills, card search | Online and gambling controls decline purchases; someone other than the cardholder cannot lift a control; control history shows what was in force on each date; view-only user refused a bill payment; large tax bill waits for a second signatory; one search finds payments on all three cards in the chain | Card controls; billers; card replaced multiple times, old transactions searchable |
+| 15 | Card controls, merchant refund, bills, card search | Online and gambling controls decline purchases; someone other than the cardholder cannot lift a control; control history shows what was in force on each date; a merchant refunds a returned part (the purchase stays posted) so disputing the full amount is refused; view-only user refused a bill payment; large tax bill waits for a second signatory; one search finds payments on all three cards in the chain | Card controls; billers; card replaced multiple times, old transactions searchable |
 | 16 | Audit and retention | A teller cannot run the audit; the auditor lists every 2026 approval with the role held then and every authority change; deleting a closed account is refused with its retention date; finished records are archived, not deleted; only a never-used payee can be deleted | Audit of approvals and authority changes; what deletion means |
 
 All ten critical cases listed in the brief for Problem 4 are covered, and scenarios 14 to 16 cover the remaining participants and scope items (section 3.2). The run ends with a statement, an end-of-day audit report ("what changed, who, why") and a zero trial balance.
@@ -463,7 +503,7 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 
 ## 10. Limitations and scaling
 
-**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Merchants are recorded on the payment rather than modelled as counterparties. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. In-memory storage only, with reference numbers held in a module-level counter. No concurrency or rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no login: each operation is told who is acting, and the model then checks that person's authority.
+**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. In-memory storage only, with reference numbers held in a module-level counter. No concurrency or rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no login: each operation is told who is acting, and the model then checks that person's authority.
 
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 
@@ -484,14 +524,29 @@ The brief assesses classes and inheritance, so the interface was built to make t
 | `BankingApp` | `tk.Tk` | Window, sidebar, top bar (business date, books status, advance day or month, reset), outcome banner |
 | `Page` | `ttk.Frame` | A screen with a title, `build()` and `refresh()` |
 | `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
-| `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
-| `DashboardPage`, `OperationsPage`, `BooksPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
+| `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CounterpartiesPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
+| `DashboardPage`, `OperationsPage`, `BooksPage`, `ReportsPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
 | `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Reusable table, rich text pane and scrolling area |
 | `Panel`, `StatCard` | `tk.Frame` | Reusable card widgets |
 | `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
 | `BankController`, `CurrentBank`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a stand-in that always forwards to the current bank (so "Reset data" reaches every form); a result in words; a form definition; colours, fonts and styles |
 
-**What it covers.** 12 screens in two clearly separated sidebar sections. **Bank** (10 screens) is what the bank's staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids that a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 31 forms in seven groups (Customers 9, Payments 7, Cards 6, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. (An earlier version also displayed the diagram images; it was removed because a bank console should not show design documents and because it only worked when the `docs/` folder was present. The diagrams are in this report.) `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
+**What it covers.** 14 screens in two clearly separated sidebar sections. **Bank** (12 screens) is what the bank's staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids that a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 80 forms in ten groups, enough to run every workflow of the brief's operational scenario by hand, and 14 guided rule checks:
+
+| Group | Forms | What can be done |
+|---|---|---|
+| Customers | 15 | Register people, companies and charities; file and verify documents; directors, trustees and beneficial owners; onboard; open accounts; grant and revoke mandates; correct details; assign an RM; end a relationship |
+| Accounts | 6 | Open and break term deposits; close accounts; fees; statements; move to the latest terms |
+| Payments | 15 | Payees and their versions; transfers, bills, own-account transfers; authorise, cancel, release, reject; reversals; standing orders; billers |
+| Cash | 2 | Deposits and withdrawals at the counter |
+| Cards | 12 | Issue, use, report, replace, find, reactivate; limits and controls; merchants, merchant refunds and corrected re-postings |
+| Cases & compliance | 11 | Restrictions; disputes with reason codes and their resolution (chargeback or reversal); complaints; service requests; alerts; investigations; evidence snapshots; assigning and closing cases |
+| Lending | 9 | Apply, decide with conditions (within delegated limits), attach documents, satisfy conditions, disburse, repay, restructure, settle, record collections contacts |
+| Organisation | 5 | Open and close branches; hire, change role and record exits |
+| Products | 3 | Define products, publish new terms, withdraw from sale |
+| Records | 2 | Archive; request deletion (always refused, with the retention date) |
+
+Two new bank screens answer the brief's remaining scope items. **Counterparties** lists merchants, billers and payees with every payment made to or from them (a merchant's page shows each card used and any refund or chargeback). **Reports** answers historical questions directly: which mandates a person held for an organisation on a past date, the auditors' approvals-and-authority report (refused for a teller, and itself logged) and everything that happened on a given day. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. (An earlier version also displayed the diagram images; it was removed because a bank console should not show design documents and because it only worked when the `docs/` folder was present. The diagrams are in this report.) `tools/gui_smoke_test.py` drives every guided check, all 80 forms, three stories typed into the forms (onboarding a new customer; the whole financing lifecycle from application to early settlement; a card purchase, merchant refund, dispute and chargeback) and every report, without a person at the keyboard. It fails if anything crashes, an outcome is not the expected one, or the books stop balancing. It runs on GitHub for every push.
 
 `MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
 
@@ -519,6 +574,14 @@ The brief assesses classes and inheritance, so the interface was built to make t
 
 ![Class model](screenshots/gui_06_class_model.png)
 
-**Figure 15. Onboarding forms:** each form lists the permitted staff first and calls one `Bank` operation.
+**Figure 15. Operation forms:** 80 forms in ten groups; each lists the permitted staff first and calls one `Bank` operation.
 
 ![Onboarding form](screenshots/gui_07_onboarding_form.png)
+
+**Figure 16. Reports:** what Bilal could do for Ravi Textiles on 11 April 2026, while he was still a director. The same question for August 2027 answers "no mandate in force".
+
+![Reports](screenshots/gui_08_reports.png)
+
+**Figure 17. Counterparties:** a merchant is a standalone counterparty, not a `Party`; its page shows the card used and the merchant refund on its payment.
+
+![Counterparties](screenshots/gui_09_counterparties.png)

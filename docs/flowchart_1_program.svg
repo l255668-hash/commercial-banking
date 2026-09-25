@@ -31,7 +31,7 @@
 <polygon points="185,386 316,436 185,486 54,436" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
 <text x="185" y="440" text-anchor="middle" font-size="11.5" fill="#1D2B2A">--test ?</text>
 <rect x="350" y="405" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="405" x2="362" y2="467" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="405" x2="588" y2="467" stroke="#0B4F4A" stroke-width="1.5"/>
-<text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Run the 70 unittest tests (a</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">fresh small bank per test)</text>
+<text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Run the 73 unittest tests (a</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">fresh small bank per test)</text>
 <polygon points="656,407 890,407 874,465 640,465" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
 <text x="765" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print test results (OK /</text><text x="765" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">FAILED)</text>
 <polygon points="185,522 316,572 185,622 54,572" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
@@ -39,7 +39,7 @@
 <rect x="355" y="541" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
 <text x="475" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Walk the domain classes:</text><text x="475" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">inheritance tree, class and</text><text x="475" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">operation counts</text>
 <polygon points="656,543 890,543 874,601 640,601" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
-<text x="765" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print tree: 69 business + 6</text><text x="765" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">supporting classes, 97</text><text x="765" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">operations</text>
+<text x="765" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Print tree: 71 business + 6</text><text x="765" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">supporting classes, 98</text><text x="765" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">operations</text>
 <polygon points="185,658 316,708 185,758 54,708" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>
 <text x="185" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">--diagram DIR ?</text>
 <rect x="355" y="677" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>

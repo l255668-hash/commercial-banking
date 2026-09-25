@@ -62,7 +62,7 @@ SCENARIO 3: Card stolen, replaced twice with different limits, old card found
   CARD-004 4213 **** **** 5676 (Hamza Sheikh) status=ACTIVE limit=PKR 200,000.00 payments=[]
 
 ==============================================================================
-SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial refund
+SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial chargeback
 ==============================================================================
   [BLOCKED] Open a second dispute on the same payment
             -> InvalidStateError: CRD-TX-006 already has an open dispute
@@ -74,15 +74,16 @@ SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial r
     authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD up to unlimited, valid 2026-02-13 -> open
     card used: CARD-002 4213 **** **** 7838 (Usman Ali)
     superseded by CRD-TX-006
-    reversal REV-001 PKR 120,000.00: APR-001: REVERSE by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-03-21
+    reversal REV-001 PKR 120,000.00: APR-001: REVERSAL by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-03-21
   CRD-TX-006 CardPayment PKR 105,000.00 [PARTIALLY_REVERSED] card purchase at Packages Mall Electronics
     status trail: INITIATED(2026-03-20) > POSTED(2026-03-21) > PARTIALLY_REVERSED(2026-04-09)
     initiated by Usman Ali via CARD
     authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD up to unlimited, valid 2026-02-13 -> open
     card used: CARD-002 4213 **** **** 7838 (Usman Ali)
     corrects CRD-TX-005
-    reversal REV-002 PKR 40,000.00: APR-002: REVERSE by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-04-09
+    chargeback CHB-001 PKR 40,000.00: APR-002: CHARGEBACK by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-04-09
     dispute DSP-001: PARTIALLY_UPHELD
+  CHB-001 is a Chargeback (a kind of Reversal): claimed from Packages Mall Electronics via the card scheme, reason code NOT_AS_DESCRIBED
 
 ==============================================================================
 SCENARIO 5: Customer restricted then cleared; standing order fails in between
@@ -242,12 +243,16 @@ SCENARIO 14: Sole trader and high-value customer; fixed-term deposits
   FTD-001 matured 2027-08-08: interest PKR 575,000.00 and principal paid to CUR-005; deposit CLOSED, 2 ledger entries retained
 
 ==============================================================================
-SCENARIO 15: Card controls, bill payments under dual control, searchable card history
+SCENARIO 15: Card controls, merchant refund, bill payments under dual control, card history
 ==============================================================================
   [BLOCKED] Noor (not the cardholder) switches off Hamza's online block
             -> AuthorityError: only the cardholder or card operations may change card controls
   Online purchase while blocked: CRD-TX-007 PKR 12,000.00 [DECLINED]  -> card control CTL-001 block ONLINE (2027-08-10 -> open)
   In-store purchase: CRD-TX-008 PKR 9,500.00 [POSTED]
+  Imtiaz Auto Parts refunds a returned part (a new credit, not a reversal): MRF-001 PKR 3,500.00 [POSTED]
+  The purchase CRD-TX-008 stays POSTED; still disputable: PKR 6,000.00
+  [BLOCKED] Dispute the full 9,500 after the refund
+            -> BankingError: disputed amount must be between 0 and PKR 6,000.00
   Online purchase after Hamza lifts his block: CRD-TX-009 PKR 12,000.00 [POSTED]
   Online betting site (category still blocked by card operations): CRD-TX-010 PKR 5,000.00 [DECLINED]  -> card control CTL-002 block MERCHANT_CATEGORY=GAMBLING (2027-08-10 -> open)
   Was online use blocked on 10 Aug? True | today? False
@@ -288,7 +293,7 @@ OPEN ITEMS: work still waiting at the end of the simulation
 ==============================================================================
   Waiting for a second signatory: TRF-026 PKR 1,200,000.00 [AWAITING_AUTHORISATION]
   Held for compliance review: TRF-027 PKR 1,100,000.00 [HELD_FOR_REVIEW]
-  Open dispute DSP-002 on CRD-TX-011; Ravi available balance PKR 5,220,164.65
+  Open dispute DSP-002 on CRD-TX-011; Ravi available balance PKR 5,223,664.65
 
 ==============================================================================
 REPORTS
@@ -316,7 +321,7 @@ REPORTS
   
   Trial balance (double-entry check; credits +, debits -):
   CUR-001            135,000.00  CUR-001 Classic Current (legacy) (Ayesha Khan)
-  CUR-002          6,320,164.65  CUR-002 Business Current (Ravi Textiles (Pvt) Ltd)
+  CUR-002          6,323,664.65  CUR-002 Business Current (Ravi Textiles (Pvt) Ltd)
   SAV-001                  0.00  SAV-001 Business Savings (Ravi Textiles (Pvt) Ltd)
   CUR-003             70,000.00  CUR-003 Personal Current (Bilal Ahmed)
   CUR-004            277,100.00  CUR-004 Business Current (Imtiaz Ahmed)
@@ -325,7 +330,7 @@ REPORTS
   FTD-002                  0.00  FTD-002 6-Month Term Deposit (Zara Hussain)
   1100                     0.00  1100 Loans receivable
   2100             5,100,000.00  2100 Outgoing payments clearing
-  2200               180,000.00  2200 Card scheme settlement
+  2200               176,500.00  2200 Card scheme settlement
   2300             1,268,400.00  2300 Biller settlement
   4000                25,500.00  4000 Fee income
   4100               138,835.35  4100 Financing interest income
@@ -335,4 +340,4 @@ REPORTS
   1000-LHR-02              0.00  1000-LHR-02 Vault cash LHR-02
   TOTAL                    0.00  <- must be zero
   
-  Totals: 108 transactions, 10 cases, 5 notices, 293 audit events. Nothing was deleted.
+  Totals: 109 transactions, 10 cases, 5 notices, 294 audit events. Nothing was deleted.

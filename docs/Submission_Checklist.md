@@ -22,9 +22,9 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 70 tests ... OK
+python banking_system.py --test       # expect: Ran 73 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
-python banking_system.py --classes    # expect: 75 domain classes (69 business + 6 supporting), 7 error classes, 97 Bank operations
+python banking_system.py --classes    # expect: 77 domain classes (71 business + 6 supporting), 7 error classes, 98 Bank operations
 python banking_gui.py                 # the desktop console opens (Linux: sudo apt install python3-tk)
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)
 ```
@@ -37,8 +37,10 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 - [ ] Be able to explain, line by line: `Arrangement`, `DepositAccount`, `SavingsAccount.check_debit`, `Bank.initiate_transfer`, `Bank.reverse_transaction`, `Bank.repay_financing`.
 - [ ] Rehearse the slides once (speaker notes are in the deck).
 - [ ] Be able to explain the abstract classes (`python banking_system.py --classes` marks them) and walk through State machine 1: which statuses `BankTransaction`, `CustomerPayment` and `TransferPayment` each added.
+- [ ] Be able to explain the difference between a reversal, a merchant refund and a chargeback, and why only the chargeback is a subclass of `Reversal` (report sections 1, 6 and 7).
+- [ ] Be able to defend the design against the account-centric alternative (report section 7.1, slide 10).
 - [ ] Be able to walk through Flowchart 3 (transfer payment) and Flowchart 2 (onboarding) decision by decision, and say which method each diamond comes from. Know the six symbols.
-- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Class model (in the Teaching & simulation section) shows the inheritance tree live.
+- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. Also show Reports (Bilal's authority on 11 Apr 2026 vs Aug 2027) and Counterparties (a merchant's refund and chargeback). If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Class model (in the Teaching & simulation section) shows the inheritance tree live.
 - [ ] If your course requires the single code file only, submit `banking_system.py`; `banking_gui.py` is an optional extra that needs it.
 
 ## What is in the folder
@@ -53,7 +55,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 | `docs/demo_output.txt` | Captured output of the 16 scenarios |
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
-| `docs/Viva_Presentation.pptx` | 15-slide deck for the viva, with speaker notes |
+| `docs/Viva_Presentation.pptx` | 16-slide deck for the viva, with speaker notes |
 | `docs/Submission_Checklist.md` | This list |
 | `docs/screenshots/` | GUI screenshots used in report section 11 |
 | `tools/` | Optional build scripts that regenerate the flowcharts, PNGs, PDF, Word file, deck and screenshots, plus the GUI smoke test (see `tools/README.md`) |

@@ -12,7 +12,7 @@ An optional desktop GUI, `banking_gui.py`, is a separate file that uses the mode
 
 ```
 python banking_system.py              # run the seeded demonstration (16 scenarios)
-python banking_system.py --test       # run the 70 automated tests
+python banking_system.py --test       # run the 73 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 python banking_gui.py                 # open the desktop operations console (GUI)
@@ -35,7 +35,7 @@ docs/
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
-  Viva_Presentation.pptx       15-slide viva deck with speaker notes
+  Viva_Presentation.pptx       16-slide viva deck with speaker notes
   Submission_Checklist.md      what to check and fill in before handing in
   screenshots/gui_*.png        screenshots of the desktop GUI
 .github/workflows/tests.yml    CI: tests on Python 3.9 / 3.11 / 3.13, GUI smoke test, diagrams up to date
@@ -83,9 +83,9 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | 9 | Issued cards with a replacement chain |
 | 10 | Cases: `Case -> CustomerCase -> Dispute / Complaint / ServiceRequest`, `Case -> RiskCase -> FraudAlert / ComplianceInvestigation` |
 | 11 | Statements and notices |
-| 12 | `Bank`: 97 operations (79 state-changing commands), each checking its rules and writing an audit event |
+| 12 | `Bank`: 98 operations (80 state-changing commands), each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
-| 14 | 70 automated tests (including abstraction and lifecycle tests) |
+| 14 | 73 automated tests (including abstraction, lifecycle, refund and chargeback tests) |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## The desktop GUI (`banking_gui.py`)
@@ -95,14 +95,16 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | Screen | What it shows |
 |---|---|
 | Overview | Customers, deposits, lending, open cases, payments waiting for a second signatory or held for review (authorise or release them here), recent audit events, and whether the books balance |
-| Operations | 31 operation forms in seven groups (customers and onboarding, payments, cash, cards and merchants, compliance, lending, records) and 14 guided rule checks, each running one real operation and showing the model's answer |
+| Operations | 80 operation forms in ten groups (customers, accounts, payments, cash, cards and merchants, cases and compliance, lending, organisation, products, records), enough to run every workflow in the brief by hand, and 14 guided rule checks, each running one real operation and showing the model's answer |
 | Customers | Every party with its class path, KYC, capacities, a timeline of dated roles (offices, ownerships, mandates, branch and RM history, restrictions), and a time machine for any past date |
 | Accounts | Each arrangement with its pinned terms, branch history, balances, ledger with running balance, term-deposit maturity, and every financing schedule version |
 | Transactions | Filter by class (including parent classes such as `CustomerPayment`), status or text; each record's story, beneficiary as sent vs today, and its double-entry legs |
 | Cards | Replacement chains, controls with their periods, and every payment across the chain |
+| Counterparties | Merchants, billers and payees (external parties, not customers) with every payment made to or from them, including merchant refunds and chargebacks |
 | Cases | Customer, risk and collections cases, with evidence snapshots compared against the corrected record |
 | Staff / Products & branches | Role history and every approval with the role held then; products with terms versions and holders; branches and their history |
 | Books & audit | Trial balance on any date (always zero) and a searchable audit log |
+| Reports | Who held which mandate on a past date; the auditors' approvals-and-authority report (refused for a teller, itself logged); everything that happened on a given day |
 | Class model *(teaching section)* | The inheritance tree read from the code (abstract classes marked), what each level adds, each class's lifecycle, and live object counts |
 | Scenario log *(teaching section)* | The 16 seeded scenarios with refusals highlighted |
 
@@ -116,9 +118,9 @@ The GUI never edits an object directly: every button calls one `Bank` operation,
 | Assumptions | Report section 2 (A1 to A36) |
 | Requirements interpretation | Report section 3 |
 | Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams |
-| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 75 classes (69 business + 6 supporting), 97 operations; report section 5 |
+| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 77 classes (71 business + 6 supporting), 98 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
-| At least three rejected inheritances | Report section 7 (twelve given) |
+| At least three rejected inheritances | Report section 7 (fourteen given) and 7.1 (comparison with a plausible alternative design) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |
 | At least five complex scenarios | 16 scenarios, report section 9 |
 | Limitations and scaling | Report section 10 |

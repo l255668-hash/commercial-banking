@@ -50,14 +50,14 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "The project at a glance", "One Python file, standard library only - banking_system.py");
-const stats = [["69", "business classes (+6 supporting)"], ["97", "Bank operations (79 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["70", "automated tests"], ["0.00", "trial balance total"]];
+const stats = [["71", "business classes (+6 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["73", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
   s.addText(n, { x, y: y + 0.15, w: 2.85, h: 0.85, fontFace: HEAD, fontSize: 40, bold: true, color: TEAL, align: "center", margin: 0, isTextBox: true });
   s.addText(label, { x: x + 0.1, y: y + 1.0, w: 2.65, h: 0.5, fontFace: BODY, fontSize: 13, color: GREY, align: "center", margin: 0, isTextBox: true });
 });
-s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 69 business classes and the 79 state-changing commands we are more than double. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
+s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 71 business classes and the 80 state-changing commands we are more than double. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
 
 // 3. Core rule ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -94,10 +94,11 @@ hier.forEach(([t, img, pts, note]) => {
 });
 
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "BankTransaction -> CustomerPayment / LoanTransaction", "Every movement is double-entry; post() refuses legs that do not sum to zero");
+title(s, "BankTransaction -> CustomerPayment / LoanTransaction / Reversal", "Every movement is double-entry; post() refuses legs that do not sum to zero");
 fitImage(s, "uml_transactions.png", 0.4, 1.35, 9.2, 2.6);
-bullets(s, ["CustomerPayment adds initiator, channel, mandate used, 2nd signatory, disputes", "Transfer snapshots the beneficiary version; Card the exact card; Bill the biller; OwnAccount the target", "LoanTransaction groups disbursement, repayment and interest capitalisation"], 0.5, 4.05, 9, 1.3, 12.5);
-s.addNotes("Only customer payments can be disputed, which is why that level exists. A reversal is a transaction of its own, pointing at the original.");
+bullets(s, ["CustomerPayment adds initiator, channel, mandate used, 2nd signatory, disputes; Transfer, Card, Bill, OwnAccount add their own facts", "LoanTransaction groups disbursement, repayment and interest capitalisation",
+  "Reversal -> Chargeback: a card reversal claimed from the merchant with a scheme reason code; a MerchantRefund is NOT a reversal"], 0.5, 4.05, 9, 1.3, 12.5);
+s.addNotes("Only customer payments can be disputed, which is why that level exists. A reversal is a transaction of its own, pointing at the original. Research on card schemes showed three different things: the bank's reversal, the merchant's refund and the chargeback. A chargeback has everything a reversal has plus a dispute, a merchant and a reason code, so it is a subclass; a refund is started by the merchant with no bank approval and leaves the purchase posted, so it is not.");
 
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Case -> CustomerCase / RiskCase", "Separate, linked records: the branch complaint and the compliance investigation");
@@ -119,11 +120,11 @@ s.addNotes("Colours on the state diagram show which class introduced each status
 
 // 8. Rejected ------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Tempting inheritances we rejected", "Ten in the report; four of the strongest");
+title(s, "Tempting inheritances we rejected", "Fourteen in the report; four of the strongest");
 const rej = [["Customer(Person)", "One human is customer, director and signatory at once; roles start and end on different dates."],
   ["IssuedCard(DepositAccount)", "A card holds no money and many cards share one account: it is a credential."],
   ["FinancingAgreement(DepositAccount)", "A loan has no ledger of customer funds, holds or available balance."],
-  ["reversed = True flag", "A reversal has its own date, amount, approver and reason, and can be partial."]];
+  ["MerchantRefund(Reversal)", "The merchant starts it, no bank approval, and the purchase stays POSTED: not an undo."]];
 rej.forEach(([h, t], i) => {
   const x = 0.5 + (i % 2) * 4.6, y = 1.45 + Math.floor(i / 2) * 1.95;
   card(s, x, y, 4.4, 1.75);
@@ -132,6 +133,22 @@ rej.forEach(([h, t], i) => {
   s.addText(t, { x: x + 0.8, y: y + 0.7, w: 3.45, h: 0.95, fontFace: BODY, fontSize: 12.5, color: INK, margin: 0, valign: "top", isTextBox: true });
 });
 s.addNotes("The obvious alternative, 'everything is an account with flags', fails every critical case: a flag change destroys the fact that it was once different.");
+
+// 8b. Plausible alternative -------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Why not the obvious alternative?", "An account-centric model: Customer with flags, Account with a type field, edits in place");
+const alt = [["Critical case", "Account-centric alternative", "This design"],
+  ["Signatory loses authority", "is_signatory = False erases the past", "Mandate with a Period; payments keep it"],
+  ["Posted, reversed, disputed", "amount edited, original lost", "Reversal, re-post and Chargeback records"],
+  ["Card replaced several times", "one card_number overwritten", "IssuedCard chain; each payment keeps its card"],
+  ["Loan restructured", "installments rewritten", "new schedule version; paid stay PAID"],
+  ["Product withdrawn", "is_active blocks old customers too", "sale status + pinned terms version"]];
+s.addTable(alt.map((row, r) => row.map(cell => ({ text: cell, options: {
+  bold: r === 0, color: r === 0 ? WHITE : INK, fill: { color: r === 0 ? TEAL : (r % 2 ? "F4F8F7" : WHITE) },
+  fontFace: BODY, fontSize: 11, valign: "middle" } }))),
+  { x: 0.5, y: 1.35, w: 9, colW: [2.5, 3.15, 3.35], rowH: 0.5, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
+s.addText("The alternative fails all ten critical cases (report section 7.1).", { x: 0.5, y: 4.95, w: 9, h: 0.4, fontFace: BODY, fontSize: 12, italic: true, color: GREY, margin: 0, isTextBox: true });
+s.addNotes("The brief asks us to defend the design against at least one plausible alternative. The account-centric model is simpler and would pass the class count, but it answers every historical question with the current value only.");
 
 // 9. Scenarios -----------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -187,7 +204,7 @@ s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Live demo: the desktop console", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
 card(s, 0.5, 1.3, 6.1, 3.95, "F4F8F7");
 s.addImage({ path: DOCS + "screenshots/gui_01_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
-bullets(s, ["Guided rule checks: 14 real operations, each showing the model's own refusal", "31 forms, including full customer onboarding", "Customer timeline and time machine for any past date", "Card chains, cases, audit log and a zero trial balance", "GUI classes inherit too: Page -> MasterDetailPage -> CustomersPage"], 6.85, 1.35, 2.7, 3.9, 12);
+bullets(s, ["Guided rule checks: 14 real operations, each showing the model's own refusal", "80 forms: every workflow in the brief, by hand", "Customer timeline and time machine for any past date", "Card chains, cases, audit log and a zero trial balance", "GUI classes inherit too: Page -> MasterDetailPage -> CustomersPage"], 6.85, 1.35, 2.7, 3.9, 12);
 s.addNotes("Run Operations > Guided rule checks in order. Then Customers: Ayesha's roles as ribbons, and the time machine on 11 April 2026. The GUI contains no business rules: refusals come from the model and name its error class.");
 
 // 10. Code review ---------------------------------------------------------------

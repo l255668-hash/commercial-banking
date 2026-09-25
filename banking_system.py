@@ -471,6 +471,10 @@ class OfficerRole:
         self.period = Period(start)
         self.end_reason = None
 
+    def __str__(self):
+        ended = f" ({self.end_reason})" if self.end_reason else ""
+        return f"{self.title} of {self.organization.name}, {self.period}{ended}"
+
 
 class BeneficialOwnership:
     """A person's ownership share of an organisation for a period."""
@@ -1360,7 +1364,7 @@ class BankTransaction(ABC):
         if self.superseded_by:
             out.append(f"  superseded by {self.superseded_by.txn_id}")
         for r in self.reversals:
-            out.append(f"  reversal {r.txn_id} {fmt(r.amount)}: {r.approval}")
+            out.append(f"  {r.label} {r.txn_id} {fmt(r.amount)}: {r.approval}")
         return out + self.case_lines()
 
 
@@ -1439,12 +1443,20 @@ class CardPayment(CustomerPayment):
         self.card, self.merchant = card, merchant
         self.card_channel = channel
         self.country, self.merchant_category = merchant.country, merchant.category   # as at purchase
+        self.refunds: list[MerchantRefund] = []
+
+    @property
+    def net_amount(self):
+        """What the cardholder has still paid: reversals AND merchant refunds come off."""
+        refunded = sum((r.amount for r in self.refunds if r.status.current == "POSTED"), ZERO)
+        return super().net_amount - refunded
 
     def counterparty(self):
         return f"{self.merchant.name} ({self.country})"
 
     def detail_lines(self):
-        return super().detail_lines() + [f"  card used: {self.card}"]
+        return super().detail_lines() + [f"  card used: {self.card}"] + [
+            f"  merchant refund {r.txn_id} {fmt(r.amount)} [{r.status.current}]: {r.reason}" for r in self.refunds]
 
 
 class BillPayment(CustomerPayment):
@@ -1519,16 +1531,62 @@ class InterestCredit(BankTransaction):
 
 
 class Reversal(BankTransaction):
-    """Counter-posts all or part of an original transaction, with an approval."""
+    """The bank undoes all or part of one of its own postings with counter-entries,
+    under a staff approval. The original stays, marked (PARTIALLY_)REVERSED."""
 
     prefix = "REV"
+    label = "reversal"
 
     def __init__(self, amount, initiated_on, original, reason, approval):
-        super().__init__(amount, initiated_on, f"reversal of {original.txn_id}: {reason}")
+        super().__init__(amount, initiated_on, f"{self.label} of {original.txn_id}: {reason}")
         self.original, self.reason, self.approval = original, reason, approval
 
     def counterparty(self):
         return f"reverses {self.original.txn_id} ({self.original.counterparty()})"
+
+
+class Chargeback(Reversal):
+    """A reversal of a CARD payment that the card-issuing bank claims back from the
+    merchant through the card scheme, after upholding the cardholder's dispute.
+
+    It is a reversal (same counter-entries, same approval, cannot itself be
+    reversed), and adds what only a chargeback has: the dispute that justified it,
+    the merchant it is claimed from and the scheme reason code.
+    """
+
+    prefix = "CHB"
+    label = "chargeback"
+    REASON_CODES = {"FRAUD", "NOT_RECEIVED", "NOT_AS_DESCRIBED", "DUPLICATE", "INCORRECT_AMOUNT",
+                    "CANCELLED_RECURRING"}
+
+    def __init__(self, amount, initiated_on, original, reason, approval, dispute):
+        super().__init__(amount, initiated_on, original, reason, approval)
+        self.dispute, self.merchant = dispute, original.merchant
+        self.reason_code = dispute.reason
+
+    def counterparty(self):
+        return f"claimed from {self.merchant.name} via the card scheme"
+
+    def detail_lines(self):
+        return super().detail_lines() + [f"  scheme reason code {self.reason_code}; dispute {self.dispute.case_id}"]
+
+
+class MerchantRefund(BankTransaction):
+    """Money a merchant sends back for a card purchase (goods returned, order cancelled).
+
+    Not a Reversal: the merchant initiates it, no bank approval is involved and the
+    purchase itself stays POSTED - a refund is a new sale-return, not an undo.
+    It reduces what the cardholder can still dispute.
+    """
+
+    prefix = "MRF"
+
+    def __init__(self, amount, initiated_on, original, reason):
+        super().__init__(amount, initiated_on, f"refund from {original.merchant.name} for {original.txn_id}")
+        self.original, self.merchant, self.reason = original, original.merchant, reason
+
+    def counterparty(self):
+        return f"refunded by {self.merchant.name}"
 
 
 class InternalTransfer(BankTransaction):
@@ -1769,14 +1827,19 @@ class CustomerCase(Case):
 
 
 class Dispute(CustomerCase):
-    """A customer challenges a payment; may end with a (partial) refund reversal."""
+    """A customer challenges a payment, giving a reason. Upheld card disputes end in a
+    Chargeback against the merchant; other payments in a Reversal."""
 
     prefix = "DSP"
 
-    def __init__(self, subject, opened_on, opened_by, transaction, disputed_amount, channel, contact):
+    def __init__(self, subject, opened_on, opened_by, transaction, disputed_amount, channel, contact,
+                 reason="NOT_AS_DESCRIBED"):
+        if reason not in Chargeback.REASON_CODES:
+            raise BankingError(f"unknown dispute reason {reason}")
         super().__init__(subject, opened_on, opened_by,
-                         f"dispute of {transaction.txn_id}", channel, contact)
+                         f"dispute of {transaction.txn_id} ({reason})", channel, contact)
         self.transaction, self.disputed_amount = transaction, money(disputed_amount)
+        self.reason = reason
         self.refund: Reversal | None = None
 
 
@@ -2474,6 +2537,11 @@ class Bank:
     def reverse_transaction(self, original, amount, reason, by):
         """Operation: reverse all or part of a posted transaction with NEW counter-entries.
         The original stays, marked REVERSED or PARTIALLY_REVERSED."""
+        return self._counter_post(original, amount, reason, by, Reversal)
+
+    def _counter_post(self, original, amount, reason, by, kind, *extra):
+        """Shared by reversals and chargebacks: check, approve and post the counter-entries.
+        kind is Reversal or a subclass of it; extra are the subclass's own arguments."""
         self._require_role(by, self.REVERSAL_ROLES, "reverse transactions")
         if isinstance(original, Reversal):
             raise InvalidStateError("a reversal cannot itself be reversed; post a new transaction")
@@ -2484,9 +2552,9 @@ class Bank:
             raise BankingError("reversal amount must be positive")
         if amount > original.net_amount:
             raise BankingError(f"only {fmt(original.net_amount)} of {original.txn_id} is reversible")
-        approval = Approval(by, self.today, "REVERSE", original.txn_id, reason)
+        approval = Approval(by, self.today, kind.label.upper(), original.txn_id, reason)
         self.approvals.append(approval)
-        rev = Reversal(amount, self.today, original, reason, approval)
+        rev = kind(amount, self.today, original, reason, approval, *extra)
         ratio = amount / original.amount
         legs = [(e.account, money(-e.amount * ratio)) for e in original.entries]
         drift = sum((x for _, x in legs), ZERO)
@@ -2496,7 +2564,7 @@ class Bank:
         self.transactions[rev.txn_id] = rev
         new_status = "REVERSED" if original.net_amount == 0 else "PARTIALLY_REVERSED"
         original.status.change(new_status, self.today, by, reason)
-        self._log(by, "REVERSE", original.txn_id, f"{fmt(amount)} via {rev.txn_id}: {reason}")
+        self._log(by, rev.label.upper(), original.txn_id, f"{fmt(amount)} via {rev.txn_id}: {reason}")
         return rev
 
     def repost_card_payment(self, original, corrected_amount, reason, by):
@@ -2595,6 +2663,28 @@ class Bank:
             return self._fail(txn, e, status="DECLINED")
         txn.post([(card.account, -txn.amount), (self.gl["2200"], txn.amount)], self.today, "card-network")
         self._log(card.cardholder.name, "CARD_PAYMENT", txn.txn_id, f"{fmt(txn.amount)} at {merchant.name}")
+        return txn
+
+    def merchant_refund(self, card_payment, amount, reason):
+        """Operation (card network): a merchant refunds all or part of a card purchase.
+        A new credit, not a reversal - the purchase stays POSTED. A refund that cannot be
+        credited (e.g. the account is closed) is kept as FAILED."""
+        if not isinstance(card_payment, CardPayment):
+            raise BankingError(f"{card_payment.txn_id} is not a card payment")
+        if card_payment.status.current not in ("POSTED", "PARTIALLY_REVERSED"):
+            raise InvalidStateError(f"{card_payment.txn_id} is {card_payment.status.current}")
+        if money(amount) > card_payment.net_amount:
+            raise BankingError(f"only {fmt(card_payment.net_amount)} of {card_payment.txn_id} can be refunded")
+        txn = MerchantRefund(amount, self.today, card_payment, reason)
+        card_payment.refunds.append(txn)
+        self.transactions[txn.txn_id] = txn
+        try:
+            card_payment.source_account.ensure_usable("CREDIT", self.today)
+        except BankingError as e:
+            return self._fail(txn, e)
+        txn.post([(card_payment.source_account, txn.amount), (self.gl["2200"], -txn.amount)], self.today, "card-network")
+        self._log("card-network", "MERCHANT_REFUND", txn.txn_id,
+                  f"{fmt(txn.amount)} from {txn.merchant.name} for {card_payment.txn_id}: {reason}")
         return txn
 
     def report_card(self, card, kind, reported_by):
@@ -2899,8 +2989,9 @@ class Bank:
         self._log(by, "COMPLAINT", c.case_id, summary)
         return c
 
-    def open_dispute(self, txn, amount, contact, channel, by):
-        """Operation: a customer disputes a posted payment (one open dispute at a time)."""
+    def open_dispute(self, txn, amount, contact, channel, by, reason="NOT_AS_DESCRIBED"):
+        """Operation: a customer disputes a posted payment (one open dispute at a time),
+        giving a reason from the card schemes' reason categories."""
         if not isinstance(txn, CustomerPayment):
             raise BankingError(f"{txn.txn_id} is not a customer payment and cannot be disputed")
         if txn.status.current not in ("POSTED", "PARTIALLY_REVERSED"):
@@ -2909,21 +3000,26 @@ class Bank:
             raise BankingError(f"disputed amount must be between 0 and {fmt(txn.net_amount)}")
         if any(d.is_open for d in txn.disputes):
             raise InvalidStateError(f"{txn.txn_id} already has an open dispute")
-        d = Dispute(txn.source_account.holders[0], self.today, by, txn, amount, channel, contact)
+        d = Dispute(txn.source_account.holders[0], self.today, by, txn, amount, channel, contact, reason)
         txn.disputes.append(d)
         self.cases[d.case_id] = d
         self._log(by, "OPEN_DISPUTE", d.case_id, f"{txn.txn_id} {fmt(d.disputed_amount)}")
         return d
 
     def resolve_dispute(self, dispute, outcome, refund, by):
-        """Operation: close a dispute, refunding (reversing) up to the disputed amount."""
+        """Operation: close a dispute, giving back up to the disputed amount. For a card
+        payment the money is claimed from the merchant as a Chargeback; for any other
+        customer payment the bank posts a Reversal."""
         if not dispute.is_open:
             raise InvalidStateError(f"{dispute.case_id} already closed")
         if refund:
             if money(refund) > dispute.disputed_amount:
                 raise BankingError(f"refund exceeds the disputed {fmt(dispute.disputed_amount)}")
-            dispute.refund = self.reverse_transaction(dispute.transaction, refund,
-                                                      f"dispute {dispute.case_id} {outcome}", by)
+            reason = f"dispute {dispute.case_id} {outcome}"
+            if isinstance(dispute.transaction, CardPayment):
+                dispute.refund = self._counter_post(dispute.transaction, refund, reason, by, Chargeback, dispute)
+            else:
+                dispute.refund = self._counter_post(dispute.transaction, refund, reason, by, Reversal)
         dispute.close(outcome, self.today, by)
         self._log(by, "RESOLVE_DISPUTE", dispute.case_id, outcome)
 
@@ -3468,14 +3564,14 @@ def run_demo():
         _show(f"{c} status={c.status.current} limit={fmt(c.daily_limit_on(bank.today))} payments={spent}")
 
     # -------------------------------------------------------------------------
-    _section("SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial refund")
+    _section("SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial chargeback")
     # -------------------------------------------------------------------------
     bank.advance_to(date(2026, 3, 20))
     buy = bank.card_purchase(usman_card, "Packages Mall Electronics", 120_000)
     bank.advance_to(date(2026, 3, 21))
     fixed = bank.repost_card_payment(buy, 105_000, "merchant presented corrected amount", hina)
     bank.advance_to(date(2026, 4, 5))
-    dispute = bank.open_dispute(fixed, 105_000, ayesha, "PHONE", omar)
+    dispute = bank.open_dispute(fixed, 105_000, ayesha, "PHONE", omar, reason="NOT_AS_DESCRIBED")
     _attempt("Open a second dispute on the same payment",
              lambda: bank.open_dispute(fixed, 1_000, ayesha, "BRANCH", omar))
     bank.advance_to(date(2026, 4, 9))
@@ -3483,6 +3579,8 @@ def run_demo():
     _attempt("Resolve the same dispute again (would refund twice)",
              lambda: bank.resolve_dispute(dispute, "UPHELD", 65_000, hina))
     _show(bank.transaction_story(buy), bank.transaction_story(fixed))
+    _show(f"{dispute.refund.txn_id} is a {type(dispute.refund).__name__} (a kind of Reversal): "
+          f"{dispute.refund.counterparty()}, reason code {dispute.refund.reason_code}")
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 5: Customer restricted then cleared; standing order fails in between")
@@ -3750,7 +3848,7 @@ def run_demo():
           f"{len(ftd_a.entries)} ledger entries retained")
 
     # -------------------------------------------------------------------------
-    _section("SCENARIO 15: Card controls, bill payments under dual control, searchable card history")
+    _section("SCENARIO 15: Card controls, merchant refund, bill payments under dual control, card history")
     # -------------------------------------------------------------------------
     bank.advance_to(date(2027, 8, 10))
     bank.deposit_cash(ravi_cur, 5_000_000, farah, hamza)
@@ -3760,8 +3858,14 @@ def run_demo():
              lambda: bank.remove_card_control(online_block, noor))
     _txn_line("Online purchase while blocked",
               bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
-    _txn_line("In-store purchase", bank.card_purchase(card3, "Imtiaz Auto Parts", 9_500))
+    parts = bank.card_purchase(card3, "Imtiaz Auto Parts", 9_500)
+    _txn_line("In-store purchase", parts)
     bank.advance_to(date(2027, 8, 12))
+    returned = bank.merchant_refund(parts, 3_500, "one part returned")
+    _txn_line("Imtiaz Auto Parts refunds a returned part (a new credit, not a reversal)", returned)
+    _show(f"The purchase {parts.txn_id} stays {parts.status.current}; still disputable: {fmt(parts.net_amount)}")
+    _attempt("Dispute the full 9,500 after the refund",
+             lambda: bank.open_dispute(parts, 9_500, hamza, "BRANCH", maryam, reason="NOT_AS_DESCRIBED"))
     bank.remove_card_control(online_block, hamza)
     _txn_line("Online purchase after Hamza lifts his block",
               bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
@@ -3809,7 +3913,7 @@ def run_demo():
     waiting = bank.initiate_transfer(ravi_cur, yarn, 1_200_000, hamza)      # needs a second signatory
     held = bank.initiate_transfer(ravi_cur, yarn, 1_100_000, ayesha)        # above the review threshold
     books = bank.card_purchase(card3, "Liberty Books", 18_500)
-    open_dispute = bank.open_dispute(books, 18_500, hamza, "BRANCH", maryam)
+    open_dispute = bank.open_dispute(books, 18_500, hamza, "BRANCH", maryam, reason="NOT_RECEIVED")
     _txn_line("Waiting for a second signatory", waiting)
     _txn_line("Held for compliance review", held)
     _show(f"Open dispute {open_dispute.case_id} on {books.txn_id}; "
@@ -4435,6 +4539,39 @@ class ModelShapeTests(unittest.TestCase):
 
 
 
+class CardRefundAndChargebackTests(unittest.TestCase):
+    """Research finding: a reversal, a merchant refund and a chargeback are three different things."""
+
+    def test_merchant_refund_is_a_new_credit_and_limits_the_dispute(self):
+        w = _World()
+        buy = w.bank.card_purchase(w.card, "Shop", 10_000)
+        before = w.acct.ledger_balance()
+        refund = w.bank.merchant_refund(buy, 4_000, "item returned")
+        self.assertIsInstance(refund, MerchantRefund)
+        self.assertNotIsInstance(refund, Reversal)
+        self.assertEqual(buy.status.current, "POSTED")                  # the purchase is not undone
+        self.assertEqual(w.acct.ledger_balance() - before, 4_000)
+        self.assertEqual(buy.net_amount, 6_000)
+        with self.assertRaises(BankingError):
+            w.bank.open_dispute(buy, 7_000, w.b, "PHONE", w.rm)         # only 6,000 is still disputable
+        with self.assertRaises(BankingError):
+            w.bank.merchant_refund(buy, 7_000, "too much")
+        self.assertEqual(w.bank.trial_balance()[1], 0)
+
+    def test_chargeback_needs_a_reason_code_and_cannot_be_reversed(self):
+        w = _World()
+        buy = w.bank.card_purchase(w.card, "Shop", 10_000)
+        with self.assertRaises(BankingError):
+            w.bank.open_dispute(buy, 5_000, w.b, "PHONE", w.rm, reason="DID_NOT_LIKE_IT")
+        d = w.bank.open_dispute(buy, 5_000, w.b, "PHONE", w.rm, reason="NOT_RECEIVED")
+        w.bank.resolve_dispute(d, "UPHELD", 5_000, w.cards)
+        self.assertIsInstance(d.refund, Chargeback)
+        self.assertEqual((d.refund.reason_code, buy.status.current), ("NOT_RECEIVED", "PARTIALLY_REVERSED"))
+        with self.assertRaises(InvalidStateError):
+            w.bank.reverse_transaction(d.refund, None, "undo", w.cards)
+        self.assertEqual(w.bank.trial_balance()[1], 0)
+
+
 class AbstractionTests(unittest.TestCase):
     """Abstract base classes and polymorphism: the base of each hierarchy cannot be
     created, and behaviour that differs by class lives in the class, not in the Bank."""
@@ -4477,6 +4614,15 @@ class AbstractionTests(unittest.TestCase):
         self.assertTrue(daraz.payments and all(p.merchant is daraz for p in daraz.payments))
         gamble = next(t for t in self.bank.merchants["BetWorld"].payments)
         self.assertEqual((gamble.merchant_category, gamble.status.current), ("GAMBLING", "DECLINED"))
+
+    def test_upheld_card_dispute_is_a_chargeback_and_other_disputes_are_reversals(self):
+        chargebacks = [t for t in self.bank.transactions.values() if isinstance(t, Chargeback)]
+        self.assertTrue(chargebacks)
+        for c in chargebacks:
+            self.assertIsInstance(c, Reversal)                     # multi-level: BankTransaction > Reversal
+            self.assertIsInstance(c.original, CardPayment)
+            self.assertIs(c.merchant, c.original.merchant)
+            self.assertIn(c.reason_code, Chargeback.REASON_CODES)
 
     def test_story_and_case_roles_need_no_type_checks(self):
         for method in (Bank.transaction_story, Bank.assign_case):
@@ -4738,7 +4884,7 @@ def _own_members(cls):
             else:
                 mark = "  [override]"
             methods.append(name + "()" + mark)
-        elif name.isupper() or name in ("prefix", "id_prefix", "officer_title"):
+        elif name.isupper() or name in ("prefix", "id_prefix", "officer_title", "label"):
             consts.append(name)
     return consts, methods
 

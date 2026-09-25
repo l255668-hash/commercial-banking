@@ -26,7 +26,7 @@ Companies and charities both have officers, owners and mandates, and both are on
 For behaviour many unrelated classes need: `StatusHistory` and `Period`. Accounts, cards, cases, branches and employees all have lifecycles, but they are not the same kind of thing, so each has a `StatusHistory` rather than inheriting from a common base.
 
 **How many classes and operations, and how do you know?**
-Run `python banking_system.py --classes`: 75 classes, 7 error classes, 97 `Bank` operations (79 of them state-changing commands), counted from the code. Six of the classes are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, `Bank`), so the honest business count is 69; the printout says so. A test (`ModelShapeTests`) fails if the business class count or the operation count drops below 30.
+Run `python banking_system.py --classes`: 77 classes, 7 error classes, 98 `Bank` operations (80 of them state-changing commands), counted from the code. Six of the classes are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, `Bank`), so the honest business count is 71; the printout says so. A test (`ModelShapeTests`) fails if the business class count or the operation count drops below 30.
 
 **Which of your classes are abstract, and why?**
 The root of each hierarchy: `Party`, `Arrangement`, `BankTransaction`, `Case`, plus the middle levels `Organization`, `DepositAccount`, `CustomerPayment` and `LoanTransaction`. The bank never holds something that is only "a transaction" or only "a party", so creating one raises `TypeError`. Each has at least one abstract method whose answer genuinely differs by class, e.g. `DepositAccount.overdraft_limit()` (current accounts read it from the terms, savings and term deposits are zero) and `BankTransaction.counterparty()`. `CustomerCase` and `RiskCase` are concrete because each fully answers `handler_roles()`.
@@ -42,6 +42,15 @@ The root of each hierarchy: `Party`, `Arrangement`, `BankTransaction`, `Case`, p
 
 **How are state machines inherited?**
 `LIFECYCLE` is a class constant, so subclasses inherit it. `CashTransaction` uses `BankTransaction`'s as is; `CustomerPayment` calls `.extend(...)` to add dual control; `TransferPayment` extends that with the compliance hold. `FinancingAgreement` replaces `Arrangement`'s lifecycle completely, because a loan is settled, not closed. State machine 1 colours each status by the class that added it.
+
+**Why is `Chargeback` a subclass of `Reversal`, but `MerchantRefund` is not?**
+Research on the card schemes showed three different things. A reversal is the bank undoing its own posting under a staff approval. A chargeback is the same thing for a card payment, plus a dispute that justified it, a merchant it is claimed from and a scheme reason code. Everything true of a reversal is true of a chargeback, which is the test for inheritance. A merchant refund fails that test: the merchant starts it, no bank employee approves it, and the purchase stays `POSTED` (only the amount still disputable goes down). So it is a sibling under `BankTransaction` (rejected inheritance 13).
+
+**Why is your design better than a simpler one?**
+Report section 7.1 compares it with an account-centric model (a `Customer` with flags, an `Account` with a type field, edits in place). That model is simpler and would pass the class count, but it fails all ten critical cases because it only ever knows the current value. For example, `is_signatory = False` erases the fact that Bilal once had authority, and our `Mandate` with a period keeps it.
+
+**What did your research actually change?**
+Report section 1 has a table: eight first ideas that the research overturned. Examples: `Customer(Person)` became role objects; a `refunded` flag became reversal, refund and chargeback; editing installments became schedule versions.
 
 ## Historical correctness
 
@@ -91,6 +100,9 @@ Only in the model. The GUI's `BankController.run` calls one `Bank` operation and
 
 **What happens to the forms when you press "Reset data"?**
 They keep working on the new bank. The forms are built once, so they hold a `CurrentBank` stand-in that looks up `controller.bank` on every call instead of capturing the old object. The GUI smoke test resets the bank between its passes to check exactly this.
+
+**Can the evaluator run the whole scenario from the GUI?**
+Yes. 80 forms cover every workflow in the brief: onboarding, accounts, payments, cards, cases, the full financing lifecycle, staff, branches and products. The Reports screen answers "who had authority on that date" and runs the auditors' report. The smoke test drives all 80 forms and three complete stories through the GUI on every push.
 
 **Why does a bank console show a class model and a scenario log?**
 It doesn't mix them in: the sidebar has a "Bank" section with the ten screens staff would use, and a separate "Teaching & simulation" section with the class model and the scenario log. The brief says the model is for teaching and simulation, and those two screens let you see the inheritance tree and the seeded scenarios live. A real bank's staff application would not include them, which is why they are labelled as teaching aids. An earlier screen that displayed the diagram images was removed for that reason.

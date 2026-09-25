@@ -329,6 +329,10 @@ def label_of(obj):
         return f"{obj.mandate_id} {obj.person.name} for {obj.organization.name}"
     if isinstance(obj, bs.ProductDefinition):
         return f"{obj.code} {obj.name} ({obj.category})"
+    if isinstance(obj, bs.StandingOrder):
+        return f"{obj.order_id} {bs.fmt(obj.amount)} to {obj.beneficiary.nickname} on day {obj.day_of_month}"
+    if isinstance(obj, bs.ApprovalCondition):
+        return f"{obj.condition_id} {obj.description} ({obj.application.application_id})"
     if isinstance(obj, bs.FinancingApplication):
         return f"{obj.application_id} {obj.applicant.name} {bs.fmt(obj.requested_amount)} [{obj.status.current}]"
     return str(obj)
@@ -1193,6 +1197,22 @@ def _optional_money(text):
     return bs.money(text) if text.strip() else None
 
 
+def _terms(text):
+    """Parse 'monthly_fee=500, annual_rate=0.05' into keyword arguments (numbers stay text
+    so the model's Decimal handling applies)."""
+    out = {}
+    for part in filter(None, (p.strip() for p in text.split(","))):
+        if "=" not in part:
+            raise ValueError(f"'{part}' is not key=value")
+        key, value = (x.strip() for x in part.split("=", 1))
+        out[key] = value
+    return out
+
+
+ALL_ROLES = sorted(bs.Bank.BRANCH_ROLES | bs.Bank.COMPLIANCE_ROLES | bs.Bank.CREDIT_ROLES | bs.Bank.CARD_ROLES
+                   | bs.Bank.COLLECTIONS_ROLES | bs.Bank.AUDIT_ROLES)
+
+
 class OperationsPage(Page):
     title = "Operations"
     subtitle = "Every form calls one Bank operation; refusals show the model's own rule"
@@ -1212,6 +1232,9 @@ class OperationsPage(Page):
         b = CurrentBank(self.ctl)          # "Reset data" swaps the bank; the forms must follow
         amt = bs.money
         branch = ("staff", bs.Bank.BRANCH_ROLES)
+        credit = ("staff", bs.Bank.CREDIT_ROLES)
+        compliance = ("staff", bs.Bank.COMPLIANCE_ROLES)
+        cards = ("staff", bs.Bank.CARD_ROLES)
         return [
             OperationSpec("Customers", "Register a person",
                           [("Full name", "text"), ("Date of birth (YYYY-MM-DD)", "text"), ("Registered by", branch)],
@@ -1255,6 +1278,53 @@ class OperationsPage(Page):
                           [("Mandate", "mandate"), ("Reason", "text"), ("Recorded by", branch)],
                           lambda v: b.revoke_mandate(v[0], v[1] or "authority withdrawn", v[2]),
                           "The mandate's period closes; payments made under it stay provable."),
+            OperationSpec("Customers", "Register a charity / trust",
+                          [("Name", "text"), ("Registration number", "text"), ("Address", "text"), ("Registered by", branch)],
+                          lambda v: b.register_charity(v[0] or "Console Trust", v[1] or "TR-0000", v[2] or "Lahore", v[3]),
+                          "A charity needs two verified trustees before it can be onboarded."),
+            OperationSpec("Customers", "Record a beneficial owner",
+                          [("Organisation", "org"), ("Person", "person"), ("Percentage", "text"), ("Recorded by", branch)],
+                          lambda v: b.record_beneficial_owner(v[0], v[1], v[2] or "25", v[3]),
+                          "Owners at or above 25% must be verified before the organisation is."),
+            OperationSpec("Customers", "End a director / trustee role",
+                          [("Organisation", "org"), ("Person", "person"), ("Reason", "text"), ("Recorded by", branch)],
+                          lambda v: b.end_officer_role(v[0], v[1], v[2] or "resigned", v[3]),
+                          "The office record stays with its dates; only its period closes."),
+            OperationSpec("Customers", "Correct a recorded detail",
+                          [("Party", "party"), ("Detail", ("choice", ["registered_address", "name"])),
+                           ("Correct value", "text"), ("Reason", "text"), ("Corrected by", branch)],
+                          lambda v: b.correct_party_detail(v[0], v[1], v[2] or "corrected value", v[3] or "data correction", v[4]),
+                          "The old value is kept; case evidence captured before keeps showing it."),
+            OperationSpec("Customers", "Assign a relationship manager",
+                          [("Customer", "customer"), ("Relationship manager", ("staff", {"RELATIONSHIP_MANAGER"})),
+                           ("Assigned by", branch)],
+                          lambda v: b.assign_relationship_manager(v[0], v[1], v[2])),
+            OperationSpec("Customers", "End a customer relationship",
+                          [("Customer", "customer"), ("Reason", "text"), ("Recorded by", branch)],
+                          lambda v: b.end_relationship(v[0], v[1] or "customer request", v[2]),
+                          "Refused while the customer still holds open products."),
+            OperationSpec("Accounts", "Open a term deposit",
+                          [("Term-deposit product", "term_product"), ("Payout account", "account"), ("Branch employee", branch)],
+                          lambda v: b.open_deposit_account(bs.FixedTermDeposit, v[0], list(v[1].holders), v[2], v[1]),
+                          "Same holders as the payout account; fund it with an own-account transfer."),
+            OperationSpec("Accounts", "Break a term deposit early",
+                          [("Term deposit", "term_deposit"), ("Reason", "text"), ("Branch employee", branch)],
+                          lambda v: b.break_term_deposit(v[0], v[2], v[1] or "customer needs the funds"),
+                          "Interest is forfeited and the penalty in the pinned terms is charged."),
+            OperationSpec("Accounts", "Close an account",
+                          [("Account", "account"), ("Reason", "text"), ("Branch employee", branch)],
+                          lambda v: b.close_account(v[0], v[1] or "customer request", v[2]),
+                          "Needs a zero balance, no holds, no payment in progress and no live financing."),
+            OperationSpec("Accounts", "Charge a fee",
+                          [("Account", "account"), ("Fee code", "text"), ("Amount", "amount")],
+                          lambda v: b.charge_fee(v[0], v[1] or "SERVICE", amt(v[2]))),
+            OperationSpec("Accounts", "Produce a statement",
+                          [("Account", "account"), ("From (YYYY-MM-DD)", "text"), ("To (YYYY-MM-DD)", "text")],
+                          lambda v: b.generate_statement(v[0], _date(v[1]), _date(v[2])).render()),
+            OperationSpec("Accounts", "Move an account to the latest terms",
+                          [("Account", "any_arrangement"), ("Branch employee", branch)],
+                          lambda v: b.migrate_terms(v[0], v[1]),
+                          "Only on request: old customers keep their pinned terms otherwise."),
             OperationSpec("Payments", "Add a beneficiary",
                           [("Owner (customer)", "customer"), ("Nickname", "text"), ("Bank", "text"),
                            ("Account number", "text"), ("Account title", "text"), ("Added by", "person")],
@@ -1283,6 +1353,34 @@ class OperationsPage(Page):
                           [("Transaction", "posted"), ("Amount (blank = all)", "text"), ("Reason", "text"),
                            ("Employee", ("staff", bs.Bank.REVERSAL_ROLES))],
                           lambda v: b.reverse_transaction(v[0], amt(v[1]) if v[1] else None, v[2] or "console", v[3])),
+            OperationSpec("Payments", "Cancel a pending payment",
+                          [("Payment", "awaiting"), ("Cancelled by (signatory)", "person"), ("Reason", "text")],
+                          lambda v: b.cancel_pending_payment(v[0], v[1], v[2] or "no longer needed")),
+            OperationSpec("Payments", "Reject a held payment",
+                          [("Payment", "held"), ("Compliance employee", compliance), ("Reason", "text")],
+                          lambda v: b.reject_held_transaction(v[0], v[1], v[2] or "rejected after review")),
+            OperationSpec("Payments", "Amend a beneficiary",
+                          [("Beneficiary", "all_beneficiary"), ("New bank", "text"), ("New account number", "text"),
+                           ("New account title", "text"), ("Changed by", "person")],
+                          lambda v: b.amend_beneficiary(v[0], v[1] or "HBL", v[2] or "1111222233", v[3] or v[0].nickname, v[4]),
+                          "A new version; transfers already sent keep the version they used."),
+            OperationSpec("Payments", "Deactivate a beneficiary",
+                          [("Beneficiary", "beneficiary"), ("Reason", "text"), ("By", "person")],
+                          lambda v: b.deactivate_beneficiary(v[0], v[1] or "no longer used", v[2])),
+            OperationSpec("Payments", "Create a standing order",
+                          [("From account", "account"), ("Beneficiary", "beneficiary"), ("Amount", "amount"),
+                           ("Day of month (1-28)", "text"), ("Created by", "person")],
+                          lambda v: b.create_standing_order(v[0], v[1], amt(v[2]), int(v[3] or 1), v[4]),
+                          "Authority is checked now, once; the daily batch pays it each month."),
+            OperationSpec("Payments", "Cancel a standing order",
+                          [("Standing order", "standing_order"), ("Cancelled by", "person"), ("Reason", "text")],
+                          lambda v: b.cancel_standing_order(v[0], v[1], v[2] or "customer request")),
+            OperationSpec("Payments", "Register a biller",
+                          [("Code", "text"), ("Name", "text"), ("Category", ("choice", sorted(bs.Biller.CATEGORIES)))],
+                          lambda v: b.register_biller(v[0] or "CONSOLE", v[1] or "Console Biller", v[2])),
+            OperationSpec("Payments", "Deactivate a biller",
+                          [("Biller", "biller"), ("Reason", "text")],
+                          lambda v: b.deactivate_biller(v[0], v[1] or "collection agreement ended")),
             OperationSpec("Cash", "Deposit cash",
                           [("Account", "account"), ("Amount", "amount"), ("Teller", ("staff", {"TELLER"}))],
                           lambda v: b.deposit_cash(v[0], amt(v[1]), v[2])),
@@ -1300,6 +1398,31 @@ class OperationsPage(Page):
                            ("Country", ("choice", ["PK", "AE", "GB", "US"]))],
                           lambda v: b.record_merchant(v[0] or "Console merchant", v[1], v[2]),
                           "As the card network presents it; card controls check its category and country."),
+            OperationSpec("Cards", "Issue a card",
+                          [("Card product", "card_product"), ("Account", "account"), ("Cardholder", "person"),
+                           ("Daily limit (blank = product default)", "text"), ("Card operations", cards)],
+                          lambda v: b.issue_card(v[0], v[1], v[2], v[4], _optional_money(v[3])),
+                          "The cardholder must hold the account or have a live CARD mandate."),
+            OperationSpec("Cards", "Change a daily limit",
+                          [("Card", "card"), ("New daily limit", "amount"), ("Card operations", cards)],
+                          lambda v: b.change_card_limit(v[0], amt(v[1]), v[2]),
+                          "From today; earlier payments were checked against the limit of their day."),
+            OperationSpec("Cards", "Record a found card",
+                          [("Card", "card"), ("Card operations", cards), ("Note", "text")],
+                          lambda v: b.record_card_found(v[0], v[1], v[2] or "card handed in; destroyed")),
+            OperationSpec("Cards", "Reactivate a lost card",
+                          [("Card", "card"), ("Card operations", cards)],
+                          lambda v: b.reactivate_card(v[0], v[1]),
+                          "Only a LOST card that was never replaced; stolen or replaced cards never."),
+            OperationSpec("Cards", "Merchant refund",
+                          [("Card payment", "card_payment"), ("Amount", "amount"), ("Reason", "text")],
+                          lambda v: b.merchant_refund(v[0], amt(v[1]), v[2] or "goods returned"),
+                          "A new credit from the merchant; the purchase stays POSTED."),
+            OperationSpec("Cards", "Correct a card payment (re-post)",
+                          [("Card payment", "card_payment"), ("Corrected amount", "amount"), ("Reason", "text"),
+                           ("Card operations", cards)],
+                          lambda v: b.repost_card_payment(v[0], amt(v[1]), v[2] or "merchant corrected amount", v[3]),
+                          "Full reversal of the original plus a new, linked payment."),
             OperationSpec("Cards", "Report a card",
                           [("Card", "card"), ("Report", ("choice", ["LOST", "STOLEN", "DAMAGED"])),
                            ("Reported by", "person")],
@@ -1314,17 +1437,58 @@ class OperationsPage(Page):
             OperationSpec("Cards", "Switch off a card control",
                           [("Control", "control"), ("By (cardholder)", "person")],
                           lambda v: b.remove_card_control(v[0], v[1])),
-            OperationSpec("Compliance", "Impose a restriction",
+            OperationSpec("Cases & compliance", "Impose a restriction",
                           [("Customer", "customer"), ("Scope", ("choice", ["DEBIT_BLOCK", "FULL_FREEZE"])),
                            ("Reason", "text"), ("Compliance employee", ("staff", bs.Bank.COMPLIANCE_ROLES))],
                           lambda v: b.impose_restriction(v[0], v[1], v[2] or "console review", v[3])),
-            OperationSpec("Compliance", "Lift a restriction",
+            OperationSpec("Cases & compliance", "Lift a restriction",
                           [("Restriction", "restriction"), ("Reason", "text"), ("Compliance employee", ("staff", bs.Bank.COMPLIANCE_ROLES))],
                           lambda v: b.lift_restriction(v[0], v[1] or "cleared", v[2])),
-            OperationSpec("Compliance", "Open a dispute",
-                          [("Payment", "posted_payment"), ("Amount", "amount"), ("Contact", "person"),
+            OperationSpec("Cases & compliance", "Open a dispute",
+                          [("Payment", "posted_payment"), ("Amount", "amount"),
+                           ("Reason", ("choice", sorted(bs.Chargeback.REASON_CODES))), ("Contact", "person"),
                            ("Employee", ("staff", bs.Bank.BRANCH_ROLES))],
-                          lambda v: b.open_dispute(v[0], amt(v[1]), v[2], "BRANCH", v[3])),
+                          lambda v: b.open_dispute(v[0], amt(v[1]), v[3], "BRANCH", v[4], v[2]),
+                          "Reason codes follow the card schemes' dispute categories."),
+            OperationSpec("Cases & compliance", "Resolve a dispute",
+                          [("Dispute", "open_dispute"), ("Outcome", ("choice", ["UPHELD", "PARTIALLY_UPHELD", "REJECTED"])),
+                           ("Amount given back (0 = none)", "text"), ("Employee", ("staff", bs.Bank.REVERSAL_ROLES))],
+                          lambda v: b.resolve_dispute(v[0], v[1], _optional_money(v[2]) or None, v[3]),
+                          "Card payments: a Chargeback against the merchant; other payments: a Reversal."),
+            OperationSpec("Cases & compliance", "Log a complaint",
+                          [("Customer", "customer"), ("Summary", "text"),
+                           ("Category", ("choice", ["PAYMENT_DELAY", "SERVICE", "FEES", "CARD", "OTHER"])),
+                           ("Contact person", "person"), ("Recorded by", branch)],
+                          lambda v: b.log_complaint(v[0], v[1] or "customer complaint", "BRANCH", v[3], v[2], v[4])),
+            OperationSpec("Cases & compliance", "Record a service request",
+                          [("Customer", "customer"),
+                           ("Request", ("choice", ["STATEMENT_COPY", "ADDRESS_CHANGE", "CHEQUE_BOOK", "LIMIT_REVIEW"])),
+                           ("Contact person", "person"), ("Recorded by", branch)],
+                          lambda v: b.raise_service_request(v[0], v[1], v[2], "BRANCH", v[3])),
+            OperationSpec("Cases & compliance", "Raise a fraud alert",
+                          [("Customer", "customer"), ("Rule", ("choice", ["UNUSUAL_PATTERN", "LARGE_FIRST_TIME_TRANSFER",
+                                                                          "MULTIPLE_FAILED_ATTEMPTS"]))],
+                          lambda v: b.raise_fraud_alert(v[0], v[1]),
+                          "Normally raised by monitoring; an alert may turn out to be a false positive."),
+            OperationSpec("Cases & compliance", "Open an investigation",
+                          [("Customer", "customer"), ("Summary", "text"), ("Link to alert", "alert"),
+                           ("Compliance employee", compliance)],
+                          lambda v: b.open_investigation(v[0], v[1] or "compliance review", v[3], linked=[v[2]])),
+            OperationSpec("Cases & compliance", "Add evidence (snapshot)",
+                          [("Case", "open_case"), ("Description", "text"), ("Party on file", "party"),
+                           ("Recorded by", compliance)],
+                          lambda v: b.add_evidence(v[0], v[1] or "record at review time", v[2],
+                                                   {"name": v[2].name,
+                                                    "registered_address": v[2].detail("registered_address")}, v[3]),
+                          "Freezes the party's details as they are now; later corrections do not change it."),
+            OperationSpec("Cases & compliance", "Assign a case",
+                          [("Case", "open_case"), ("Employee", "employee"), ("Assigned by", branch)],
+                          lambda v: b.assign_case(v[0], v[1], v[2]),
+                          "Each kind of case says which roles may work it."),
+            OperationSpec("Cases & compliance", "Close a case",
+                          [("Case", "open_case"), ("Outcome", "text"), ("Closed by", "employee")],
+                          lambda v: b.close_case(v[0], v[1] or "resolved", v[2]),
+                          "A risk case refuses to close while its own restriction is in force."),
             OperationSpec("Lending", "Apply for financing",
                           [("Applicant", "customer"), ("Amount", "amount"), ("Months", "text"),
                            ("Submitted by", "person")],
@@ -1333,8 +1497,72 @@ class OperationsPage(Page):
                               amt(v[1]), int(v[2] or 12), "console application", v[3])),
             OperationSpec("Lending", "Decide an application",
                           [("Application", "application"), ("Decision", ("choice", ["APPROVE", "DECLINE"])),
-                           ("Annual rate", "text"), ("Credit employee", ("staff", bs.Bank.CREDIT_ROLES))],
-                          lambda v: b.decide_application(v[0], v[3], v[1] == "APPROVE", None, v[2] or "0.18")),
+                           ("Annual rate", "text"), ("Conditions (comma-separated, optional)", "text"),
+                           ("Credit employee", credit)],
+                          lambda v: b.decide_application(v[0], v[4], v[1] == "APPROVE", None, v[2] or "0.18",
+                                                         [c.strip() for c in v[3].split(",") if c.strip()]),
+                          "Each credit role may approve only up to its delegated limit."),
+            OperationSpec("Lending", "Attach a supporting document",
+                          [("Application", "open_app"), ("Document", "text"), ("Filed by", credit)],
+                          lambda v: b.attach_application_document(v[0], v[1] or "financial statements", v[2])),
+            OperationSpec("Lending", "Satisfy a condition",
+                          [("Condition", "condition"), ("Evidence", "text"), ("Recorded by", branch)],
+                          lambda v: b.satisfy_condition(v[0], v[1] or "original on file", v[2])),
+            OperationSpec("Lending", "Disburse financing",
+                          [("Approved application", "approved_app"), ("Settlement account", "account"),
+                           ("First installment due (YYYY-MM-DD)", "text"), ("Credit employee", credit)],
+                          lambda v: b.disburse_financing(v[0], v[1], _date(v[2]), v[3]),
+                          "Refused until every condition is met."),
+            OperationSpec("Lending", "Repay financing",
+                          [("Agreement", "financing"), ("Amount", "amount"), ("From account", "account")],
+                          lambda v: b.repay_financing(v[0], amt(v[1]), v[2]),
+                          "Oldest installment first, interest before principal."),
+            OperationSpec("Lending", "Restructure financing",
+                          [("Agreement", "financing"), ("New term in months", "text"), ("Annual rate", "text"),
+                           ("First installment due (YYYY-MM-DD)", "text"), ("Reason", "text"), ("Credit employee", credit)],
+                          lambda v: b.restructure_financing(v[0], int(v[1] or 12), v[2] or "0.17", _date(v[3]),
+                                                            v[4] or "cash-flow difficulty", v[5]),
+                          "A new schedule version; paid installments stay PAID on the old one."),
+            OperationSpec("Lending", "Settle financing early",
+                          [("Agreement", "financing"), ("From account", "account"), ("Credit employee", credit)],
+                          lambda v: b.settle_financing(v[0], v[1], v[2]),
+                          "Principal plus interest already due; future interest is waived."),
+            OperationSpec("Lending", "Record a collections contact",
+                          [("Collections case", "collections_case"), ("Collections officer", ("staff", bs.Bank.COLLECTIONS_ROLES)),
+                           ("Outcome", "text"), ("Promised amount (optional)", "text"), ("Promised by (YYYY-MM-DD, optional)", "text")],
+                          lambda v: b.record_collections_contact(v[0], v[1], v[2] or "customer contacted",
+                                                                 _optional_money(v[3]), _date(v[4], False))),
+            OperationSpec("Organisation", "Open a branch",
+                          [("Code", "text"), ("Name", "text"), ("City", "text")],
+                          lambda v: b.open_branch(v[0] or "NEW-01", v[1] or "New Branch", v[2] or "Lahore")),
+            OperationSpec("Organisation", "Hire an employee",
+                          [("Person", "person"), ("Role", ("choice", ALL_ROLES)), ("Branch", "branch")],
+                          lambda v: b.hire_employee(v[0], v[1], v[2])),
+            OperationSpec("Organisation", "Change an employee's role",
+                          [("Employee", "employee"), ("New role", ("choice", ALL_ROLES)), ("Branch", "branch")],
+                          lambda v: b.change_role(v[0], v[1], v[2]),
+                          "Old approvals keep the role held when they were made."),
+            OperationSpec("Organisation", "Record an employee exit",
+                          [("Employee", "employee"), ("Reason", "text")],
+                          lambda v: b.record_employee_exit(v[0], v[1] or "resigned"),
+                          "Refused while the person is still relationship manager for customers."),
+            OperationSpec("Organisation", "Close a branch",
+                          [("Branch", "branch"), ("Transfer into", "branch"), ("Authorised by", branch)],
+                          lambda v: b.close_branch(v[0], v[1], str(v[2])),
+                          "Customers, accounts, staff and vault cash move; opening branches stay recorded."),
+            OperationSpec("Products", "Define a product",
+                          [("Code", "text"), ("Name", "text"), ("Category", ("choice", sorted(bs.ProductDefinition.CATEGORIES))),
+                           ("Terms (key=value, ...)", "text")],
+                          lambda v: b.define_product(v[0] or "NEW", v[1] or "New product", v[2], **_terms(v[3])),
+                          "e.g. monthly_fee=500, annual_rate=0.05, term_months=12"),
+            OperationSpec("Products", "Publish new terms",
+                          [("Product", "product"), ("Effective from (YYYY-MM-DD)", "text"), ("Changes (key=value, ...)", "text")],
+                          lambda v: b.revise_product_terms(v[0], _date(v[1]), **_terms(v[2])),
+                          "Existing customers stay on the version they were sold."),
+            OperationSpec("Products", "Withdraw from sale",
+                          [("Product", "product"), ("Reason", "text")],
+                          lambda v: b.withdraw_from_sale(v[0], v[1] or "replaced by a newer product"),
+                          "New customers cannot buy it; existing customers keep it."),
             OperationSpec("Records", "Archive a finished record",
                           [("Account", "any_arrangement"), ("Employee", ("staff", bs.Bank.BRANCH_ROLES))],
                           lambda v: b.archive_record(v[0], v[1])),
@@ -1379,6 +1607,26 @@ class OperationsPage(Page):
                         for m in p.mandates if m.period.end is None],
             "deposit_product": [p for p in ctl.bank.products.values()
                                 if p.category in ("CURRENT", "SAVINGS") and p.can_sell(ctl.bank.today)],
+            "term_product": [p for p in ctl.bank.products.values() if p.category == "TERM_DEPOSIT"],
+            "card_product": [p for p in ctl.bank.products.values() if p.category == "DEBIT_CARD"],
+            "product": sorted(ctl.bank.products.values(), key=lambda p: p.code),
+            "all_beneficiary": [x for x in ctl.bank.beneficiaries.values() if x.status.current != "DELETED"],
+            "standing_order": [x for x in ctl.bank.standing_orders.values() if x.status.current == "ACTIVE"],
+            "term_deposit": [a for a in ctl.bank.arrangements.values()
+                             if isinstance(a, bs.FixedTermDeposit) and a.status.current == "ACTIVE"],
+            "card_payment": [t for t in ctl.payments_in("POSTED", "PARTIALLY_REVERSED") if isinstance(t, bs.CardPayment)],
+            "open_app": [a for a in ctl.bank.applications.values() if a.status.current not in ("DISBURSED", "DECLINED")],
+            "approved_app": [a for a in ctl.bank.applications.values()
+                             if a.status.current in ("APPROVED", "APPROVED_WITH_CONDITIONS")],
+            "condition": [c for a in ctl.bank.applications.values() for c in a.conditions if not c.is_met()],
+            "financing": [a for a in ctl.bank.arrangements.values()
+                          if isinstance(a, bs.FinancingAgreement) and a.status.current in a.USABLE_STATUSES],
+            "open_case": [c for c in ctl.bank.cases.values() if c.is_open],
+            "open_dispute": [c for c in ctl.bank.cases.values() if isinstance(c, bs.Dispute) and c.is_open],
+            "collections_case": [c for c in ctl.bank.cases.values() if isinstance(c, bs.CollectionsCase) and c.is_open],
+            "alert": [c for c in ctl.bank.cases.values() if isinstance(c, bs.FraudAlert)],
+            "branch": [x for x in ctl.bank.branches.values() if x.status.current == "OPEN"],
+            "employee": ctl.staff(),
         }.get(kind)
         return None if source is None else [(label_of(x), x) for x in source]
 
@@ -1396,13 +1644,24 @@ class OperationsPage(Page):
         self.op_tree.bind("<<TreeviewSelect>>", self._pick_operation)
         self.form = Panel(frame, self.theme, "Choose an operation")
         self.form.grid(row=0, column=1, sticky="nsew")
+        self.form_frame = frame
         self.specs = {}
         groups = {}
         for spec in self._specs():
             if spec.group not in groups:
-                groups[spec.group] = self.op_tree.insert("", "end", text=spec.group, open=spec.group != "Customers")
+                groups[spec.group] = self.op_tree.insert("", "end", text=spec.group, open=False)
             iid = self.op_tree.insert(groups[spec.group], "end", text="   " + spec.label)
             self.specs[iid] = spec
+        counts = {}
+        for spec in self.specs.values():
+            counts[spec.group] = counts.get(spec.group, 0) + 1
+        guide = ("Open a group on the left and pick an operation. Each form calls exactly one Bank "
+                 "operation, so every rule, refusal and audit entry is the model's own.\n\n"
+                 + "\n".join(f"{group}: {n} forms" for group, n in counts.items())
+                 + f"\n\n{len(self.specs)} forms in total. Refused money movements are kept on record "
+                   "as FAILED or DECLINED; other refusals name the rule (e.g. AuthorityError).")
+        tk.Label(self.form.body, text=guide, bg=self.theme.CARD, fg=self.theme.INK, font=self.theme.f_body,
+                 justify="left", anchor="nw", wraplength=640).pack(fill="both", expand=True)
 
     def _pick_operation(self, _event=None):
         sel = self.op_tree.selection()
@@ -1598,6 +1857,190 @@ class BooksPage(Page):
                             or "BLOCKED" in e.action else None) for e in events[:600]])
 
 
+# ----------------------------------------------------------------------------- counterparties
+class CounterpartiesPage(MasterDetailPage):
+    title = "Counterparties"
+    subtitle = ("Merchants, billers and payees: external parties the bank pays or is paid by. "
+                "They are not customers, so the bank holds no KYC for them")
+    columns = [("Kind", 70), ("Name", 172), ("Detail", 172), ("Paid", 44)]
+    pane_weights = (3, 2)
+
+    def rows(self):
+        bank = self.ctl.bank
+        out = []
+        for m in sorted(bank.merchants.values(), key=lambda m: m.name):
+            out.append((m, ["Merchant", m.name, f"{m.category}, {m.country}", len(m.payments)], None))
+        for b in bank.billers.values():
+            paid = [t for t in bank.transactions.values() if isinstance(t, bs.BillPayment) and t.biller is b]
+            out.append((b, ["Biller", b.name, b.category, len(paid)],
+                        "muted" if b.status.current != "ACTIVE" else None))
+        for x in bank.beneficiaries.values():
+            paid = [t for t in bank.transactions.values() if isinstance(t, bs.TransferPayment) and t.beneficiary is x]
+            out.append((x, ["Payee", x.nickname, f"of {x.owner.name}", len(paid)],
+                        "muted" if x.status.current != "ACTIVE" else None))
+        return out
+
+    def _payments(self, payments, extra):
+        self.detail.h2("Payments")
+        if not payments:
+            self.detail.line("None yet.", "muted")
+            return
+        self.detail.table(["Txn", "Date", "Amount", "Status", extra[0]],
+                          [[t.txn_id, t.initiated_on, f"{t.amount:,.2f}", t.status.current, extra[1](t)]
+                           for t in payments])
+
+    def show(self, x):
+        d, bank = self.detail, self.ctl.bank
+        if isinstance(x, bs.Merchant):
+            d.h1(x.name, f"{x.merchant_id}  class: Merchant (standalone, not a Party)")
+            d.kv("Category / country", f"{x.category} / {x.country}")
+            d.kv("First presented by the card network", x.first_seen)
+            d.line("Card controls check the category and country copied onto each payment.", "muted")
+
+            def after(t):
+                parts = [f"refund {r.txn_id}" for r in t.refunds]
+                parts += [f"{r.label} {r.txn_id}" for r in t.reversals]
+                return f"card {t.card.card_id}" + ("; " + ", ".join(parts) if parts else "")
+            self._payments(x.payments, ("Card and follow-ups", after))
+        elif isinstance(x, bs.Biller):
+            d.h1(x.name, f"{x.code}  class: Biller")
+            d.kv("Category", x.category)
+            d.kv("Status trail", x.status.trail())
+            paid = [t for t in bank.transactions.values() if isinstance(t, bs.BillPayment) and t.biller is x]
+            self._payments(paid, ("Consumer reference", lambda t: t.consumer_reference))
+        else:
+            d.h1(x.nickname, f"{x.beneficiary_id}  payee of {x.owner.name}  class: Beneficiary")
+            d.kv("Status trail", x.status.trail())
+            d.h2("Versions (details are never overwritten)")
+            for v in x.versions:
+                d.line(f"  {v}")
+            paid = [t for t in bank.transactions.values() if isinstance(t, bs.TransferPayment) and t.beneficiary is x]
+            self._payments(paid, ("Sent to version", lambda t: f"v{t.beneficiary_version.version}"))
+
+
+# ----------------------------------------------------------------------------- reports
+class ReportsPage(Page):
+    title = "Reports"
+    subtitle = "Historical questions answered from the records: authority on a date, the audit trail, a day's activity"
+
+    def build(self):
+        t = self.theme
+        self.content.columnconfigure(0, weight=2, uniform="rep")
+        self.content.columnconfigure(1, weight=3, uniform="rep")
+        self.content.rowconfigure(0, weight=1)
+        left = tk.Frame(self.content, bg=t.BG)
+        left.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        out = Panel(self.content, t, "Result")
+        out.grid(row=0, column=1, sticky="nsew")
+        self.out = DetailView(out.body, t)
+        self.out.pack(fill="both", expand=True)
+        self.choices, self.panels = {}, []
+
+        def panel(title, subtitle, fields, run):
+            box = Panel(left, t, title)
+            box.pack(fill="x", pady=(0, 12))
+            box.body.columnconfigure(1, weight=1)
+            tk.Label(box.body, text=subtitle, bg=t.CARD, fg=t.MUTED, font=t.f_small, anchor="w", justify="left",
+                     wraplength=420).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 4))
+            widgets = []
+            for r, (label, kind, default) in enumerate(fields, start=1):
+                tk.Label(box.body, text=label, bg=t.CARD, fg=t.MUTED, font=t.f_small,
+                         anchor="w").grid(row=r, column=0, sticky="w", padx=(0, 8), pady=2)
+                w = ttk.Combobox(box.body, state="readonly") if kind else ttk.Entry(box.body)
+                if not kind and default:
+                    w.insert(0, default)
+                w.grid(row=r, column=1, sticky="ew", pady=2)
+                widgets.append((w, kind))
+            ttk.Button(box.body, text="Run report", command=lambda: self._run(title, widgets, run)).grid(
+                row=len(fields) + 1, column=1, sticky="e", pady=(6, 0))
+            self.panels.append((title, widgets, run))
+
+        panel("Who had authority, and when",
+              "the mandates a person held for an organisation on a past date",
+              [("Organisation", "org", None), ("Person", "person", None), ("On (YYYY-MM-DD)", None, "2026-04-11")],
+              self._authority)
+        panel("Approvals and authority audit",
+              "for auditors and branch managers; every run is itself logged",
+              [("Requested by", "staff", None), ("From (YYYY-MM-DD)", None, "2026-01-01"),
+               ("To (YYYY-MM-DD)", None, "2026-12-31")],
+              self._audit)
+        panel("What happened on a day", "the audit log for one date: who did what, and why",
+              [("Date (YYYY-MM-DD)", None, "2026-03-02")], self._daily)
+
+    def refresh(self):
+        bank = self.ctl.bank
+        self.choices = {
+            "org": [(p.name, p) for p in sorted(bank.parties.values(), key=lambda p: p.name)
+                    if isinstance(p, bs.Organization)],
+            "person": [(p.name, p) for p in self.ctl.persons()],
+            "staff": [(label_of(e), e) for e in (self.ctl.staff(bs.Bank.AUDIT_ROLES)
+                                                 + [e for e in self.ctl.staff() if e not in self.ctl.staff(bs.Bank.AUDIT_ROLES)])],
+        }
+        preferred = {"org": "Ravi Textiles (Pvt) Ltd", "person": "Bilal Ahmed"}   # a former director
+        for combo, kind in self._combos():
+            labels = [label for label, _ in self.choices[kind]]
+            combo["values"] = labels
+            if combo.get() not in labels and labels:
+                combo.set(preferred[kind] if preferred.get(kind) in labels else labels[0])
+        if not self.out.text.get("1.0", "end").strip():
+            self._run(*self.panels[0])                  # open with a worked example
+
+    def _combos(self):
+        found = []
+
+        def walk(widget):
+            for c in widget.winfo_children():
+                if isinstance(c, ttk.Combobox):
+                    found.append(c)
+                walk(c)
+        walk(self.content.winfo_children()[0])
+        kinds = ["org", "person", "staff"]
+        return list(zip(found, kinds))
+
+    def _run(self, title, widgets, run):
+        values = []
+        for w, kind in widgets:
+            raw = w.get().strip()
+            values.append(dict(self.choices.get(kind, [])).get(raw) if kind else raw)
+        self.out.clear()
+        self.out.h1(title)
+        try:
+            run(*values)
+        except bs.BankingError as e:
+            self.out.line(f"Refused by {type(e).__name__}: {e}", "bad")
+        except ValueError as e:
+            self.out.line(f"Check the input: {e}", "bad")
+        self.out.done()
+
+    def _authority(self, org, person, on):
+        on = _date(on)
+        held = self.ctl.bank.authority_on(org, person, on)
+        self.out.kv("Question", f"What could {person.name} do for {org.name} on {on}?")
+        if held:
+            for m in held:
+                self.out.line(f"  {m}", "ok")
+        else:
+            self.out.line("  No mandate in force on that date.", "bad")
+        self.out.h2("Every mandate this person has ever held here")
+        for m in [m for m in org.mandates if m.person is person] or []:
+            self.out.line(f"  {m}")
+        offices = [r for r in org.officers if r.person is person]
+        if offices:
+            self.out.h2("Offices held")
+            for r in offices:
+                self.out.line(f"  {r}")
+
+    def _audit(self, by, start, end):
+        for line in self.ctl.bank.approvals_and_authority_audit(by, _date(start), _date(end)):
+            self.out.line(line, "muted" if not line.startswith("  ") else None)
+
+    def _daily(self, on):
+        lines = self.ctl.bank.daily_report(_date(on))
+        self.out.kv("Events", len(lines))
+        for line in lines:
+            self.out.line(line)
+
+
 # ----------------------------------------------------------------------------- scenario log
 class ScenarioLogPage(Page):
     title = "Scenario log"
@@ -1663,8 +2106,8 @@ class BankingApp(tk.Tk):
     SECTIONS = [
         ("Bank", [("Overview", DashboardPage), ("Operations", OperationsPage), ("Customers", CustomersPage),
                   ("Accounts", AccountsPage), ("Transactions", TransactionsPage), ("Cards", CardsPage),
-                  ("Cases", CasesPage), ("Staff", StaffPage), ("Products & branches", ProductsPage),
-                  ("Books & audit", BooksPage)]),
+                  ("Counterparties", CounterpartiesPage), ("Cases", CasesPage), ("Staff", StaffPage),
+                  ("Products & branches", ProductsPage), ("Books & audit", BooksPage), ("Reports", ReportsPage)]),
         ("Teaching & simulation", [("Class model", ClassModelPage), ("Scenario log", ScenarioLogPage)]),
     ]
     PAGES = [page for _section, pages in SECTIONS for page in pages]

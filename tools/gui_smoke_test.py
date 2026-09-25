@@ -41,16 +41,23 @@ def guided_checks(app):
 
 def sample_text(name, kind):
     """A plausible value for a free-text field, judged by its label."""
-    if "(blank" in name:
+    lowered = name.lower()
+    if "(blank" in name or "optional" in lowered:
         return ""                                      # the optional fields are left empty
-    if kind == "amount":
+    if kind == "amount" or "amount given back" in lowered:
         return "1000"
-    if "YYYY-MM-DD" in name:
-        return "1990-01-01"
-    if "Months" in name:
+    if "YYYY-MM-DD" in name:                           # future dates for dues, past for births
+        return "2028-01-15" if any(w in lowered for w in ("due", "effective", "to (")) else "1990-01-01"
+    if "months" in lowered:
         return "12"
-    if "rate" in name.lower():
+    if "rate" in lowered:
         return "0.18"
+    if "percentage" in lowered:
+        return "30"
+    if "day of month" in lowered:
+        return "5"
+    if "key=value" in lowered:
+        return "monthly_fee=100"
     return "Smoke test " + name.split(" (")[0].lower()
 
 
@@ -119,6 +126,81 @@ def onboarding_story(app):
     run("Add a beneficiary", [kashif, "Landlord", "UBL", "1234567890", "Mr Landlord", kashif], "ok")
 
 
+def lending_and_dispute_story(app):
+    print("== financing lifecycle and a card dispute through the forms")
+    ops, ctl = app.pages["Operations"], app.ctl
+    bank = ctl.bank
+    spec = {s.label: s for s in ops.specs.values()}
+
+    def run(label, values, expect):
+        outcome = show(ctl.run(label, lambda: spec[label].call(values)))
+        if outcome.kind != expect:
+            problems.append(f"{label}: expected {expect}, got {outcome.kind} ({outcome.detail[:80]})")
+        return outcome
+
+    ravi = ctl.find_person("Ravi Textiles (Pvt) Ltd")
+    ayesha = ctl.find_person("Ayesha Khan")
+    zainab = ctl.find_employee("Zainab Qureshi")
+    officer = ctl.find_employee("Maryam Tahir")
+    cards_ops = ctl.find_employee("Hina Aslam")
+    account = next(a for a in bank.arrangements.values()
+                   if ravi in a.holders and isinstance(a, g.bs.CurrentAccount) and a.status.current == "ACTIVE")
+    run("Apply for financing", [ravi, "2000000", "12", ayesha], "ok")
+    app_ = [a for a in bank.applications.values() if a.status.current == "SUBMITTED"][-1]
+    run("Decide an application", [app_, "APPROVE", "0.18", "board resolution", zainab], "ok")
+    run("Disburse financing", [app_, account, "2027-10-01", zainab], "blocked")   # condition still open
+    run("Satisfy a condition", [app_.conditions[0], "original on file", officer], "ok")
+    run("Disburse financing", [app_, account, "2027-10-01", zainab], "ok")
+    fin = app_.agreement
+    run("Repay financing", [fin, "100000", account], "ok")
+    run("Restructure financing", [fin, "18", "0.17", "2027-11-01", "cash-flow delay", zainab], "ok")
+    run("Settle financing early", [fin, account, zainab], "ok")
+    card = next(c for c in bank.cards.values() if c.status.current == "ACTIVE" and c.account is account)
+    run("Card purchase", [card, bank.merchants["Liberty Books"], "5000", "POS"], "ok")
+    buy = [t for t in bank.transactions.values() if isinstance(t, g.bs.CardPayment)][-1]
+    run("Merchant refund", [buy, "1000", "one book returned"], "ok")
+    run("Open a dispute", [buy, "4000", "NOT_RECEIVED", card.cardholder, officer], "ok")
+    dispute = buy.disputes[-1]
+    run("Resolve a dispute", [dispute, "UPHELD", "4000", cards_ops], "ok")
+    if not isinstance(dispute.refund, g.bs.Chargeback):
+        problems.append("an upheld card dispute did not produce a Chargeback")
+
+
+def reports_and_counterparties(app):
+    ctl = app.ctl
+    app.show("Reports")
+    page = app.pages["Reports"]
+    ravi, bilal = ctl.find_person("Ravi Textiles (Pvt) Ltd"), ctl.find_person("Bilal Ahmed")
+    checks = [
+        ("authority while director", lambda: page._authority(ravi, bilal, "2026-04-11"), "MND-"),
+        ("authority after revocation", lambda: page._authority(ravi, bilal, "2027-08-01"), "No mandate"),
+        ("audit by the auditor", lambda: page._audit(ctl.find_employee("Nida Farooq"), "2026-01-01", "2026-12-31"),
+         "Approvals by staff"),
+        ("daily report", lambda: page._daily("2026-03-02"), "Events"),
+    ]
+    for name, call, expect in checks:
+        page.out.clear()
+        call()
+        text = page.out.text.get("1.0", "end")
+        print(f"  {'ok' if expect in text else 'MISSING':8} report: {name}")
+        if expect not in text:
+            problems.append(f"report '{name}' did not show '{expect}'")
+    page.out.clear()
+    page._run("audit", [], lambda: page._audit(ctl.find_employee("Farah Siddiqui"), "2026-01-01", "2026-12-31"))
+    if "Refused by AuthorityError" not in page.out.text.get("1.0", "end"):
+        problems.append("a teller was allowed to run the audit report")
+    else:
+        print("  ok       report: a teller is refused the audit")
+    app.show("Counterparties")
+    cp = app.pages["Counterparties"]
+    kinds = {row[1][0] for row in cp.rows()}
+    for obj, _cells, _tag in cp.rows():
+        cp._show_selected(obj)
+    print(f"  ok       counterparties: {len(cp.rows())} rows of kinds {sorted(kinds)}")
+    if kinds != {"Merchant", "Biller", "Payee"}:
+        problems.append(f"counterparties screen shows {kinds}")
+
+
 def main():
     app = g.BankingApp()
     try:
@@ -127,6 +209,9 @@ def main():
         every_form(app)
         app.ctl.reset()
         onboarding_story(app)
+        lending_and_dispute_story(app)
+        print("== reports and counterparties screens")
+        reports_and_counterparties(app)
         print("== every screen refreshed")
         for name, _ in app.PAGES:
             app.show(name)

@@ -1,46 +1,48 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="3257" height="848" font-family="Helvetica, Arial, sans-serif" font-size="11">
+<svg xmlns="http://www.w3.org/2000/svg" width="3525" height="876" font-family="Helvetica, Arial, sans-serif" font-size="11">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#34495e"/></marker></defs>
 <text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">BankTransaction hierarchy - what each level adds (- attribute, + class constant, () method; italic = abstract)</text>
-<polyline points="154,440 154,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="824,440 824,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="154,440 154,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="824,440 824,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="422,652 422,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="690,652 690,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="958,652 958,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="1226,652 1226,629 824,629 824,606" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="1494,440 1494,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="1762,440 1762,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2030,440 2030,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="2566,440 2566,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1494,440 1494,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1762,440 1762,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2030,440 2030,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2566,440 2566,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="2298,652 2298,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="2566,652 2566,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
 <polyline points="2834,652 2834,531 2566,531 2566,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<polyline points="3102,440 3102,417 1628,417 1628,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
-<rect x="1503" y="60" width="250" height="334" fill="#f4f8fb" stroke="#34495e"/>
-<rect x="1503" y="60" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="1628" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a" font-style="italic">«abstract» BankTransaction</text>
-<text x="1509" y="96" fill="#1d2b3a">+ prefix</text>
-<text x="1509" y="110" fill="#1d2b3a">+ LIFECYCLE</text>
-<text x="1509" y="124" fill="#1d2b3a">- txn_id</text>
-<text x="1509" y="138" fill="#1d2b3a">- amount</text>
-<text x="1509" y="152" fill="#1d2b3a">- initiated_on</text>
-<text x="1509" y="166" fill="#1d2b3a">- narrative</text>
-<text x="1509" y="180" fill="#1d2b3a">- status</text>
-<text x="1509" y="194" fill="#1d2b3a">- entries</text>
-<text x="1509" y="208" fill="#1d2b3a">- reversals</text>
-<text x="1509" y="222" fill="#1d2b3a">- failure_reason</text>
-<text x="1509" y="236" fill="#1d2b3a">- supersedes</text>
-<text x="1509" y="250" fill="#1d2b3a">- superseded_by</text>
-<line x1="1503" y1="255" x2="1753" y2="255" stroke="#34495e"/>
-<text x="1509" y="268" fill="#1d2b3a">kind()</text>
-<text x="1509" y="282" fill="#1d2b3a">post()</text>
-<text x="1509" y="296" fill="#1d2b3a">reversed_amount()</text>
-<text x="1509" y="310" fill="#1d2b3a">net_amount()</text>
-<text x="1509" y="324" fill="#1d2b3a">summary()</text>
-<text x="1509" y="338" fill="#1d2b3a" font-style="italic">counterparty()  {abstract}</text>
-<text x="1509" y="352" fill="#1d2b3a">detail_lines()</text>
-<text x="1509" y="366" fill="#1d2b3a">case_lines()</text>
-<text x="1509" y="380" fill="#1d2b3a">story_lines()</text>
+<polyline points="3102,440 3102,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="3370,440 3370,417 1762,417 1762,394" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="3370,652 3370,587 3370,587 3370,564" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<rect x="1637" y="60" width="250" height="334" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1637" y="60" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1762" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a" font-style="italic">«abstract» BankTransaction</text>
+<text x="1643" y="96" fill="#1d2b3a">+ prefix</text>
+<text x="1643" y="110" fill="#1d2b3a">+ LIFECYCLE</text>
+<text x="1643" y="124" fill="#1d2b3a">- txn_id</text>
+<text x="1643" y="138" fill="#1d2b3a">- amount</text>
+<text x="1643" y="152" fill="#1d2b3a">- initiated_on</text>
+<text x="1643" y="166" fill="#1d2b3a">- narrative</text>
+<text x="1643" y="180" fill="#1d2b3a">- status</text>
+<text x="1643" y="194" fill="#1d2b3a">- entries</text>
+<text x="1643" y="208" fill="#1d2b3a">- reversals</text>
+<text x="1643" y="222" fill="#1d2b3a">- failure_reason</text>
+<text x="1643" y="236" fill="#1d2b3a">- supersedes</text>
+<text x="1643" y="250" fill="#1d2b3a">- superseded_by</text>
+<line x1="1637" y1="255" x2="1887" y2="255" stroke="#34495e"/>
+<text x="1643" y="268" fill="#1d2b3a">kind()</text>
+<text x="1643" y="282" fill="#1d2b3a">post()</text>
+<text x="1643" y="296" fill="#1d2b3a">reversed_amount()</text>
+<text x="1643" y="310" fill="#1d2b3a">net_amount()</text>
+<text x="1643" y="324" fill="#1d2b3a">summary()</text>
+<text x="1643" y="338" fill="#1d2b3a" font-style="italic">counterparty()  {abstract}</text>
+<text x="1643" y="352" fill="#1d2b3a">detail_lines()</text>
+<text x="1643" y="366" fill="#1d2b3a">case_lines()</text>
+<text x="1643" y="380" fill="#1d2b3a">story_lines()</text>
 <rect x="29" y="440" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
 <rect x="29" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
 <text x="154" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CashTransaction</text>
@@ -73,7 +75,7 @@
 <text x="303" y="716" fill="#1d2b3a">- consumer_reference</text>
 <line x1="297" y1="721" x2="547" y2="721" stroke="#34495e"/>
 <text x="303" y="734" fill="#1f6f3a">counterparty()  [implements]</text>
-<rect x="565" y="652" width="250" height="166" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="565" y="652" width="250" height="194" fill="#f4f8fb" stroke="#34495e"/>
 <rect x="565" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
 <text x="690" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CardPayment</text>
 <text x="571" y="688" fill="#1d2b3a">+ prefix</text>
@@ -83,9 +85,11 @@
 <text x="571" y="744" fill="#1d2b3a">- card_channel</text>
 <text x="571" y="758" fill="#1d2b3a">- country</text>
 <text x="571" y="772" fill="#1d2b3a">- merchant_category</text>
-<line x1="565" y1="777" x2="815" y2="777" stroke="#34495e"/>
-<text x="571" y="790" fill="#1f6f3a">counterparty()  [implements]</text>
-<text x="571" y="804" fill="#9c3d10">detail_lines()  [override]</text>
+<text x="571" y="786" fill="#1d2b3a">- refunds</text>
+<line x1="565" y1="791" x2="815" y2="791" stroke="#34495e"/>
+<text x="571" y="804" fill="#9c3d10">net_amount()  [override]</text>
+<text x="571" y="818" fill="#1f6f3a">counterparty()  [implements]</text>
+<text x="571" y="832" fill="#9c3d10">detail_lines()  [override]</text>
 <rect x="833" y="652" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
 <rect x="833" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
 <text x="958" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">OwnAccountTransfer</text>
@@ -159,11 +163,33 @@
 <text x="2715" y="734" fill="#1f6f3a">counterparty()  [implements]</text>
 <rect x="2977" y="440" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
 <rect x="2977" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
-<text x="3102" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Reversal</text>
+<text x="3102" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">MerchantRefund</text>
 <text x="2983" y="476" fill="#1d2b3a">+ prefix</text>
 <text x="2983" y="490" fill="#1d2b3a">- original</text>
-<text x="2983" y="504" fill="#1d2b3a">- reason</text>
-<text x="2983" y="518" fill="#1d2b3a">- approval</text>
+<text x="2983" y="504" fill="#1d2b3a">- merchant</text>
+<text x="2983" y="518" fill="#1d2b3a">- reason</text>
 <line x1="2977" y1="523" x2="3227" y2="523" stroke="#34495e"/>
 <text x="2983" y="536" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="3245" y="440" width="250" height="124" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="3245" y="440" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="3370" y="455" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Reversal</text>
+<text x="3251" y="476" fill="#1d2b3a">+ prefix</text>
+<text x="3251" y="490" fill="#1d2b3a">+ label</text>
+<text x="3251" y="504" fill="#1d2b3a">- original</text>
+<text x="3251" y="518" fill="#1d2b3a">- reason</text>
+<text x="3251" y="532" fill="#1d2b3a">- approval</text>
+<line x1="3245" y1="537" x2="3495" y2="537" stroke="#34495e"/>
+<text x="3251" y="550" fill="#1f6f3a">counterparty()  [implements]</text>
+<rect x="3245" y="652" width="250" height="152" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="3245" y="652" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="3370" y="667" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Chargeback</text>
+<text x="3251" y="688" fill="#1d2b3a">+ prefix</text>
+<text x="3251" y="702" fill="#1d2b3a">+ label</text>
+<text x="3251" y="716" fill="#1d2b3a">+ REASON_CODES</text>
+<text x="3251" y="730" fill="#1d2b3a">- dispute</text>
+<text x="3251" y="744" fill="#1d2b3a">- merchant</text>
+<text x="3251" y="758" fill="#1d2b3a">- reason_code</text>
+<line x1="3245" y1="763" x2="3495" y2="763" stroke="#34495e"/>
+<text x="3251" y="776" fill="#9c3d10">counterparty()  [override]</text>
+<text x="3251" y="790" fill="#9c3d10">detail_lines()  [override]</text>
 </svg>
