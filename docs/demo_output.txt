@@ -255,14 +255,14 @@ SCENARIO 15: Card controls, bill payments under dual control, searchable card hi
   Hamza pays the quarterly sales-tax bill: BIL-003 PKR 1,250,000.00 [AWAITING_AUTHORISATION]
   Ayesha authorises it as second signatory: BIL-003 PKR 1,250,000.00 [POSTED]
   Search by Hamza's current card finds 8 payments across the whole chain:
-    CRD-TX-001 2026-02-25    PKR 45,000.00 [POSTED] card CARD-001 at Metro Cash & Carry
-    CRD-TX-002 2026-03-11    PKR 25,000.00 [DECLINED] card CARD-001 at Online Store X
-    CRD-TX-003 2026-03-11    PKR 30,000.00 [POSTED] card CARD-003 at Hyperstar
-    CRD-TX-004 2026-03-11   PKR 120,000.00 [DECLINED] card CARD-003 at Al-Fatah Electronics
-    CRD-TX-007 2027-08-10    PKR 12,000.00 [DECLINED] card CARD-004 at Daraz.pk
-    CRD-TX-008 2027-08-10     PKR 9,500.00 [POSTED] card CARD-004 at Imtiaz Auto Parts
-    CRD-TX-009 2027-08-12    PKR 12,000.00 [POSTED] card CARD-004 at Daraz.pk
-    CRD-TX-010 2027-08-12     PKR 5,000.00 [DECLINED] card CARD-004 at BetWorld
+    CRD-TX-001 2026-02-25    PKR 45,000.00 [POSTED] card CARD-001 at Metro Cash & Carry (WHOLESALE, PK)
+    CRD-TX-002 2026-03-11    PKR 25,000.00 [DECLINED] card CARD-001 at Online Store X (ONLINE_MARKETPLACE, PK)
+    CRD-TX-003 2026-03-11    PKR 30,000.00 [POSTED] card CARD-003 at Hyperstar (GROCERY, PK)
+    CRD-TX-004 2026-03-11   PKR 120,000.00 [DECLINED] card CARD-003 at Al-Fatah Electronics (ELECTRONICS, PK)
+    CRD-TX-007 2027-08-10    PKR 12,000.00 [DECLINED] card CARD-004 at Daraz.pk (ONLINE_MARKETPLACE, PK)
+    CRD-TX-008 2027-08-10     PKR 9,500.00 [POSTED] card CARD-004 at Imtiaz Auto Parts (RETAIL, PK)
+    CRD-TX-009 2027-08-12    PKR 12,000.00 [POSTED] card CARD-004 at Daraz.pk (ONLINE_MARKETPLACE, PK)
+    CRD-TX-010 2027-08-12     PKR 5,000.00 [DECLINED] card CARD-004 at BetWorld (GAMBLING, PK)
 
 ==============================================================================
 SCENARIO 16: Auditor review, record retention, archive versus delete
@@ -335,4 +335,4 @@ REPORTS
   1000-LHR-02              0.00  1000-LHR-02 Vault cash LHR-02
   TOTAL                    0.00  <- must be zero
   
-  Totals: 108 transactions, 10 cases, 5 notices, 284 audit events. Nothing was deleted.
+  Totals: 108 transactions, 10 cases, 5 notices, 293 audit events. Nothing was deleted.

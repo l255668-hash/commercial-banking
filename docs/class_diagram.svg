@@ -153,33 +153,35 @@
 <rect x="572" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
 <text x="657" y="899" text-anchor="middle" fill="#1d2b3a">Mandate</text>
 <rect x="756" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="841" y="899" text-anchor="middle" fill="#1d2b3a">Notice</text>
+<text x="841" y="899" text-anchor="middle" fill="#1d2b3a">Merchant</text>
 <rect x="940" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1025" y="899" text-anchor="middle" fill="#1d2b3a">OfficerRole</text>
+<text x="1025" y="899" text-anchor="middle" fill="#1d2b3a">Notice</text>
 <rect x="1124" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1209" y="899" text-anchor="middle" fill="#1d2b3a">PaymentAuthorisation</text>
+<text x="1209" y="899" text-anchor="middle" fill="#1d2b3a">OfficerRole</text>
 <rect x="1308" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1393" y="899" text-anchor="middle" fill="#1d2b3a">Period</text>
+<text x="1393" y="899" text-anchor="middle" fill="#1d2b3a">PaymentAuthorisation</text>
 <rect x="1492" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1577" y="899" text-anchor="middle" fill="#1d2b3a">ProductDefinition</text>
+<text x="1577" y="899" text-anchor="middle" fill="#1d2b3a">Period</text>
 <rect x="1676" y="880" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1761" y="899" text-anchor="middle" fill="#1d2b3a">ProductTermsVersion</text>
+<text x="1761" y="899" text-anchor="middle" fill="#1d2b3a">ProductDefinition</text>
 <rect x="20" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="105" y="945" text-anchor="middle" fill="#1d2b3a">PromiseToPay</text>
+<text x="105" y="945" text-anchor="middle" fill="#1d2b3a">ProductTermsVersion</text>
 <rect x="204" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="289" y="945" text-anchor="middle" fill="#1d2b3a">RepaymentSchedule</text>
+<text x="289" y="945" text-anchor="middle" fill="#1d2b3a">PromiseToPay</text>
 <rect x="388" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="473" y="945" text-anchor="middle" fill="#1d2b3a">Restriction</text>
+<text x="473" y="945" text-anchor="middle" fill="#1d2b3a">RepaymentSchedule</text>
 <rect x="572" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="657" y="945" text-anchor="middle" fill="#1d2b3a">RoleAssignment</text>
+<text x="657" y="945" text-anchor="middle" fill="#1d2b3a">Restriction</text>
 <rect x="756" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="841" y="945" text-anchor="middle" fill="#1d2b3a">StandingOrder</text>
+<text x="841" y="945" text-anchor="middle" fill="#1d2b3a">RoleAssignment</text>
 <rect x="940" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1025" y="945" text-anchor="middle" fill="#1d2b3a">Statement</text>
+<text x="1025" y="945" text-anchor="middle" fill="#1d2b3a">StandingOrder</text>
 <rect x="1124" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1209" y="945" text-anchor="middle" fill="#1d2b3a">StatusChange</text>
+<text x="1209" y="945" text-anchor="middle" fill="#1d2b3a">Statement</text>
 <rect x="1308" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1393" y="945" text-anchor="middle" fill="#1d2b3a">StatusHistory</text>
+<text x="1393" y="945" text-anchor="middle" fill="#1d2b3a">StatusChange</text>
 <rect x="1492" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
-<text x="1577" y="945" text-anchor="middle" fill="#1d2b3a">VerificationCheck</text>
+<text x="1577" y="945" text-anchor="middle" fill="#1d2b3a">StatusHistory</text>
+<rect x="1676" y="926" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
+<text x="1761" y="945" text-anchor="middle" fill="#1d2b3a">VerificationCheck</text>
 </svg>

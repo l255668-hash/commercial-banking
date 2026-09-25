@@ -26,7 +26,7 @@ Companies and charities both have officers, owners and mandates, and both are on
 For behaviour many unrelated classes need: `StatusHistory` and `Period`. Accounts, cards, cases, branches and employees all have lifecycles, but they are not the same kind of thing, so each has a `StatusHistory` rather than inheriting from a common base.
 
 **How many classes and operations, and how do you know?**
-Run `python banking_system.py --classes`: 74 domain classes, 7 error classes, 96 `Bank` operations (78 of them state-changing commands), counted from the code. A test (`ModelShapeTests`) fails if either count drops below 30.
+Run `python banking_system.py --classes`: 75 classes, 7 error classes, 97 `Bank` operations (79 of them state-changing commands), counted from the code. Six of the classes are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, `Bank`), so the honest business count is 69; the printout says so. A test (`ModelShapeTests`) fails if the business class count or the operation count drops below 30.
 
 **Which of your classes are abstract, and why?**
 The root of each hierarchy: `Party`, `Arrangement`, `BankTransaction`, `Case`, plus the middle levels `Organization`, `DepositAccount`, `CustomerPayment` and `LoanTransaction`. The bank never holds something that is only "a transaction" or only "a party", so creating one raises `TypeError`. Each has at least one abstract method whose answer genuinely differs by class, e.g. `DepositAccount.overdraft_limit()` (current accounts read it from the terms, savings and term deposits are zero) and `BankTransaction.counterparty()`. `CustomerCase` and `RiskCase` are concrete because each fully answers `handler_roles()`.
@@ -91,6 +91,12 @@ Only in the model. The GUI's `BankController.run` calls one `Bank` operation and
 
 **What happens to the forms when you press "Reset data"?**
 They keep working on the new bank. The forms are built once, so they hold a `CurrentBank` stand-in that looks up `controller.bank` on every call instead of capturing the old object. The GUI smoke test resets the bank between its passes to check exactly this.
+
+**Why does a bank console show a class model and a scenario log?**
+It doesn't mix them in: the sidebar has a "Bank" section with the ten screens staff would use, and a separate "Teaching & simulation" section with the class model and the scenario log. The brief says the model is for teaching and simulation, and those two screens let you see the inheritance tree and the seeded scenarios live. A real bank's staff application would not include them, which is why they are labelled as teaching aids. An earlier screen that displayed the diagram images was removed for that reason.
+
+**Why is `Merchant` not a `Party`?**
+The bank does no KYC on merchants; the merchant's own bank (the acquirer) does. We only record what card controls, disputes and fraud review need: name, category and country, and a link to every card payment made there. A shared `Counterparty` superclass with `Biller` was rejected too: they share only a name.
 
 **Why does the GUI have its own inheritance?**
 Every list screen has the same layout (table left, details right, refresh on show), so that lives once in `MasterDetailPage`; each subclass only declares its columns and how to draw one record. Same reasoning as `DepositAccount` in the model.

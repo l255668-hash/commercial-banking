@@ -131,7 +131,7 @@ def main():
         for name, _ in app.PAGES:
             app.show(name)
             app.update()
-        print(f"  {len(app.PAGES)} screens, {len(app.pages['Diagrams'].files)} diagram files")
+        print(f"  {len(app.PAGES)} screens in {len(app.SECTIONS)} sidebar sections")
         balanced = app.ctl.books_balance()
         print(f"  trial balance is zero: {balanced}")
         if not balanced:

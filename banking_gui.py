@@ -15,6 +15,9 @@ Design rules
   ``Bank`` operation, so every business rule, refusal and audit event is the
   model's own. A refusal is shown with the model's error class
   (for example ``AuthorityError``) exactly as the model raised it.
+* The sidebar separates the bank's own screens from two teaching and
+  simulation aids (Class model, Scenario log), which a real bank's staff
+  application would not have.
 * The GUI is itself built from classes and inheritance:
 
       tk.Tk        -> BankingApp                     the window, sidebar and top bar
@@ -23,7 +26,6 @@ Design rules
                         -> MasterDetailPage          list on the left, details on the right
                              -> CustomersPage, AccountsPage, TransactionsPage, CardsPage,
                                 CasesPage, StaffPage, ProductsPage, ClassModelPage
-                        -> DiagramsPage              class, UML and flowchart images
       tk.Frame     -> StatCard, Panel                reusable widgets
       ttk.Frame    -> DataTable, DetailView          reusable widgets
       tk.Canvas    -> TimelineCanvas                 validity periods drawn as ribbons
@@ -36,10 +38,8 @@ import contextlib
 import gc
 import inspect
 import io
-import math
 import sys
 from datetime import date, timedelta
-from pathlib import Path
 
 try:
     import tkinter as tk
@@ -309,6 +309,8 @@ def label_of(obj):
         return f"{obj.card_id} {obj.masked_number} {obj.cardholder.name} [{obj.status.current}]"
     if isinstance(obj, bs.Beneficiary):
         return f"{obj.nickname} ({obj.owner.name})"
+    if isinstance(obj, bs.Merchant):
+        return str(obj)
     if isinstance(obj, bs.Biller):
         return obj.name
     if isinstance(obj, bs.Restriction):
@@ -986,7 +988,7 @@ class CardsPage(MasterDetailPage):
         d.h2("Payments across the whole chain (search_transactions)")
         hits = bank.search_transactions(card=c)
         d.table(["Txn", "Date", "Card", "Amount", "Status", "Merchant"],
-                [[t.txn_id, t.initiated_on, t.card.card_id, f"{t.amount:,.2f}", t.status.current, t.merchant]
+                [[t.txn_id, t.initiated_on, t.card.card_id, f"{t.amount:,.2f}", t.status.current, t.merchant.name]
                  for t in hits])
         if c.events:
             d.h2("Events")
@@ -1117,7 +1119,8 @@ class ProductsPage(MasterDetailPage):
 
 class ClassModelPage(MasterDetailPage):
     title = "Class model"
-    subtitle = "Read from the code at runtime: what each class adds at its level, and live object counts"
+    subtitle = ("Teaching view, not a bank screen: the inheritance tree read from the code at runtime, "
+                "what each level adds, lifecycles and live object counts")
     columns = [("Class", 240), ("Level", 55), ("Live objects", 95)]
 
     def rows(self):
@@ -1288,10 +1291,15 @@ class OperationsPage(Page):
                            ("Presented by", "person")],
                           lambda v: b.withdraw_cash(v[0], amt(v[1]), v[2], v[3])),
             OperationSpec("Cards", "Card purchase",
-                          [("Card", "card"), ("Merchant", "text"), ("Amount", "amount"),
-                           ("Channel", ("choice", ["POS", "ONLINE", "ATM"])), ("Country", ("choice", ["PK", "AE", "GB"])),
-                           ("Merchant category", ("choice", ["RETAIL", "GAMBLING", "TRAVEL", "WHOLESALE"]))],
-                          lambda v: b.card_purchase(v[0], v[1] or "Console merchant", amt(v[2]), v[3], v[4], v[5])),
+                          [("Card", "card"), ("Merchant", "merchant"), ("Amount", "amount"),
+                           ("Channel", ("choice", ["POS", "ONLINE", "ATM"]))],
+                          lambda v: b.card_purchase(v[0], v[1], amt(v[2]), v[3])),
+            OperationSpec("Cards", "Record a merchant",
+                          [("Merchant name", "text"),
+                           ("Category", ("choice", sorted(bs.Merchant.CATEGORIES))),
+                           ("Country", ("choice", ["PK", "AE", "GB", "US"]))],
+                          lambda v: b.record_merchant(v[0] or "Console merchant", v[1], v[2]),
+                          "As the card network presents it; card controls check its category and country."),
             OperationSpec("Cards", "Report a card",
                           [("Card", "card"), ("Report", ("choice", ["LOST", "STOLEN", "DAMAGED"])),
                            ("Reported by", "person")],
@@ -1350,6 +1358,7 @@ class OperationsPage(Page):
             "any_arrangement": list(ctl.bank.arrangements.values()),
             "beneficiary": [x for x in ctl.bank.beneficiaries.values() if x.status.current == "ACTIVE"],
             "biller": [x for x in ctl.bank.billers.values() if x.status.current == "ACTIVE"],
+            "merchant": sorted(ctl.bank.merchants.values(), key=lambda m: m.name),
             "person": ctl.persons(),
             "customer": ctl.customers(),
             "staff": ctl.staff(),
@@ -1518,7 +1527,7 @@ class OperationsPage(Page):
             ("The stolen-then-destroyed card is used", "DECLINED",
              lambda: b().card_purchase(b().cards["CARD-001"], "Unknown shop", 1_000)),
             ("Online gambling on Hamza's card", "DECLINED by the MERCHANT_CATEGORY control",
-             lambda: b().card_purchase(b().cards["CARD-004"], "BetWorld", 2_000, "ONLINE", "PK", "GAMBLING")),
+             lambda: b().card_purchase(b().cards["CARD-004"], "BetWorld", 2_000, "ONLINE")),
             ("Credit manager approves PKR 30m", "AuthorityError: above the 25m delegated limit",
              over_limit_credit),
             ("Place a debit block on Ravi Textiles", "restriction in force from today", restrict),
@@ -1592,7 +1601,8 @@ class BooksPage(Page):
 # ----------------------------------------------------------------------------- scenario log
 class ScenarioLogPage(Page):
     title = "Scenario log"
-    subtitle = "The seeded demonstration that built this data: 16 scenarios on a simulated calendar"
+    subtitle = ("Simulation record, not a bank screen: the seeded demonstration that built this data "
+                "(16 scenarios on a simulated calendar)")
 
     def build(self):
         self.content.columnconfigure(1, weight=1)
@@ -1641,78 +1651,6 @@ class ScenarioLogPage(Page):
             self.view.text.yview(self.marks[sel[0]])
 
 
-# ----------------------------------------------------------------------------- diagrams
-class DiagramsPage(Page):
-    title = "Diagrams"
-    subtitle = "Class, UML and flowchart diagrams from the docs folder (generated from the code)"
-    DOCS = Path(__file__).resolve().parent / "docs"
-
-    def build(self):
-        self.content.columnconfigure(1, weight=1)
-        self.content.rowconfigure(0, weight=1)
-        left = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
-        left.grid(row=0, column=0, sticky="ns", padx=(0, 12))
-        self.list = tk.Listbox(left, width=34, bd=0, highlightthickness=0, activestyle="none",
-                               font=self.theme.f_body, fg=self.theme.INK, bg=self.theme.CARD,
-                               selectbackground=self.theme.SELECT, selectforeground=self.theme.INK)
-        self.list.pack(fill="both", expand=True, padx=6, pady=6)
-        self.list.bind("<<ListboxSelect>>", lambda _e: self._show())
-        self.fit = tk.BooleanVar(value=True)
-        ttk.Checkbutton(left, text="Fit to width", variable=self.fit, command=self._show).pack(anchor="w", padx=8,
-                                                                                               pady=(0, 8))
-        right = tk.Frame(self.content, bg=self.theme.CARD, highlightbackground=self.theme.LINE, highlightthickness=1)
-        right.grid(row=0, column=1, sticky="nsew")
-        right.rowconfigure(0, weight=1)
-        right.columnconfigure(0, weight=1)
-        self.canvas = tk.Canvas(right, bg="#FFFFFF", highlightthickness=0)
-        xs = ttk.Scrollbar(right, orient="horizontal", command=self.canvas.xview)
-        ys = ttk.Scrollbar(right, orient="vertical", command=self.canvas.yview)
-        self.canvas.configure(xscrollcommand=xs.set, yscrollcommand=ys.set)
-        self.canvas.grid(row=0, column=0, sticky="nsew")
-        ys.grid(row=0, column=1, sticky="ns")
-        xs.grid(row=1, column=0, sticky="ew")
-        self.canvas.bind("<Configure>", lambda _e: self._show() if self.fit.get() else None)
-        for sequence, step in (("<MouseWheel>", None), ("<Button-4>", -3), ("<Button-5>", 3)):
-            self.canvas.bind(sequence, lambda e, step=step: self.canvas.yview_scroll(
-                step if step is not None else -int(e.delta / 120) or (-1 if e.delta > 0 else 1), "units"))
-        self.files, self.image = [], None
-
-    def refresh(self):
-        if self.files:
-            return
-        order = ["flowchart", "state_", "class_diagram", "uml_"]
-        found = sorted(self.DOCS.glob("*.png"),
-                       key=lambda p: (next((i for i, o in enumerate(order) if p.name.startswith(o)), 9), p.name))
-        self.files = found
-        for p in found:
-            self.list.insert("end", " " + p.stem.replace("_", " "))
-        if found:
-            self.list.selection_set(0)
-            self.after(50, self._show)
-        else:
-            self.canvas.create_text(20, 20, anchor="nw", text="No diagrams found in docs/", fill=self.theme.MUTED)
-
-    def _show(self):
-        sel = self.list.curselection()
-        if not sel:
-            return
-        try:
-            image = tk.PhotoImage(file=str(self.files[sel[0]]))
-        except tk.TclError as e:
-            self.canvas.delete("all")
-            self.canvas.create_text(20, 20, anchor="nw", text=f"Cannot open image: {e}", fill=self.theme.BAD)
-            return
-        if self.fit.get():
-            width = max(200, self.canvas.winfo_width())
-            factor = max(1, math.ceil(image.width() / width))
-            if factor > 1:
-                image = image.subsample(factor, factor)
-        self.image = image                       # keep a reference, or Tk discards the picture
-        self.canvas.delete("all")
-        self.canvas.create_image(0, 0, image=image, anchor="nw")
-        self.canvas.configure(scrollregion=(0, 0, image.width(), image.height()))
-
-
 # =============================================================================
 # The application window
 # =============================================================================
@@ -1720,11 +1658,16 @@ class BankingApp(tk.Tk):
     """Main window: sidebar navigation, a top bar with the business date and batch controls,
     the page area, and an outcome banner for the result of the last operation."""
 
-    PAGES = [("Overview", DashboardPage), ("Operations", OperationsPage), ("Customers", CustomersPage),
-             ("Accounts", AccountsPage), ("Transactions", TransactionsPage), ("Cards", CardsPage),
-             ("Cases", CasesPage), ("Staff", StaffPage), ("Products & branches", ProductsPage),
-             ("Books & audit", BooksPage), ("Class model", ClassModelPage), ("Diagrams", DiagramsPage),
-             ("Scenario log", ScenarioLogPage)]
+    # The bank's own screens, then two teaching/simulation aids kept visibly apart from them
+    # (the brief describes the model as being "for teaching and simulation purposes").
+    SECTIONS = [
+        ("Bank", [("Overview", DashboardPage), ("Operations", OperationsPage), ("Customers", CustomersPage),
+                  ("Accounts", AccountsPage), ("Transactions", TransactionsPage), ("Cards", CardsPage),
+                  ("Cases", CasesPage), ("Staff", StaffPage), ("Products & branches", ProductsPage),
+                  ("Books & audit", BooksPage)]),
+        ("Teaching & simulation", [("Class model", ClassModelPage), ("Scenario log", ScenarioLogPage)]),
+    ]
+    PAGES = [page for _section, pages in SECTIONS for page in pages]
 
     def __init__(self):
         super().__init__()
@@ -1761,17 +1704,26 @@ class BankingApp(tk.Tk):
         tk.Label(side, text="Operations console", bg=t.TEAL, fg="#BFD8D3", font=t.f_small,
                  anchor="w").pack(fill="x", padx=20, pady=(0, 18))
         self.nav = {}
-        for name, _cls in self.PAGES:
-            item = tk.Label(side, text="   " + name, bg=t.TEAL, fg="#E6F0EE", font=t.f_body, anchor="w",
-                            padx=12, pady=8, cursor="hand2")
-            item.pack(fill="x", padx=10, pady=1)
-            item.bind("<Button-1>", lambda _e, n=name: self.show(n))
-            item.bind("<Enter>", lambda _e, w=item: w.config(bg=t.TEAL_2) if w is not self._active_nav() else None)
-            item.bind("<Leave>", lambda _e, w=item: w.config(bg=t.TEAL) if w is not self._active_nav() else None)
-            self.nav[name] = item
+        for i, (section, pages) in enumerate(self.SECTIONS):
+            if i:
+                tk.Frame(side, bg="#2F6E67", height=1).pack(fill="x", padx=20, pady=(12, 0))
+            tk.Label(side, text=section.upper(), bg=t.TEAL, fg="#9FC3BC", font=t.f_small,
+                     anchor="w").pack(fill="x", padx=22, pady=(10, 2))
+            for name, _cls in pages:
+                self._nav_item(side, name)
         tk.Label(side, text="Problem 4 - classes and inheritance\nAll rules live in banking_system.py",
                  bg=t.TEAL, fg="#9FC3BC", font=t.f_small, justify="left", wraplength=190).pack(side="bottom", anchor="w",
                                                                                padx=20, pady=18)
+
+    def _nav_item(self, side, name):
+        t = self.theme
+        item = tk.Label(side, text="   " + name, bg=t.TEAL, fg="#E6F0EE", font=t.f_body, anchor="w",
+                        padx=12, pady=6, cursor="hand2")
+        item.pack(fill="x", padx=10, pady=1)
+        item.bind("<Button-1>", lambda _e, n=name: self.show(n))
+        item.bind("<Enter>", lambda _e, w=item: w.config(bg=t.TEAL_2) if w is not self._active_nav() else None)
+        item.bind("<Leave>", lambda _e, w=item: w.config(bg=t.TEAL) if w is not self._active_nav() else None)
+        self.nav[name] = item
 
     def _active_nav(self):
         return self.nav.get(self.current)

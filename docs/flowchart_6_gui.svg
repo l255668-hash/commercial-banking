@@ -35,7 +35,7 @@
 <rect x="350" y="405" width="250" height="62" fill="#EEF4F2" stroke="#0B4F4A" stroke-width="1.5"/><line x1="362" y1="405" x2="362" y2="467" stroke="#0B4F4A" stroke-width="1.5"/><line x1="588" y1="405" x2="588" y2="467" stroke="#0B4F4A" stroke-width="1.5"/>
 <text x="475" y="433" text-anchor="middle" font-size="11.5" fill="#1D2B2A">BankController.reset(): run the</text><text x="475" y="447" text-anchor="middle" font-size="11.5" fill="#1D2B2A">demo quietly to seed the bank</text>
 <rect x="355" y="541" width="240" height="62" fill="#FFFFFF" stroke="#34495E" stroke-width="1.5"/>
-<text x="475" y="569" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Build the window: sidebar, top</text><text x="475" y="583" text-anchor="middle" font-size="11.5" fill="#1D2B2A">bar, 13 screens; show Overview</text>
+<text x="475" y="563" text-anchor="middle" font-size="11.5" fill="#1D2B2A">Build the window: sidebar (bank</text><text x="475" y="576" text-anchor="middle" font-size="11.5" fill="#1D2B2A">screens, teaching screens), top</text><text x="475" y="590" text-anchor="middle" font-size="11.5" fill="#1D2B2A">bar; show Overview</text>
 <polygon points="366,679 600,679 584,737 350,737" fill="#E6EEF9" stroke="#3D5A80" stroke-width="1.5"/>
 <text x="475" y="699" text-anchor="middle" font-size="11.5" fill="#1D2B2A">User picks a screen, a form, a</text><text x="475" y="712" text-anchor="middle" font-size="11.5" fill="#1D2B2A">guided check, or a top-bar</text><text x="475" y="726" text-anchor="middle" font-size="11.5" fill="#1D2B2A">action</text>
 <polygon points="475,794 606,844 475,894 344,844" fill="#FFF3D6" stroke="#B8862F" stroke-width="1.5"/>

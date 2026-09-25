@@ -8,11 +8,11 @@
 | Roll number | ______________________________ |
 | Course and instructor | ______________________________ |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 69 automated tests and generators for the class and UML diagrams.
+The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 70 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 69 automated tests
+python banking_system.py --test       # run the 70 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -23,7 +23,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 2. Assumptions | Section 2 (A1 to A36) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
 | 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
-| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (74 domain classes, 96 operations, 78 of them state-changing commands) |
+| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (69 business classes plus 6 supporting, 97 operations, 79 of them state-changing commands) |
 | 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | 7. At least three tempting inheritances rejected | Section 7 (twelve given) |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
@@ -161,7 +161,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | Fraud and compliance analysts | `FraudAlert`, `ComplianceInvestigation`, `Restriction`; `COMPLIANCE_ANALYST` role |
 | Collections personnel | `COLLECTIONS_OFFICER` works `CollectionsCase`s and records `PromiseToPay` |
 | Auditors and management | `AUDITOR` / `BRANCH_MANAGER` run `approvals_and_authority_audit`; `daily_report`, `trial_balance` |
-| External merchants, billers and payment counterparties | Merchant name, channel, country and category on `CardPayment`; `Biller` + `BillPayment`; `Beneficiary` versions for payees |
+| External merchants, billers and payment counterparties | `Merchant` (category and country, linked to every card payment made there; `record_merchant`); `Biller` + `BillPayment`; `Beneficiary` versions for payees; every transaction names its `counterparty()` |
 
 **Research areas and scope items.**
 
@@ -184,7 +184,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 
 ## 4. Class model
 
-74 domain classes plus 7 business-rule error classes.
+75 classes plus 7 business-rule error classes. 69 of the 75 are business classes; the other 6 are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, and the `Bank` application service). The brief discounts artificial classes, so the business count is the one to judge, and `python banking_system.py --classes` prints both.
 
 All diagrams are generated from the live classes by `python banking_system.py --diagram docs`: the attributes and methods are read from the source code itself, so the diagrams cannot drift from the implementation.
 
@@ -264,7 +264,7 @@ Complete class list by area:
 | Products | `ProductDefinition`, `ProductTermsVersion` |
 | Arrangements | `Arrangement`, `DepositAccount`, `CurrentAccount`, `SavingsAccount`, `FixedTermDeposit`, `FinancingAgreement`, `LedgerEntry`, `AccountHold`, `Restriction` |
 | Financing | `FinancingApplication`, `ApprovalCondition`, `RepaymentSchedule`, `Installment` |
-| Payments | `Beneficiary`, `BeneficiaryVersion`, `StandingOrder`, `Biller`, `BankTransaction`, `CustomerPayment`, `TransferPayment`, `CardPayment`, `BillPayment`, `OwnAccountTransfer`, `CashTransaction`, `FeeCharge`, `InterestCredit`, `Reversal`, `InternalTransfer`, `LoanTransaction`, `LoanDisbursement`, `LoanRepayment`, `InterestCapitalisation` |
+| Payments | `Beneficiary`, `BeneficiaryVersion`, `StandingOrder`, `Biller`, `Merchant`, `BankTransaction`, `CustomerPayment`, `TransferPayment`, `CardPayment`, `BillPayment`, `OwnAccountTransfer`, `CashTransaction`, `FeeCharge`, `InterestCredit`, `Reversal`, `InternalTransfer`, `LoanTransaction`, `LoanDisbursement`, `LoanRepayment`, `InterestCapitalisation` |
 | Cards | `IssuedCard`, `CardControl` |
 | Cases | `Case`, `CaseNote`, `CaseEvidence`, `CustomerCase`, `ServiceRequest`, `Dispute`, `Complaint`, `RiskCase`, `FraudAlert`, `ComplianceInvestigation`, `CollectionsCase`, `PromiseToPay` |
 | Communications | `Statement`, `Notice` |
@@ -337,15 +337,15 @@ The flowcharts show what an operation checks. These diagrams show what can happe
 
 `banking_system.py` is organised in 16 numbered parts (model, service, demo, tests, diagram, command line), each with a header comment. Every class and every public operation has a docstring that states the rule it enforces.
 
-`Bank` exposes 96 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`. The brief says trivial operations do not count, so they are classified honestly:
+`Bank` exposes 97 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`. The brief says trivial operations do not count, so they are classified honestly:
 
 | Kind | Count | Operations |
 |---|---|---|
-| Commands (create, update, assign, approve, cancel, transfer, close, retire, archive, delete, status change) | 78 | every operation in the table below except those in the next two rows |
+| Commands (create, update, assign, approve, cancel, transfer, close, retire, archive, delete, status change) | 79 | every operation in the table below except those in the next two rows |
 | Batch processes run by the simulated clock | 6 | `advance_to`, `run_standing_orders`, `run_arrears_check`, `charge_monthly_fees`, `credit_savings_interest`, `run_term_deposit_maturity` |
 | Views, historical queries and reports | 12 | `authority_on`, `capacities_of`, `transaction_story`, `daily_report`, `trial_balance`, `relationship_history`, `party_snapshot`, `approvals_and_authority_audit`, `search_transactions`, `retention_until`, `active_customers`, `active_arrangements` |
 
-Even counting only the 78 commands, the model is more than twice the brief's minimum of 30. The brief's verbs are all present: create (`register_person`, `open_deposit_account`), view (the query row), update (`amend_beneficiary`, `correct_party_detail`), delete (`delete_beneficiary`, `request_deletion`), assign (`assign_case`, `assign_relationship_manager`), cancel (`cancel_pending_payment`, `cancel_standing_order`), transfer (`transfer_between_accounts`, `close_branch`), approve (`decide_application`, `authorise_payment`), retire (`withdraw_from_sale`, `deactivate_biller`), archive (`archive_record`) and status management (`report_card`, `impose_restriction`).
+Even counting only the 79 commands, the model is more than twice the brief's minimum of 30. The brief's verbs are all present: create (`register_person`, `open_deposit_account`), view (the query row), update (`amend_beneficiary`, `correct_party_detail`), delete (`delete_beneficiary`, `request_deletion`), assign (`assign_case`, `assign_relationship_manager`), cancel (`cancel_pending_payment`, `cancel_standing_order`), transfer (`transfer_between_accounts`, `close_branch`), approve (`decide_application`, `authorise_payment`), retire (`withdraw_from_sale`, `deactivate_biller`), archive (`archive_record`) and status management (`report_card`, `impose_restriction`).
 
 | Group | Operations |
 |---|---|
@@ -354,7 +354,7 @@ Even counting only the 78 commands, the model is more than twice the brief's min
 | Products | `define_product`, `revise_product_terms`, `withdraw_from_sale`, `migrate_terms` |
 | Accounts, deposits and cash | `open_deposit_account`, `close_account`, `deposit_cash`, `withdraw_cash`, `transfer_between_accounts`, `break_term_deposit`, `run_term_deposit_maturity`, `charge_fee`, `charge_monthly_fees`, `credit_savings_interest`, `generate_statement` |
 | Payments | `add_beneficiary`, `amend_beneficiary`, `deactivate_beneficiary`, `delete_beneficiary`, `initiate_transfer`, `authorise_payment`, `cancel_pending_payment`, `release_transaction`, `reject_held_transaction`, `reverse_transaction`, `repost_card_payment`, `create_standing_order`, `cancel_standing_order`, `run_standing_orders`, `register_biller`, `deactivate_biller`, `pay_bill` |
-| Cards | `issue_card`, `card_purchase`, `report_card`, `replace_card`, `record_card_found`, `reactivate_card`, `change_card_limit`, `add_card_control`, `remove_card_control` |
+| Cards | `issue_card`, `record_merchant`, `card_purchase`, `report_card`, `replace_card`, `record_card_found`, `reactivate_card`, `change_card_limit`, `add_card_control`, `remove_card_control` |
 | Financing and collections | `submit_financing_application`, `attach_application_document`, `decide_application`, `satisfy_condition`, `disburse_financing`, `repay_financing`, `run_arrears_check`, `restructure_financing`, `settle_financing`, `record_collections_contact` |
 | Cases | `raise_service_request`, `raise_fraud_alert`, `open_investigation`, `assign_case`, `add_evidence`, `impose_restriction`, `lift_restriction`, `log_complaint`, `open_dispute`, `resolve_dispute`, `close_case` |
 | Retention | `archive_record`, `request_deletion`, `retention_until`, `active_customers`, `active_arrangements` |
@@ -364,7 +364,7 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 69 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), five abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
+**Automated tests.** 70 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), six abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, and a merchant is a counterparty linked to every card payment made there) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
@@ -385,6 +385,8 @@ Two conventions worth defending: payments that break a rule return a transaction
 **BankingError -> specific errors.** Every rule violation is a banking error; the subclasses let the demonstration and the tests name *which* rule stopped an action.
 
 ### 6.1 Abstract classes and polymorphism
+
+The brief states that abstraction, abstract base classes and polymorphism are not assessed. They are used here only where they make an inheritance decision enforceable rather than merely described: the level of the hierarchy that is abstract is exactly the level this report argues is "not a real thing on its own".
 
 A real bank never holds "a party", "an arrangement", "a transaction" or "a case" that is not some specific kind, so the root of each hierarchy is an abstract base class (Python `abc`). Trying to create one raises `TypeError`, and a new subclass that forgets a required method cannot be instantiated at all. Each abstract method is one whose answer genuinely differs by class:
 
@@ -417,7 +419,7 @@ Each class with a status declares its lifecycle once, as a `LIFECYCLE` class con
 8. **`GeneralLedgerAccount(DepositAccount)`.** Both have entries and a balance, but a GL account has no holder, product, terms, restrictions or customer status. The shared idea is only "has entries".
 9. **Merging `PaymentAuthorisation` into `Approval`.** Both are "someone said yes", but an `Approval` is a bank employee acting in a staff role, frozen at decision time, while a `PaymentAuthorisation` is a customer's signatory acting under a mandate. They follow different rules and must never be confused in an audit.
 10. **`SoleTrader(Organization)`.** A sole trader has no separate legal personality, so this would misrepresent liability and KYC (A5).
-11. **`Biller(Organization)` or `Merchant(Party)`.** Billers and merchants are counterparties, not customers: the bank holds no KYC, mandates or relationship for them. Making them parties would pull in documents, checks and restrictions that never apply. `Biller` is a small standalone class; a merchant is recorded on the card payment.
+11. **`Biller(Organization)` or `Merchant(Party)`.** Billers and merchants are counterparties, not customers: the bank holds no KYC, mandates or relationship for them. Making them parties would pull in documents, checks and restrictions that never apply. `Biller` and `Merchant` are small standalone classes. A shared `Counterparty` superclass for the two was also rejected: they share only a name, and their rules differ (a biller has a collection arrangement and can be deactivated; a merchant is recorded as the card network presents it, with the category and country that card controls check).
 12. **Card controls as extra card statuses (`BLOCKED_ONLINE`, ...).** A card can have several controls at once, each switched on and off at different times, and a control is not the card's lifecycle state. Separate `CardControl` objects with periods keep the status meaningful and the control history answerable.
 
 **Why this design beats the obvious alternative.** The obvious model is "everything is an account" with a customer class holding flags (`is_director`, `card_number`, `interest_rate`, `is_blocked`). It fails every critical case in the brief: changing a flag destroys the fact that it was once different, one card number cannot represent a replacement chain, and one rate cannot represent a customer pinned to old terms. The chosen design keeps inheritance only where behaviour genuinely differs and uses dated composition everywhere else, so every historical question stays answerable.
@@ -483,13 +485,13 @@ The brief assesses classes and inheritance, so the interface was built to make t
 | `Page` | `ttk.Frame` | A screen with a title, `build()` and `refresh()` |
 | `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
 | `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
-| `DashboardPage`, `OperationsPage`, `BooksPage`, `DiagramsPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
+| `DashboardPage`, `OperationsPage`, `BooksPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
 | `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Reusable table, rich text pane and scrolling area |
 | `Panel`, `StatCard` | `tk.Frame` | Reusable card widgets |
 | `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
 | `BankController`, `CurrentBank`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a stand-in that always forwards to the current bank (so "Reset data" reaches every form); a result in words; a form definition; colours, fonts and styles |
 
-**What it covers.** 13 screens. The Operations screen has 30 forms in seven groups (Customers 9, Payments 7, Cards 5, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. The Diagrams screen shows every flowchart, state machine and UML diagram in `docs/`, so the design can be explained from inside the running program. `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
+**What it covers.** 12 screens in two clearly separated sidebar sections. **Bank** (10 screens) is what the bank's staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids that a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 31 forms in seven groups (Customers 9, Payments 7, Cards 6, Compliance 3, Cash 2, Lending 2, Records 2) and 14 guided rule checks. The Customers group takes a new party through the whole of Flowchart 2 by hand: register a person or company, file an identity document, verify it (an expired document is recorded as a FAIL check), appoint directors or trustees, onboard, open an account, then grant and revoke mandates. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. (An earlier version also displayed the diagram images; it was removed because a bank console should not show design documents and because it only worked when the `docs/` folder was present. The diagrams are in this report.) `tools/gui_smoke_test.py` drives every check, every form and the onboarding story without a person at the keyboard and fails if anything crashes or the books stop balancing.
 
 `MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
 
@@ -513,14 +515,10 @@ The brief assesses classes and inheritance, so the interface was built to make t
 
 ![Books and audit](screenshots/gui_05_books_audit.png)
 
-**Figure 14. Class model read from the code at runtime,** with what each level adds and live object counts.
+**Figure 14. Class model (teaching section) read from the code at runtime:** `CustomerPayment` is marked abstract, with what it adds, the lifecycle it declares and its subclasses.
 
 ![Class model](screenshots/gui_06_class_model.png)
 
 **Figure 15. Onboarding forms:** each form lists the permitted staff first and calls one `Bank` operation.
 
-![Onboarding form](screenshots/gui_08_onboarding_form.png)
-
-**Figure 16. Diagrams screen:** the flowcharts and UML diagrams from `docs/`, viewable while the program runs.
-
-![Diagrams screen](screenshots/gui_07_diagrams.png)
+![Onboarding form](screenshots/gui_07_onboarding_form.png)

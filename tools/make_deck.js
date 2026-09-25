@@ -50,14 +50,14 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "The project at a glance", "One Python file, standard library only - banking_system.py");
-const stats = [["74", "domain classes"], ["96", "Bank operations (78 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["69", "automated tests"], ["0.00", "trial balance total"]];
+const stats = [["69", "business classes (+6 supporting)"], ["97", "Bank operations (79 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["70", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
   s.addText(n, { x, y: y + 0.15, w: 2.85, h: 0.85, fontFace: HEAD, fontSize: 40, bold: true, color: TEAL, align: "center", margin: 0, isTextBox: true });
   s.addText(label, { x: x + 0.1, y: y + 1.0, w: 2.65, h: 0.5, fontFace: BODY, fontSize: 13, color: GREY, align: "center", margin: 0, isTextBox: true });
 });
-s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 78 state-changing commands we are more than double. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
+s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 69 business classes and the 79 state-changing commands we are more than double. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
 
 // 3. Core rule ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -179,7 +179,7 @@ sym.forEach(([shape, label], i) => {
 const charts = ["Program overview", "Onboarding", "Transfer payment", "Card purchase", "Financing lifecycle", "Desktop console"];
 s.addText(charts.map((t, k) => ({ text: `${k + 1}. ${t}`, options: { breakLine: k < charts.length - 1 } })),
   { x: 7.35, y: 1.35, w: 2.15, h: 2.8, fontFace: BODY, fontSize: 12, color: INK, paraSpaceAfter: 6, valign: "top", margin: 0, isTextBox: true });
-s.addText("Report section 4.1; also on the GUI's Diagrams screen", { x: 4.3, y: 4.45, w: 5.2, h: 0.5, fontFace: BODY, fontSize: 11, italic: true, color: GREY, margin: 0, isTextBox: true });
+s.addText("Report section 4.1 (flowcharts) and 4.2 (state machines)", { x: 4.3, y: 4.45, w: 5.2, h: 0.5, fontFace: BODY, fontSize: 11, italic: true, color: GREY, margin: 0, isTextBox: true });
 s.addNotes("The class diagrams show structure; the flowcharts show behaviour. Walk through the transfer: beneficiary, authority (mandate within limit), funds, dual control, then the PKR 1,000,000 compliance hold. Every red terminator is a refusal that is still kept on record.");
 
 // 9c. GUI ----------------------------------------------------------------------
@@ -187,7 +187,7 @@ s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Live demo: the desktop console", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
 card(s, 0.5, 1.3, 6.1, 3.95, "F4F8F7");
 s.addImage({ path: DOCS + "screenshots/gui_01_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
-bullets(s, ["Guided rule checks: 14 real operations, each showing the model's own refusal", "30 forms, including full customer onboarding", "Customer timeline and time machine for any past date", "Card chains, cases, audit log and a zero trial balance", "GUI classes inherit too: Page -> MasterDetailPage -> CustomersPage"], 6.85, 1.35, 2.7, 3.9, 12);
+bullets(s, ["Guided rule checks: 14 real operations, each showing the model's own refusal", "31 forms, including full customer onboarding", "Customer timeline and time machine for any past date", "Card chains, cases, audit log and a zero trial balance", "GUI classes inherit too: Page -> MasterDetailPage -> CustomersPage"], 6.85, 1.35, 2.7, 3.9, 12);
 s.addNotes("Run Operations > Guided rule checks in order. Then Customers: Ayesha's roles as ribbons, and the time machine on 11 April 2026. The GUI contains no business rules: refusals come from the model and name its error class.");
 
 // 10. Code review ---------------------------------------------------------------

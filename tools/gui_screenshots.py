@@ -3,9 +3,8 @@
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py --all /tmp/shots
 
-The default run writes the two newest report figures to docs/screenshots/:
-the Diagrams screen showing a flowchart, and the "Register a person" form in
-the Operations screen.  ``--all DIR`` instead saves every screen to DIR, for
+The default run rewrites the seven report figures in docs/screenshots/
+(gui_01 to gui_07). ``--all DIR`` instead saves every screen to DIR, for
 checking the layout after a change.
 
 The whole X screen is grabbed with ``xwd`` and converted with netpbm
@@ -29,15 +28,28 @@ def grab(target):
     print("written", target)
 
 
-def show_flowchart(app):
-    app.show("Diagrams")
-    page = app.pages["Diagrams"]
-    names = [p.name for p in page.files]
-    index = names.index("flowchart_3_transfer.png") if "flowchart_3_transfer.png" in names else 0
-    page.list.selection_clear(0, "end")
-    page.list.selection_set(index)
-    page.list.see(index)
-    page._show()
+def select(page, predicate):
+    """Select the first row of a list screen whose object matches, and show it."""
+    for iid, obj in page.table.objects.items():
+        if predicate(obj):
+            page.table.tree.selection_set(iid)
+            page.table.tree.see(iid)
+            page._show_selected(obj)
+            return
+
+
+def show_page(name):
+    return lambda app: app.show(name)
+
+
+def show_guided_checks(app):
+    app.show("Operations")
+    app.pages["Operations"].content.winfo_children()[0].select(1)
+
+
+def show_class_model(app):
+    app.show("Class model")
+    select(app.pages["Class model"], lambda c: c is g.bs.CustomerPayment)
 
 
 def show_onboarding_form(app):
@@ -60,8 +72,13 @@ def main(argv):
                   lambda a, n=name: a.show(n)) for i, (name, _) in enumerate(app.PAGES)]
     else:
         out = SHOTS
-        steps = [("gui_07_diagrams.png", show_flowchart),
-                 ("gui_08_onboarding_form.png", show_onboarding_form)]
+        steps = [("gui_01_overview.png", show_page("Overview")),
+                 ("gui_02_guided_checks.png", show_guided_checks),
+                 ("gui_03_customer_timeline.png", show_page("Customers")),
+                 ("gui_04_card_chain.png", show_page("Cards")),
+                 ("gui_05_books_audit.png", show_page("Books & audit")),
+                 ("gui_06_class_model.png", show_class_model),
+                 ("gui_07_onboarding_form.png", show_onboarding_form)]
     queue = list(steps)
 
     def step():

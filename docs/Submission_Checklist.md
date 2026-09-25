@@ -22,9 +22,9 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 69 tests ... OK
+python banking_system.py --test       # expect: Ran 70 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
-python banking_system.py --classes    # expect: 74 domain classes, 7 error classes, 96 Bank operations
+python banking_system.py --classes    # expect: 75 domain classes (69 business + 6 supporting), 7 error classes, 97 Bank operations
 python banking_gui.py                 # the desktop console opens (Linux: sudo apt install python3-tk)
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)
 ```
@@ -38,7 +38,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 - [ ] Rehearse the slides once (speaker notes are in the deck).
 - [ ] Be able to explain the abstract classes (`python banking_system.py --classes` marks them) and walk through State machine 1: which statuses `BankTransaction`, `CustomerPayment` and `TransferPayment` each added.
 - [ ] Be able to walk through Flowchart 3 (transfer payment) and Flowchart 2 (onboarding) decision by decision, and say which method each diamond comes from. Know the six symbols.
-- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Diagrams shows the flowcharts during the viva.
+- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Class model (in the Teaching & simulation section) shows the inheritance tree live.
 - [ ] If your course requires the single code file only, submit `banking_system.py`; `banking_gui.py` is an optional extra that needs it.
 
 ## What is in the folder

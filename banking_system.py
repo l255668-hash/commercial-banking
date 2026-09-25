@@ -1244,6 +1244,31 @@ class Biller:
         return f"{self.name} ({self.category})"
 
 
+class Merchant:
+    """An external merchant where customers pay by card, as the card network presents it
+    (name, merchant category and country).
+
+    A counterparty, not a Party and not a customer: the merchant's own bank (the
+    acquirer) does its KYC, so this bank records only what card controls, disputes
+    and fraud review need. Every card payment keeps a link to the merchant, so all
+    payments at one merchant can be found across every card that paid there.
+    """
+
+    CATEGORIES = {"RETAIL", "GROCERY", "ELECTRONICS", "ONLINE_MARKETPLACE", "GAMBLING", "TRAVEL",
+                  "WHOLESALE", "BOOKS"}
+
+    def __init__(self, name, category, country, first_seen):
+        if category not in self.CATEGORIES:
+            raise BankingError(f"unknown merchant category {category}")
+        self.merchant_id = next_id("MER")
+        self.name, self.category, self.country = name, category, country
+        self.first_seen = first_seen
+        self.payments: list[CardPayment] = []
+
+    def __str__(self):
+        return f"{self.name} ({self.category}, {self.country})"
+
+
 # =============================================================================
 # PART 8 - Transactions (double-entry)
 #   BankTransaction -> CustomerPayment -> TransferPayment / CardPayment    (multi-level)
@@ -1399,22 +1424,24 @@ class TransferPayment(CustomerPayment):
 
 
 class CardPayment(CustomerPayment):
-    """A purchase with an issued card. Remembers the exact card used, forever."""
+    """A purchase with an issued card. Remembers the exact card used and the merchant,
+    forever; the merchant's country and category are copied at the time of purchase,
+    because those are what the card controls checked."""
 
     prefix = "CRD-TX"
 
     LIFECYCLE = CustomerPayment.LIFECYCLE.extend({"INITIATED": {"DECLINED": "card_purchase refused"}},
                                                final={"DECLINED"})
 
-    def __init__(self, amount, initiated_on, card, merchant, channel="POS", country="PK",
-                 merchant_category="RETAIL"):
-        super().__init__(amount, initiated_on, f"card purchase at {merchant}",
+    def __init__(self, amount, initiated_on, card, merchant, channel="POS"):
+        super().__init__(amount, initiated_on, f"card purchase at {merchant.name}",
                          card.account, card.cardholder, "CARD")
         self.card, self.merchant = card, merchant
-        self.card_channel, self.country, self.merchant_category = channel, country, merchant_category
+        self.card_channel = channel
+        self.country, self.merchant_category = merchant.country, merchant.category   # as at purchase
 
     def counterparty(self):
-        return f"{self.merchant} ({self.country})"
+        return f"{self.merchant.name} ({self.country})"
 
     def detail_lines(self):
         return super().detail_lines() + [f"  card used: {self.card}"]
@@ -1896,7 +1923,7 @@ class Bank:
         self.arrangements, self.transactions, self.cards, self.beneficiaries = {}, {}, {}, {}
         self.standing_orders, self.applications, self.cases = {}, {}, {}
         self.statements, self.notices, self.audit = [], [], []
-        self.approvals, self.billers = [], {}
+        self.approvals, self.billers, self.merchants = [], {}, {}
         self.gl = {}
         for code, gl_name, gl_type in [
                 ("1100", "Loans receivable", "ASSET"),
@@ -2533,11 +2560,24 @@ class Bank:
         self._log(by, "ISSUE_CARD", card.card_id, f"{card} limit {fmt(money(limit))}")
         return card
 
-    def card_purchase(self, card, merchant, amount, channel="POS", country="PK", merchant_category="RETAIL"):
+    def record_merchant(self, name, category="RETAIL", country="PK"):
+        """Operation: record a merchant the card network has presented (or return the one
+        already on file under that name). The first record's category and country stand."""
+        if name not in self.merchants:
+            self.merchants[name] = Merchant(name, category, country, self.today)
+            self._log("card-network", "MERCHANT_RECORDED", self.merchants[name].merchant_id,
+                      str(self.merchants[name]))
+        return self.merchants[name]
+
+    def card_purchase(self, card, merchant, amount, channel="POS"):
         """Operation: a card payment from the card network; declined ones are kept.
-        channel is POS, ONLINE or ATM; country is where the merchant is."""
-        txn = CardPayment(amount, self.today, card, merchant, channel, country, merchant_category)
+        merchant is a Merchant (or a name, recorded as a PK retail merchant);
+        channel is POS, ONLINE or ATM."""
+        if isinstance(merchant, str):
+            merchant = self.record_merchant(merchant)
+        txn = CardPayment(amount, self.today, card, merchant, channel)
         card.payments.append(txn)
+        merchant.payments.append(txn)
         self.transactions[txn.txn_id] = txn
         try:
             if card.status.current != "ACTIVE":
@@ -2545,7 +2585,7 @@ class Bank:
             if self.today > card.expires_on:
                 raise RestrictionViolation(f"card {card.card_id} expired on {card.expires_on}")
             for control in card.controls:
-                if control.blocks(channel, country, merchant_category, self.today):
+                if control.blocks(channel, txn.country, txn.merchant_category, self.today):
                     raise RestrictionViolation(f"card control {control}")
             if card.spent_on(self.today) + txn.amount > card.daily_limit_on(self.today):
                 raise BankingError(f"daily limit {fmt(card.daily_limit_on(self.today))} exceeded")
@@ -2554,7 +2594,7 @@ class Bank:
         except BankingError as e:
             return self._fail(txn, e, status="DECLINED")
         txn.post([(card.account, -txn.amount), (self.gl["2200"], txn.amount)], self.today, "card-network")
-        self._log(card.cardholder.name, "CARD_PAYMENT", txn.txn_id, f"{fmt(txn.amount)} at {merchant}")
+        self._log(card.cardholder.name, "CARD_PAYMENT", txn.txn_id, f"{fmt(txn.amount)} at {merchant.name}")
         return txn
 
     def report_card(self, card, kind, reported_by):
@@ -3363,6 +3403,11 @@ def run_demo():
     hamza_card = bank.issue_card(debit, ravi_cur, hamza, hina)
     usman_card = bank.issue_card(debit, ravi_cur, usman, hina)
     bank.advance_to(date(2026, 2, 25))
+    for name, category in [("Metro Cash & Carry", "WHOLESALE"), ("Online Store X", "ONLINE_MARKETPLACE"),
+                           ("Hyperstar", "GROCERY"), ("Al-Fatah Electronics", "ELECTRONICS"),
+                           ("Packages Mall Electronics", "ELECTRONICS"), ("Daraz.pk", "ONLINE_MARKETPLACE"),
+                           ("Imtiaz Auto Parts", "RETAIL"), ("BetWorld", "GAMBLING"), ("Liberty Books", "BOOKS")]:
+        bank.record_merchant(name, category)              # as the card network presents them
     bank.card_purchase(hamza_card, "Metro Cash & Carry", 45_000)
     bank.advance_to(date(2026, 2, 27))
     _txn_line("Noor (view-only) tries to pay a supplier",
@@ -3721,7 +3766,7 @@ def run_demo():
     _txn_line("Online purchase after Hamza lifts his block",
               bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
     _txn_line("Online betting site (category still blocked by card operations)",
-              bank.card_purchase(card3, "BetWorld", 5_000, channel="ONLINE", merchant_category="GAMBLING"))
+              bank.card_purchase(card3, "BetWorld", 5_000, channel="ONLINE"))
     _show(f"Was online use blocked on 10 Aug? {online_block.blocks('ONLINE', 'PK', 'RETAIL', date(2027, 8, 10))}"
           f" | today? {online_block.blocks('ONLINE', 'PK', 'RETAIL', bank.today)}")
     _txn_line("Noor (view-only) pays a tax bill", bank.pay_bill(ravi_cur, fbr, "NTN-4455667", 50_000, noor))
@@ -4361,7 +4406,7 @@ class ModelShapeTests(unittest.TestCase):
     """The brief's minimum scale and inheritance requirements, checked from the code."""
 
     def test_at_least_30_classes_and_30_operations(self):
-        self.assertGreaterEqual(len(domain_classes()), 30)
+        self.assertGreaterEqual(len(domain_classes()) - len(support_classes()), 30)   # business classes only
         self.assertGreaterEqual(len(bank_operations()), 30)
 
     def test_multi_level_inheritance_exists(self):
@@ -4425,6 +4470,13 @@ class AbstractionTests(unittest.TestCase):
         meanings = {type(a).__name__: a.position()[1] for a in self.bank.arrangements.values()}
         self.assertEqual(meanings["CurrentAccount"], "held")
         self.assertEqual(meanings["FinancingAgreement"], "owed")
+
+    def test_merchant_is_a_counterparty_linked_to_every_card_that_paid_there(self):
+        daraz = self.bank.merchants["Daraz.pk"]
+        self.assertNotIsInstance(daraz, Party)                     # no KYC on merchants (rejected #11)
+        self.assertTrue(daraz.payments and all(p.merchant is daraz for p in daraz.payments))
+        gamble = next(t for t in self.bank.merchants["BetWorld"].payments)
+        self.assertEqual((gamble.merchant_category, gamble.status.current), ("GAMBLING", "DECLINED"))
 
     def test_story_and_case_roles_need_no_type_checks(self):
         for method in (Bank.transaction_story, Bank.assign_case):
@@ -4532,6 +4584,13 @@ def error_classes():
 def bank_operations():
     """Public operations of the Bank service (each checks rules and writes audit)."""
     return [n for n, f in vars(Bank).items() if callable(f) and not n.startswith("_")]
+
+
+def support_classes():
+    """Classes that are infrastructure rather than banking concepts: history building
+    blocks, the audit line and the application service. Counted separately so the
+    business class count is honest (the brief discounts artificial classes)."""
+    return [Period, StatusChange, StatusHistory, Lifecycle, AuditEvent, Bank]
 
 
 def inheritance_tree():
@@ -4925,8 +4984,10 @@ def main(argv=None):
         return 0 if result.wasSuccessful() else 1
     if "--classes" in argv:
         print("\n".join(inheritance_tree()))
-        print(f"\n{len(domain_classes())} domain classes, {len(error_classes())} error classes, "
-              f"{len(bank_operations())} Bank operations")
+        support = support_classes()
+        print(f"\n{len(domain_classes())} domain classes ({len(domain_classes()) - len(support)} business "
+              f"classes + {len(support)} supporting: {', '.join(c.__name__ for c in support)}), "
+              f"{len(error_classes())} error classes, {len(bank_operations())} Bank operations")
         return 0
     if "--diagram" in argv:
         i = argv.index("--diagram")
