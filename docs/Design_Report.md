@@ -29,7 +29,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
 | 10. Limitations and scaling | Section 10 |
-| (Optional) user interface | Section 11: desktop GUI in `banking_gui.py` |
+| (Optional) user interface | Section 11: desktop GUI in `banking_gui.py` (staff console and digital banking) |
 
 ---
 
@@ -325,7 +325,7 @@ The class diagrams above show the structure. These six flowcharts show the behav
 
 ![Flowchart 5 - Financing lifecycle](flowchart_5_financing.png)
 
-**Flowchart 6. Desktop console** (`banking_gui.py`): every action calls one `Bank` operation and the result decides the banner colour; no rule lives in the GUI.
+**Flowchart 6. Desktop front end** (`banking_gui.py`): sign in as staff or as a customer; every action calls one `Bank` operation and the result decides the banner colour; no rule lives in the GUI.
 
 ![Flowchart 6 - Desktop console](flowchart_6_gui.png)
 
@@ -503,7 +503,7 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 
 ## 10. Limitations and scaling
 
-**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. In-memory storage only, with reference numbers held in a module-level counter. No concurrency or rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no login: each operation is told who is acting, and the model then checks that person's authority.
+**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. In-memory storage only, with reference numbers held in a module-level counter. No concurrency or rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no authentication: the GUI's sign-in chooses a person without a password, each operation is told who is acting, and the model then checks that person's authority.
 
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 
@@ -511,27 +511,18 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 
 ---
 
-## 11. Desktop operations console (optional GUI)
+## 11. Desktop front end (optional GUI)
 
-The brief assesses classes and inheritance, so the interface was built to make the model visible and testable, not to add business logic. `banking_gui.py` is a desktop console in pure Python (Tkinter and ttk, from the standard library). It imports `banking_system.py` and does not change it.
+The brief assesses classes and inheritance, so the front end exists to make the model usable, visible and testable, never to hold business rules. `banking_gui.py` is pure Python (Tkinter and ttk from the standard library). It imports `banking_system.py` and does not change it: every button calls exactly one `Bank` operation, so every rule, refusal and audit entry is the model's own. A refusal names the rule that stopped it, and a refused payment is shown as "refused, kept on record" because the model keeps it as failed or declined.
 
-**Two rules keep it honest.** Every button calls exactly one `Bank` operation, so every rule, refusal and audit event is the model's own. A refusal is shown with the model's error class (for example `AuthorityError`) and message, and a refused payment is shown as "refused, kept on record" because the model keeps it as FAILED or DECLINED.
+**Two ways in, as in a real bank.** The program opens on a sign-in screen (Figure 9). There are no passwords, because this is a simulation, but who you are matters, because the model checks that person's authority on every action.
 
-**It is built with the same OOP ideas it demonstrates.**
+- **Staff console.** Sign in as a member of staff. The top bar shows who you are and your role and branch. Forms no longer ask "registered by / approved by": you are recorded automatically as the member of staff. The Operations screen lists the forms your role may perform, with a search box; ticking "also show what my role may not do" brings back the rest, so a refusal can still be demonstrated (for example a teller trying to release a held payment).
+- **Digital banking** (the brief's "online channels"). Sign in as a customer or a company signatory. You see your own accounts and every company account you hold a live mandate for, with what the mandate allows. You can pay a payee, pay a bill, move money between accounts, add a payee, approve or decline colleagues' payments that need a second signatory, switch card controls on and off, report a card lost or stolen, dispute a card payment and raise complaints or service requests. Noor, a view-only signatory, sees the company account; when she tries to pay, the model refuses and keeps the attempt on record, exactly as for a payment made at a branch.
 
-| Class | Inherits from | Role |
-|---|---|---|
-| `BankingApp` | `tk.Tk` | Window, sidebar, top bar (business date, books status, advance day or month, reset), outcome banner |
-| `Page` | `ttk.Frame` | A screen with a title, `build()` and `refresh()` |
-| `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
-| `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CounterpartiesPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
-| `DashboardPage`, `OperationsPage`, `BooksPage`, `ReportsPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
-| `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Reusable table, rich text pane and scrolling area |
-| `Panel`, `StatCard` | `tk.Frame` | Reusable card widgets |
-| `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
-| `BankController`, `CurrentBank`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a stand-in that always forwards to the current bank (so "Reset data" reaches every form); a result in words; a form definition; colours, fonts and styles |
+**Designed to be read.** Status and role codes are shown in plain words ("Awaiting 2nd signatory", "Relationship manager") while the model keeps its exact codes. Tables size their columns to their content. The sidebar uses line icons drawn from canvas shapes, so the program needs no image files and looks the same on Windows, macOS and Linux. The Overview has three charts (largest depositors, customer payments per month, payment outcomes), a queue of payments that need attention with the actions to clear them, and an activity feed written as sentences ("Hamza Sheikh paid by card CRD-TX-011").
 
-**What it covers.** 14 screens in two clearly separated sidebar sections. **Bank** (12 screens) is what the bank's staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids that a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 80 forms in ten groups, enough to run every workflow of the brief's operational scenario by hand, and 14 guided rule checks:
+**Fourteen console screens in two sections.** **Bank** (12 screens) is what staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 80 forms in ten groups, enough to run every workflow of the brief's operational scenario by hand, plus 14 guided rule checks:
 
 | Group | Forms | What can be done |
 |---|---|---|
@@ -546,37 +537,58 @@ The brief assesses classes and inheritance, so the interface was built to make t
 | Products | 3 | Define products, publish new terms, withdraw from sale |
 | Records | 2 | Archive; request deletion (always refused, with the retention date) |
 
-Two new bank screens answer the brief's remaining scope items. **Counterparties** lists merchants, billers and payees with every payment made to or from them (a merchant's page shows each card used and any refund or chargeback). **Reports** answers historical questions directly: which mandates a person held for an organisation on a past date, the auditors' approvals-and-authority report (refused for a teller, and itself logged) and everything that happened on a given day. The Class model screen marks abstract classes, lists the methods each subclass must implement, and prints each class's lifecycle. (An earlier version also displayed the diagram images; it was removed because a bank console should not show design documents and because it only worked when the `docs/` folder was present. The diagrams are in this report.) `tools/gui_smoke_test.py` drives every guided check, all 80 forms, three stories typed into the forms (onboarding a new customer; the whole financing lifecycle from application to early settlement; a card purchase, merchant refund, dispute and chargeback) and every report, without a person at the keyboard. It fails if anything crashes, an outcome is not the expected one, or the books stop balancing. It runs on GitHub for every push.
+**Counterparties** lists merchants, billers and payees with every payment made to or from them. **Reports** answers historical questions directly: which mandates a person held for an organisation on a past date, the auditors' approvals-and-authority report (refused for a teller, and itself logged) and everything that happened on a given day. The **Class model** screen marks abstract classes, lists the methods each subclass must implement and prints each class's lifecycle.
 
-`MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
+**Built with the same OOP ideas it demonstrates.**
 
-**Figure 9. Overview:** balances, work waiting for action (authorise or release from here), recent audit events, and the books status.
+| Class | Inherits from | Role |
+|---|---|---|
+| `BankingApp` | `tk.Tk` | The window: sign-in screen, staff console or digital banking; sidebar, top bar and result banner |
+| `SignInScreen`, `DigitalBanking` | `tk.Frame` | Choosing who you are; the digital-banking shell with its tabs |
+| `Page` | `ttk.Frame` | A console screen with a title, `build()` and `refresh()` |
+| `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
+| `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CounterpartiesPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
+| `DashboardPage`, `OperationsPage`, `BooksPage`, `ReportsPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
+| `CustomerView` | `ttk.Frame` | A digital-banking screen for the signed-in person; `act()` runs one operation as that person |
+| `HomeView`, `PayView`, `ApprovalsView`, `CardsView`, `HelpView` | `CustomerView` | My accounts; pay and transfer; approvals; my cards; help and requests |
+| `Chart` | `tk.Canvas` | Title, empty state and redraw on resize; subclasses implement `draw()` |
+| `BarChart`, `ColumnChart`, `DonutChart` | `Chart` | The three dashboard charts |
+| `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Self-sizing table, rich text pane and scrolling area |
+| `Panel`, `StatCard`, `Banner` | `tk.Frame` | Card, dashboard tile and result strip |
+| `TimelineCanvas`, `IconBadge`, `Avatar` | `tk.Canvas` | Validity periods as ribbons; icon badge; initials |
+| `OperationSpec`, `BankController`, `CurrentBank`, `Outcome`, `Theme`, `Icons` | - | A form definition that knows which roles may use it; the only object that talks to the model; a stand-in that follows "Reset data"; a result in words; colours, fonts and styles; drawn icons |
 
-![GUI overview](screenshots/gui_01_overview.png)
+`MasterDetailPage` and `CustomerView` follow the same reasoning as the model's hierarchies: every list screen (or every digital-banking screen) shares its layout and behaviour, and only what differs is written in the subclass. `Chart -> BarChart / ColumnChart / DonutChart` is a small template: the base class draws the title and the empty state and redraws on resize, and each subclass draws only its own marks.
 
-**Figure 10. Guided rule checks:** each runs one real operation and shows the model's answer.
+`tools/gui_smoke_test.py` drives every guided check, all 80 forms, three stories typed into the forms (onboarding; the financing lifecycle from application to early settlement; a card purchase, merchant refund, dispute and chargeback), every report, a signed-in teller (who sees only a teller's forms and is recorded automatically) and a digital-banking story (Noor is refused as view-only, Hamza starts a payment that needs a second signatory and switches a card control, Ayesha approves it, a complaint is logged). It runs on GitHub for every push and fails if anything crashes, an outcome is not the expected one, or the books stop balancing.
 
-![Guided rule checks](screenshots/gui_02_guided_checks.png)
+**Figure 9. Sign in:** a member of staff for the console, or a customer or company signatory for digital banking.
 
-**Figure 11. A customer with one record and many dated roles:** capacities, timeline ribbons and the time machine.
+![Sign in](screenshots/gui_01_sign_in.png)
 
-![Customer timeline](screenshots/gui_03_customer_timeline.png)
+**Figure 10. Overview, signed in as a compliance analyst:** tiles, charts, the payments that need attention (release and reject act as the signed-in officer) and the activity feed.
 
-**Figure 12. Card replacement chain:** every payment on every card in the chain stays searchable.
+![Overview](screenshots/gui_02_overview.png)
 
-![Card chain](screenshots/gui_04_card_chain.png)
+**Figure 11. An operation form for a signed-in relationship manager:** only her role's forms are listed, and she is recorded as the member of staff without being asked.
 
-**Figure 13. Books and audit:** the trial balance totals zero; the audit log records what changed, who did it and why.
+![Operation form](screenshots/gui_03_operation_form.png)
 
-![Books and audit](screenshots/gui_05_books_audit.png)
+**Figure 12. Guided rule checks:** each runs one real operation and shows the model's answer.
 
-**Figure 14. Class model (teaching section) read from the code at runtime:** `CustomerPayment` is marked abstract, with what it adds, the lifecycle it declares and its subclasses.
+![Guided rule checks](screenshots/gui_04_guided_checks.png)
 
-![Class model](screenshots/gui_06_class_model.png)
+**Figure 13. One customer, many dated roles:** capacities, timeline ribbons and the time machine.
 
-**Figure 15. Operation forms:** 80 forms in ten groups; each lists the permitted staff first and calls one `Bank` operation.
+![Customer timeline](screenshots/gui_05_customer_timeline.png)
 
-![Onboarding form](screenshots/gui_07_onboarding_form.png)
+**Figure 14. Card replacement chain:** every payment on every card in the chain stays searchable.
+
+![Card chain](screenshots/gui_06_card_chain.png)
+
+**Figure 15. Books and audit:** the trial balance totals zero; the audit log records what changed, who did it and why.
+
+![Books and audit](screenshots/gui_07_books_audit.png)
 
 **Figure 16. Reports:** what Bilal could do for Ravi Textiles on 11 April 2026, while he was still a director. The same question for August 2027 answers "no mandate in force".
 
@@ -585,3 +597,19 @@ Two new bank screens answer the brief's remaining scope items. **Counterparties*
 **Figure 17. Counterparties:** a merchant is a standalone counterparty, not a `Party`; its page shows the card used and the merchant refund on its payment.
 
 ![Counterparties](screenshots/gui_09_counterparties.png)
+
+**Figure 18. Class model (teaching section):** `CustomerPayment` is marked abstract, with what it adds, the lifecycle it declares and its subclasses.
+
+![Class model](screenshots/gui_10_class_model.png)
+
+**Figure 19. Digital banking, signed in as Hamza:** the company account he may use, with what his mandate allows, and its recent activity.
+
+![Digital banking home](screenshots/gui_11_digital_home.png)
+
+**Figure 20. My cards:** the card, its controls (switched on and off by the cardholder) and every payment across the replacement chain, with a dispute button.
+
+![Digital banking cards](screenshots/gui_12_digital_cards.png)
+
+**Figure 21. Approvals, signed in as Ayesha:** Hamza's PKR 1,200,000 payment waits for her as the second signatory; the model refuses Hamza approving his own.
+
+![Digital banking approvals](screenshots/gui_13_digital_approvals.png)

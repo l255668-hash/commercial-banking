@@ -201,11 +201,11 @@ s.addNotes("The class diagrams show structure; the flowcharts show behaviour. Wa
 
 // 9c. GUI ----------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Live demo: the desktop console", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
+title(s, "Live demo: staff console and digital banking", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
 card(s, 0.5, 1.3, 6.1, 3.95, "F4F8F7");
-s.addImage({ path: DOCS + "screenshots/gui_01_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
-bullets(s, ["Guided rule checks: 14 real operations, each showing the model's own refusal", "80 forms: every workflow in the brief, by hand", "Customer timeline and time machine for any past date", "Card chains, cases, audit log and a zero trial balance", "GUI classes inherit too: Page -> MasterDetailPage -> CustomersPage"], 6.85, 1.35, 2.7, 3.9, 12);
-s.addNotes("Run Operations > Guided rule checks in order. Then Customers: Ayesha's roles as ribbons, and the time machine on 11 April 2026. The GUI contains no business rules: refusals come from the model and name its error class.");
+s.addImage({ path: DOCS + "screenshots/gui_02_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
+bullets(s, ["Sign in as staff or as a customer; the model checks that person's authority", "Staff: forms list what your role may do and record you automatically", "Digital banking: own accounts plus companies under a mandate; approvals, cards, disputes", "80 forms and 14 guided checks cover every workflow in the brief", "GUI classes inherit too: Page -> MasterDetailPage, CustomerView, Chart"], 6.85, 1.35, 2.7, 3.9, 12);
+s.addNotes("Sign in as Kamran (compliance) and show the Overview and a guided check. Then switch user to digital banking: Noor is refused (view only), Hamza starts a PKR 1.2m payment that waits for a 2nd signatory, Ayesha approves it. The GUI contains no business rules: refusals come from the model and name its rule.");
 
 // 10. Code review ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };

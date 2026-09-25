@@ -25,7 +25,7 @@ Work through this list before you hand the project in.
 python banking_system.py --test       # expect: Ran 73 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
 python banking_system.py --classes    # expect: 77 domain classes (71 business + 6 supporting), 7 error classes, 98 Bank operations
-python banking_gui.py                 # the desktop console opens (Linux: sudo apt install python3-tk)
+python banking_gui.py                 # the sign-in screen opens (Linux: sudo apt install python3-tk)
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)
 ```
 
@@ -40,7 +40,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 - [ ] Be able to explain the difference between a reversal, a merchant refund and a chargeback, and why only the chargeback is a subclass of `Reversal` (report sections 1, 6 and 7).
 - [ ] Be able to defend the design against the account-centric alternative (report section 7.1, slide 10).
 - [ ] Be able to walk through Flowchart 3 (transfer payment) and Flowchart 2 (onboarding) decision by decision, and say which method each diamond comes from. Know the six symbols.
-- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again. Also show Reports (Bilal's authority on 11 Apr 2026 vs Aug 2027) and Counterparties (a merchant's refund and chargeback). If asked to show a new customer, use Operations > Customers: register a person, add a document, verify, onboard, open an account. Class model (in the Teaching & simulation section) shows the inheritance tree live.
+- [ ] Rehearse a live demo in the GUI (about 5 minutes): sign in as Kamran Javed (compliance) and show the Overview; Operations > Guided rule checks 1 to 5; Customers (Ayesha's timeline); Reports (Bilal's authority on 11 Apr 2026 vs Aug 2027). Then *Switch user* to digital banking as Noor (a payment is refused: view only), as Hamza (pay PKR 1,200,000, which waits for a 2nd signatory), and as Ayesha (Approvals: approve it). "Reset" rebuilds the seeded data.
 - [ ] If your course requires the single code file only, submit `banking_system.py`; `banking_gui.py` is an optional extra that needs it.
 
 ## What is in the folder

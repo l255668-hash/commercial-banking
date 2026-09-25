@@ -3,8 +3,8 @@
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py --all /tmp/shots
 
-The default run rewrites the nine report figures in docs/screenshots/
-(gui_01 to gui_09). ``--all DIR`` instead saves every screen to DIR, for
+The default run rewrites the thirteen report figures in docs/screenshots/
+(gui_01 to gui_13). ``--all DIR`` instead saves every screen to DIR, for
 checking the layout after a change.
 
 The whole X screen is grabbed with ``xwd`` and converted with netpbm
@@ -38,34 +38,51 @@ def select(page, predicate):
             return
 
 
-def show_page(name):
-    return lambda app: app.show(name)
+def staff(name, page=None):
+    """Sign in as a member of staff and open a page."""
+    def setup(app):
+        if not (isinstance(app.user, g.bs.Employee) and app.user.person.name == name):
+            app.sign_in_staff(app.ctl.find_employee(name))
+        if page:
+            app.show(page)
+    return setup
 
 
-def show_guided_checks(app):
-    app.show("Operations")
+def customer(name, view="Home"):
+    def setup(app):
+        app.sign_in_customer(app.ctl.find_person(name))
+        app.digital.show(view)
+    return setup
+
+
+def sign_in_screen(app):
+    app.sign_out()
+
+
+def guided_checks(app):
+    staff("Kamran Javed", "Operations")(app)
     app.pages["Operations"].content.winfo_children()[0].select(1)
 
 
-def show_class_model(app):
-    app.show("Class model")
-    select(app.pages["Class model"], lambda c: c is g.bs.CustomerPayment)
-
-
-def show_counterparty(app):
-    app.show("Counterparties")
-    select(app.pages["Counterparties"], lambda x: getattr(x, "name", "") == "Imtiaz Auto Parts")
-
-
-def show_onboarding_form(app):
-    app.show("Operations")
+def operation_form(app):
+    staff("Maryam Tahir", "Operations")(app)
     ops = app.pages["Operations"]
     ops.content.winfo_children()[0].select(0)          # the forms tab, not the guided checks
-    iid = next(i for i, s in ops.specs.items() if s.label == "Register a person")
+    iid = next(i for i, s in ops.specs.items() if s.label == "Onboard as a customer")
     ops.op_tree.item(ops.op_tree.parent(iid), open=True)
     ops.op_tree.selection_set(iid)
     ops.op_tree.see(iid)
     ops._pick_operation()
+
+
+def class_model(app):
+    staff("Kamran Javed", "Class model")(app)
+    select(app.pages["Class model"], lambda c: c is g.bs.CustomerPayment)
+
+
+def counterparty(app):
+    staff("Kamran Javed", "Counterparties")(app)
+    select(app.pages["Counterparties"], lambda x: getattr(x, "name", "") == "Imtiaz Auto Parts")
 
 
 def main(argv):
@@ -74,19 +91,23 @@ def main(argv):
     if argv[:1] == ["--all"]:
         out = Path(argv[1] if len(argv) > 1 else ".")
         out.mkdir(parents=True, exist_ok=True)
-        steps = [(f"{i:02d}_{name.replace(' ', '_').replace('&', 'and')}.png",
-                  lambda a, n=name: a.show(n)) for i, (name, _) in enumerate(app.PAGES)]
+        steps = [(f"{i:02d}_{name.replace(' ', '_').replace('&', 'and')}.png", staff("Maryam Tahir", name))
+                 for i, (name, _) in enumerate(app.PAGES)]
     else:
         out = SHOTS
-        steps = [("gui_01_overview.png", show_page("Overview")),
-                 ("gui_02_guided_checks.png", show_guided_checks),
-                 ("gui_03_customer_timeline.png", show_page("Customers")),
-                 ("gui_04_card_chain.png", show_page("Cards")),
-                 ("gui_05_books_audit.png", show_page("Books & audit")),
-                 ("gui_06_class_model.png", show_class_model),
-                 ("gui_07_onboarding_form.png", show_onboarding_form),
-                 ("gui_08_reports.png", show_page("Reports")),
-                 ("gui_09_counterparties.png", show_counterparty)]
+        steps = [("gui_01_sign_in.png", sign_in_screen),
+                 ("gui_02_overview.png", staff("Kamran Javed", "Overview")),
+                 ("gui_03_operation_form.png", operation_form),
+                 ("gui_04_guided_checks.png", guided_checks),
+                 ("gui_05_customer_timeline.png", staff("Kamran Javed", "Customers")),
+                 ("gui_06_card_chain.png", staff("Kamran Javed", "Cards")),
+                 ("gui_07_books_audit.png", staff("Kamran Javed", "Books & audit")),
+                 ("gui_08_reports.png", staff("Kamran Javed", "Reports")),
+                 ("gui_09_counterparties.png", counterparty),
+                 ("gui_10_class_model.png", class_model),
+                 ("gui_11_digital_home.png", customer("Hamza Sheikh")),
+                 ("gui_12_digital_cards.png", customer("Hamza Sheikh", "Cards")),
+                 ("gui_13_digital_approvals.png", customer("Ayesha Khan", "Approvals"))]
     queue = list(steps)
 
     def step():

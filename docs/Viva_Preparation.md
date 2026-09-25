@@ -101,6 +101,12 @@ Only in the model. The GUI's `BankController.run` calls one `Bank` operation and
 **What happens to the forms when you press "Reset data"?**
 They keep working on the new bank. The forms are built once, so they hold a `CurrentBank` stand-in that looks up `controller.bank` on every call instead of capturing the old object. The GUI smoke test resets the bank between its passes to check exactly this.
 
+**Why does the GUI have a sign-in with no password?**
+It is a simulation, so there is nothing to protect, but *who* is acting decides what is allowed. Signing in sets the person the model checks: a teller is recorded as the teller on a cash deposit and sees only a teller's forms; a view-only signatory in digital banking is refused by `Bank.initiate_transfer`, not hidden by the screen. Report section 10 notes that a real system would take the person from authentication.
+
+**What is digital banking for, when there is already a staff console?**
+The brief says customers are served "through branches, online channels, cards". Digital banking is the online channel: the same `Bank` operations called with the customer or signatory as the one acting. It shows the brief's central idea from the customer's side: one person (Ayesha) can use her own accounts and act for two organisations, each with different powers.
+
 **Can the evaluator run the whole scenario from the GUI?**
 Yes. 80 forms cover every workflow in the brief: onboarding, accounts, payments, cards, cases, the full financing lifecycle, staff, branches and products. The Reports screen answers "who had authority on that date" and runs the auditors' report. The smoke test drives all 80 forms and three complete stories through the GUI on every push.
 

@@ -15,7 +15,7 @@ python banking_system.py              # run the seeded demonstration (16 scenari
 python banking_system.py --test       # run the 73 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
-python banking_gui.py                 # open the desktop operations console (GUI)
+python banking_gui.py                 # open the desktop app (sign in as staff or as a customer)
 ```
 
 On Windows and macOS, Tkinter comes with Python. On Linux you may need `sudo apt install python3-tk`.
@@ -90,7 +90,18 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 
 ## The desktop GUI (`banking_gui.py`)
 
-![Overview](docs/screenshots/gui_01_overview.png)
+The app opens on a sign-in screen with two ways in, as in a real bank:
+
+- **Staff console:** sign in as a member of staff. You are recorded automatically on every operation, the forms list what your role may do (with a search box), and the top bar shows who you are.
+- **Digital banking:** sign in as a customer or a company signatory. You see your own accounts and the companies you may act for, and can pay, transfer, pay bills, approve a colleague's payment as second signatory, switch card controls, report a card and dispute a payment. The model's rules still apply: a view-only signatory is refused and the attempt is kept on record.
+
+![Sign in](docs/screenshots/gui_01_sign_in.png)
+
+![Staff console overview](docs/screenshots/gui_02_overview.png)
+
+![Digital banking](docs/screenshots/gui_11_digital_home.png)
+
+Staff console screens:
 
 | Screen | What it shows |
 |---|---|
@@ -107,6 +118,16 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | Reports | Who held which mandate on a past date; the auditors' approvals-and-authority report (refused for a teller, itself logged); everything that happened on a given day |
 | Class model *(teaching section)* | The inheritance tree read from the code (abstract classes marked), what each level adds, each class's lifecycle, and live object counts |
 | Scenario log *(teaching section)* | The 16 seeded scenarios with refusals highlighted |
+
+Digital banking screens (for the signed-in customer or signatory):
+
+| Screen | What it does |
+|---|---|
+| Home | Every account the person may use (their own, and each company's under a live mandate) with the balance and what the mandate allows; recent activity; a statement |
+| Pay & transfer | Pay a payee, pay a bill, move money between accounts, add a payee; shows the mandate's limit and 2nd-signatory threshold; lists the person's recent payments and their status |
+| Approvals | Company payments waiting for this person as 2nd signatory (approve or decline), and payments they started |
+| Cards | The card, its controls switched on and off by the cardholder, reporting it lost or stolen, and every payment across the replacement chain with a dispute button |
+| Help | Complaints and service requests, and the cases the person has raised |
 
 The GUI never edits an object directly: every button calls one `Bank` operation, so all rules, refusals and audit events are the model's own. The top bar advances the business date (running the end-of-day batch) or resets the seeded data. The GUI is itself built from classes and inheritance (`Page -> MasterDetailPage -> CustomersPage` and so on).
 

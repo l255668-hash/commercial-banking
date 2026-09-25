@@ -201,6 +201,110 @@ def reports_and_counterparties(app):
         problems.append(f"counterparties screen shows {kinds}")
 
 
+def sign_in_and_roles(app):
+    """A signed-in member of staff is recorded automatically and sees their own forms."""
+    print("== sign-in, role-filtered forms and automatic 'performed by'")
+    ctl = app.ctl
+    teller = ctl.find_employee("Farah Siddiqui")
+    app.sign_in_staff(teller)
+    app.show("Operations")
+    ops = app.pages["Operations"]
+    labels = {s.label for s in ops.specs.values()}
+    if "Deposit cash" not in labels or "Approve" in labels or "Disburse financing" in labels:
+        problems.append(f"a teller sees the wrong forms: {sorted(labels)[:6]}...")
+    print(f"  ok       a teller sees {len(labels)} of {len(ops.all_specs)} forms")
+    spec = next(s for s in ops.all_specs if s.label == "Deposit cash")
+    ops._render_form(spec)
+    fixed = [w for w, m in ops.inputs if isinstance(w, g._Fixed)]
+    if len(fixed) != 1 or fixed[0].get() != g.nice(g.label_of(teller)):
+        problems.append("the teller was not filled in as the member of staff")
+    account = ctl.deposit_accounts()[0]
+    outcome = show(ctl.run("Deposit cash", lambda: spec.call([account, "1000", teller])))
+    if outcome.kind != "ok":
+        problems.append("a signed-in teller could not take a deposit")
+    ops.show_all.set(True)
+    ops._populate()
+    if len(ops.specs) != len(ops.all_specs):
+        problems.append("'show everything' did not show every form")
+    ops.show_all.set(False)
+    ops.search.insert(0, "card")
+    ops._populate()
+    print(f"  ok       search 'card' finds {len(ops.specs)} teller forms")
+    ops.search.delete(0, "end")
+    app.sign_out()
+
+
+def digital_banking_story(app):
+    """Customers and company signatories act through digital banking; mandates still apply."""
+    print("== digital banking: the same rules for customers and signatories")
+    ctl = app.ctl
+    bank = ctl.bank
+
+    def check(label, outcome, expect):
+        show(outcome)
+        if outcome.kind != expect:
+            problems.append(f"digital {label}: expected {expect}, got {outcome.kind} ({outcome.detail[:80]})")
+
+    noor, hamza, ayesha = (ctl.find_person(n) for n in ("Noor Fatima", "Hamza Sheikh", "Ayesha Khan"))
+    app.sign_in_customer(noor)
+    home = app.digital.views["Home"]
+    if not home.accounts() or home.accounts()[0][2] != {"VIEW"}:
+        problems.append("Noor should see the company account as view-only")
+    pay = app.digital.views["Pay & transfer"]
+    app.digital.show("Pay & transfer")
+    pay.p_amount.insert(0, "5000")
+    before = len(bank.transactions)
+    pay._send()
+    last = list(bank.transactions.values())[-1]
+    check("view-only transfer", g.Outcome("refused" if last.status.current == "FAILED" else "ok", last.txn_id),
+          "refused")
+    if len(bank.transactions) != before + 1:
+        problems.append("the refused transfer was not kept on record")
+
+    app.sign_in_customer(hamza)
+    app.digital.show("Pay & transfer")
+    pay.p_amount.delete(0, "end")
+    pay.p_amount.insert(0, "1200000")                   # above Hamza's 2nd-signatory threshold
+    pay._send()
+    pending = list(bank.transactions.values())[-1]
+    check("transfer needing a 2nd signatory",
+          g.Outcome("ok" if pending.status.current == "AWAITING_AUTHORISATION" else "blocked", pending.txn_id), "ok")
+    cards = app.digital.views["Cards"]
+    app.digital.show("Cards")
+    cards.vars["ONLINE"].set(True)
+    cards._toggle("ONLINE")
+    card = cards.card()
+    if not any(c.control_type == "ONLINE" and c.period.contains(ctl.today) for c in card.controls):
+        problems.append("Hamza could not switch on his online block")
+    cards.vars["ONLINE"].set(False)
+    cards._toggle("ONLINE")
+    print(f"  ok       Hamza switched his online block on and off ({len(card.controls)} control records kept)")
+
+    app.sign_in_customer(ayesha)
+    approvals = app.digital.views["Approvals"]
+    app.digital.show("Approvals")
+    waiting = ctl.awaiting_my_signature(ayesha)
+    if pending not in waiting:
+        problems.append("Ayesha does not see Hamza's payment for approval")
+    approvals.waiting.set_rows([(pending, [pending.txn_id])])
+    approvals.waiting.select_first()
+    approvals._approve()
+    check("Ayesha approves as 2nd signatory",
+          g.Outcome("ok" if pending.status.current in ("HELD_FOR_REVIEW", "POSTED") else "blocked", pending.txn_id),
+          "ok")
+    help_view = app.digital.views["Help"]
+    app.digital.show("Help")
+    cases_before = len(bank.cases)
+    help_view.c_text.insert(0, "statement arrived late")
+    help_view._complain()
+    if len(bank.cases) != cases_before + 1:
+        problems.append("a digital complaint was not recorded as a case")
+    for name in ("Home", "Pay & transfer", "Approvals", "Cards", "Help"):
+        app.digital.show(name)
+    print(f"  ok       all {len(app.digital.views)} digital banking views refreshed for {ayesha.name}")
+    app.sign_out()
+
+
 def main():
     app = g.BankingApp()
     try:
@@ -212,6 +316,10 @@ def main():
         lending_and_dispute_story(app)
         print("== reports and counterparties screens")
         reports_and_counterparties(app)
+        sign_in_and_roles(app)
+        app.ctl.reset()
+        digital_banking_story(app)
+        app.sign_in_staff(None)
         print("== every screen refreshed")
         for name, _ in app.PAGES:
             app.show(name)
