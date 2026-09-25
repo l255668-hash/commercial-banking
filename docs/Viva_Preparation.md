@@ -71,6 +71,12 @@ A sole trader has no separate legal personality, so it is a `Person` in the `SOL
 **How does the auditor see who approved what?**
 `approvals_and_authority_audit` lists every staff `Approval` with the role held at the time, plus every mandate, officer and role change from the audit log. Only auditors and branch managers may run it, and each run is itself logged (scenario 16).
 
+**Where are the business rules - in the GUI or the model?**
+Only in the model. The GUI's `BankController.run` calls one `Bank` operation and translates the result: a `BankingError` becomes a red "blocked" banner naming the error class; a FAILED or DECLINED transaction becomes "refused, kept on record". The GUI never sets an attribute on a domain object.
+
+**Why does the GUI have its own inheritance?**
+Every list screen has the same layout (table left, details right, refresh on show), so that lives once in `MasterDetailPage`; each subclass only declares its columns and how to draw one record. Same reasoning as `DepositAccount` in the model.
+
 ## The code review
 
 **What bugs did you find and fix?**

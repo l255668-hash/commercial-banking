@@ -29,6 +29,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
 | 10. Limitations and scaling | Section 10 |
+| (Optional) user interface | Section 11: desktop GUI in `banking_gui.py` |
 
 ---
 
@@ -386,3 +387,51 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 
 **If the business model changed.** Islamic banking products (for example Murabaha or Ijarah) would be new `Arrangement` subclasses, because their obligations differ structurally from interest-bearing loans; this is where the `Arrangement` level pays off. Investment or wealth products would also become new arrangement types with their own position records. Multi-currency would need a `Money` value class and FX transaction types.
+
+---
+
+## 11. Desktop operations console (optional GUI)
+
+The brief assesses classes and inheritance, so the interface was built to make the model visible and testable, not to add business logic. `banking_gui.py` is a desktop console in pure Python (Tkinter and ttk, from the standard library). It imports `banking_system.py` and does not change it.
+
+**Two rules keep it honest.** Every button calls exactly one `Bank` operation, so every rule, refusal and audit event is the model's own. A refusal is shown with the model's error class (for example `AuthorityError`) and message, and a refused payment is shown as "refused, kept on record" because the model keeps it as FAILED or DECLINED.
+
+**It is built with the same OOP ideas it demonstrates.**
+
+| Class | Inherits from | Role |
+|---|---|---|
+| `BankingApp` | `tk.Tk` | Window, sidebar, top bar (business date, books status, advance day or month, reset), outcome banner |
+| `Page` | `ttk.Frame` | A screen with a title, `build()` and `refresh()` |
+| `MasterDetailPage` | `Page` | A list on the left and the selected record's details on the right |
+| `CustomersPage`, `AccountsPage`, `TransactionsPage`, `CardsPage`, `CasesPage`, `StaffPage`, `ProductsPage`, `ClassModelPage` | `MasterDetailPage` | Each declares its columns and implements `rows()` and `show()` |
+| `DashboardPage`, `OperationsPage`, `BooksPage`, `ScenarioLogPage` | `Page` | Screens with their own layouts |
+| `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Reusable table, rich text pane and scrolling area |
+| `Panel`, `StatCard` | `tk.Frame` | Reusable card widgets |
+| `TimelineCanvas` | `tk.Canvas` | Draws validity periods as ribbons on a time axis |
+| `BankController`, `Outcome`, `OperationSpec`, `Theme` | - | The only object that talks to the model; a result in words; a form definition; colours, fonts and styles |
+
+`MasterDetailPage` is a three-level hierarchy (`ttk.Frame -> Page -> MasterDetailPage -> CustomersPage`) chosen for the same reason as the model's hierarchies: every list screen shares the same layout and behaviour, and only the columns and the detail rendering differ.
+
+**Figure 9. Overview:** balances, work waiting for action (authorise or release from here), recent audit events, and the books status.
+
+![GUI overview](screenshots/gui_01_overview.png)
+
+**Figure 10. Guided rule checks:** each runs one real operation and shows the model's answer.
+
+![Guided rule checks](screenshots/gui_02_guided_checks.png)
+
+**Figure 11. A customer with one record and many dated roles:** capacities, timeline ribbons and the time machine.
+
+![Customer timeline](screenshots/gui_03_customer_timeline.png)
+
+**Figure 12. Card replacement chain:** every payment on every card in the chain stays searchable.
+
+![Card chain](screenshots/gui_04_card_chain.png)
+
+**Figure 13. Books and audit:** the trial balance totals zero; the audit log records what changed, who did it and why.
+
+![Books and audit](screenshots/gui_05_books_audit.png)
+
+**Figure 14. Class model read from the code at runtime,** with what each level adds and live object counts.
+
+![Class model](screenshots/gui_06_class_model.png)

@@ -25,6 +25,7 @@ Work through this list before you hand the project in.
 python banking_system.py --test       # expect: Ran 60 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
 python banking_system.py --classes    # expect: 73 domain classes, 7 error classes, 96 Bank operations
+python banking_gui.py                 # the desktop console opens (Linux: sudo apt install python3-tk)
 ```
 
 - [ ] Open `docs/Design_Report.docx` and `docs/Viva_Presentation.pptx` in Word / PowerPoint and check the layout (they could not be previewed where they were generated).
@@ -34,17 +35,20 @@ python banking_system.py --classes    # expect: 73 domain classes, 7 error class
 - [ ] Read `docs/Viva_Preparation.md` and answer each question aloud in your own words.
 - [ ] Be able to explain, line by line: `Arrangement`, `DepositAccount`, `SavingsAccount.check_debit`, `Bank.initiate_transfer`, `Bank.reverse_transaction`, `Bank.repay_financing`.
 - [ ] Rehearse the slides once (speaker notes are in the deck).
+- [ ] Rehearse a live demo in the GUI: Operations > Guided rule checks, run 1 to 14 in order; then show Customers (Ayesha's timeline and the time machine on 2026-04-11), Cards (the replacement chain) and Books & audit (zero trial balance). Use "Reset data" to start again.
+- [ ] If your course requires the single code file only, submit `banking_system.py`; `banking_gui.py` is an optional extra that needs it.
 
 ## What is in the folder
 
 | File | Purpose |
 |---|---|
 | `banking_system.py` | The whole implementation: model, demo, tests, diagram generators |
+| `banking_gui.py` | Optional desktop GUI (Tkinter); every button calls one Bank operation |
 | `README.md` | How to run, file map, requirement map |
 | `docs/Design_Report.pdf` / `.docx` / `.md` | Written submission, sections 1 to 10 of the brief |
 | `docs/*.png`, `docs/*.svg` | Class overview, four UML hierarchy diagrams, three association diagrams |
 | `docs/demo_output.txt` | Captured output of the 16 scenarios |
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
-| `docs/Viva_Presentation.pptx` | 12-slide deck for the viva, with speaker notes |
+| `docs/Viva_Presentation.pptx` | 13-slide deck for the viva, with speaker notes |
 | `docs/Submission_Checklist.md` | This list |
