@@ -3,6 +3,7 @@
 banking_gui.py
 ==============
 Desktop front end for the Problem 4 banking model (banking_system.py).
+Prepared by: Khizar Rizwan and Bilal Nadeem
 
 Pure Python: Tkinter / ttk from the standard library, nothing to install
 (on Linux the OS package "python3-tk" may be needed). Run:
@@ -2912,7 +2913,7 @@ class SignInScreen(tk.Frame):
                              "person's authority on every action, exactly as it does for the demonstration.",
                  bg=t.SIDEBAR, fg=t.SIDEBAR_MUTED, font=t.f_small, anchor="w", justify="left",
                  wraplength=320).pack(fill="x", padx=44, pady=(10, 0))
-        tk.Label(brand, text="Problem 4 - classes and inheritance", bg=t.SIDEBAR, fg=t.SIDEBAR_MUTED,
+        tk.Label(brand, text="Problem 4 project by Khizar Rizwan and Bilal Nadeem", bg=t.SIDEBAR, fg=t.SIDEBAR_MUTED,
                  font=t.f_small, anchor="w").pack(side="bottom", fill="x", padx=44, pady=26)
 
         right = tk.Frame(self, bg=t.BG)

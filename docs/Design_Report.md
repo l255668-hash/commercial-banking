@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| Prepared by | ______________________________ |
-| Roll number | ______________________________ |
+| Prepared by | Khizar Rizwan and Bilal Nadeem |
+| Roll numbers | ______________________________ |
 | Course and instructor | ______________________________ |
 
 The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 73 automated tests and generators for the class and UML diagrams.

@@ -1,5 +1,7 @@
 # Problem 4: Commercial Banking, Lending, Payments and Compliance
 
+**Prepared by:** Khizar Rizwan and Bilal Nadeem
+
 [![tests](https://github.com/l255668-hash/commercial-banking/actions/workflows/tests.yml/badge.svg?branch=claude/reading-assistance-5l43go)](https://github.com/l255668-hash/commercial-banking/actions/workflows/tests.yml)
 
 An object-oriented model of a commercial bank (the fictional Indus Commercial Bank, Lahore), written for the OOP project brief, Problem 4. The assessed concepts are **classes and inheritance**. The model keeps a complete history: nothing is deleted, and any past state can be reconstructed.
