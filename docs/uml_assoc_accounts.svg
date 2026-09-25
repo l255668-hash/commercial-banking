@@ -57,6 +57,12 @@
 <line x1="875" y1="550" x2="875" y2="484" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
 <rect x="846" y="509" width="58" height="15" rx="3" fill="#ffffff"/>
 <text x="875" y="520" text-anchor="middle" fill="#5a3d8a" font-size="10.5">disputes</text>
+<line x1="720" y1="277" x2="780" y2="277" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="715" y="269" width="70" height="15" rx="3" fill="#ffffff"/>
+<text x="750" y="280" text-anchor="middle" fill="#5a3d8a" font-size="10.5">controls *</text>
+<line x1="1125" y1="262" x2="1125" y2="196" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="1109" y="221" width="33" height="15" rx="3" fill="#ffffff"/>
+<text x="1125" y="232" text-anchor="middle" fill="#5a3d8a" font-size="10.5">pays</text>
 <rect x="30" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="125" y="89" text-anchor="middle" font-weight="bold" fill="#1d2b3a">ProductDefinition</text>
 <rect x="280" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
@@ -71,12 +77,18 @@
 <text x="125" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Statement</text>
 <rect x="530" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="625" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Restriction</text>
+<rect x="1030" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="1125" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Biller</text>
 <rect x="30" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="125" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">AccountHold</text>
 <rect x="280" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="375" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">DepositAccount</text>
 <rect x="530" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="625" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">IssuedCard</text>
+<rect x="780" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="875" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">CardControl</text>
+<rect x="1030" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="1125" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">BillPayment</text>
 <rect x="30" y="358" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
 <text x="125" y="377" text-anchor="middle" font-weight="bold" fill="#1d2b3a">GeneralLedgerAccount</text>
 <rect x="280" y="358" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>

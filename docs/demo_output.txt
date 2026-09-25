@@ -2,13 +2,15 @@
 ==============================================================================
 SEED: branches, staff, products
 ==============================================================================
-  3 branches, 7 staff, 6 products
+  3 branches, 9 staff, 6 products
   Ayesha personal account CUR-001 balance PKR 150,000.00
 
 ==============================================================================
 SCENARIO 1: Business onboarding blocked by a document that expires mid-process
 ==============================================================================
   Ayesha reused her existing verified identity; no duplicate Person was created.
+  Beneficial owners at or above 25%: Sara Malik (Ayesha's 10% is recorded but is below the threshold)
+  People whose KYC the company file depends on: Ayesha Khan, Bilal Ahmed, Sara Malik
   [BLOCKED] Onboard Ravi Textiles on 12 Feb
             -> KycIncomplete: Bilal Ahmed: no passing check against a document valid on 2026-02-12
   [OK]      Onboard Ravi Textiles after renewal
@@ -111,6 +113,9 @@ SCENARIO 6: Financing with conditions, delegated limits, arrears, restructure, s
   Customer tries to overpay by 10m: RPY-003 PKR 10,000,000.00 [FAILED]  -> overpayment: only PKR 2,264,756.95 is outstanding
   Outstanding principal unchanged: PKR 2,083,333.34
   FIN-001 status IN_ARREARS; COL-001: FIN-001 overdue PKR 241,319.44
+  [BLOCKED] Teller records a collections call
+            -> AuthorityError: Farah Siddiqui (TELLER) may not record collections contacts
+  Promise to pay PKR 241,319.44 by 2026-07-27: BROKEN -> credit decides to restructure
   Schedule v2: PKR 2,116,319.45 (incl. capitalised interest PKR 32,986.11), 18 installments; collections case CLOSED (RESTRUCTURED)
   Schedule v1 [SUPERSEDED]: PAIDx2, SUPERSEDEDx10
   Schedule v2 [ACTIVE]: PAIDx1, SCHEDULEDx17
@@ -138,7 +143,7 @@ SCENARIO 7: Director leaves; old authority stays provable, new attempts fail
     - Customer since 2026-01-06, relationship manager Omar Raza
     - Holder of CUR-001 Classic Current (legacy) [ACTIVE]
     - DIRECTOR of Ravi Textiles (Pvt) Ltd, 2026-02-03 -> open
-    - Owner 35% of Ravi Textiles (Pvt) Ltd, 2026-02-03 -> open
+    - Owner 10% of Ravi Textiles (Pvt) Ltd, 2026-02-03 -> open
     - Mandate MND-001 Ayesha Khan for Ravi Textiles (Pvt) Ltd: BORROWING,CARD,PAYMENTS up to unlimited, valid 2026-02-13 -> open
     - TRUSTEE of Roshni Education Trust, 2026-02-16 -> open
     - Mandate MND-006 Ayesha Khan for Roshni Education Trust: PAYMENTS up to PKR 500,000.00, valid 2026-02-16 -> open
@@ -218,14 +223,72 @@ SCENARIO 13: Staff member and customer leave; history keeps both
   [BLOCKED] Bilal closes his relationship while his account is open
             -> InvalidStateError: Bilal Ahmed still holds CUR-003
   [OK]      Danish (no products) leaves the bank
-  Danish's record kept: Danish Butt [PER-014] relationship ACTIVE(2026-10-01) > ENDED(2027-02-03)
+  Danish's record kept: Danish Butt [PER-016] relationship ACTIVE(2026-10-01) > ENDED(2027-02-03)
+
+==============================================================================
+SCENARIO 14: Sole trader and high-value customer; fixed-term deposits
+==============================================================================
+  [BLOCKED] Onboard Imtiaz as a sole trader without a trading name
+            -> BankingError: a sole trader must state the trading name
+  Imtiaz pays the shop's electricity bill: BIL-001 PKR 18,400.00 [POSTED]
+  Imtiaz Ahmed trades as 'Imtiaz Auto Parts': one Person, segment SOLE_TRADER, personally liable (no separate Organization record)
+  [BLOCKED] Onboard Zara as a high-value (PRIVATE) customer
+            -> KycIncomplete: Zara Hussain: enhanced due diligence needs a verified source-of-wealth document
+  [OK]      Onboard Zara after enhanced due diligence
+  FTD-001 PKR 10m and FTD-002 PKR 1m placed at 11.5% for 6 months, maturing 2027-08-08
+  Zara tries to withdraw cash from the term deposit: CSH-014 PKR 500,000.00 [FAILED]  -> FTD-001 is fixed until 2027-08-08; break the deposit instead of withdrawing
+  Zara tries to top up the term deposit: OAT-003 PKR 100,000.00 [FAILED]  -> FTD-001 is funded once, at placement
+  FTD-002 broken early: interest forfeited, penalty PKR 10,000.00; status ACTIVE(2027-02-08) > CLOSED(2027-03-10)
+  FTD-001 matured 2027-08-08: interest PKR 575,000.00 and principal paid to CUR-005; deposit CLOSED, 2 ledger entries retained
+
+==============================================================================
+SCENARIO 15: Card controls, bill payments under dual control, searchable card history
+==============================================================================
+  [BLOCKED] Noor (not the cardholder) switches off Hamza's online block
+            -> AuthorityError: only the cardholder or card operations may change card controls
+  Online purchase while blocked: CRD-TX-007 PKR 12,000.00 [DECLINED]  -> card control CTL-001 block ONLINE (2027-08-10 -> open)
+  In-store purchase: CRD-TX-008 PKR 9,500.00 [POSTED]
+  Online purchase after Hamza lifts his block: CRD-TX-009 PKR 12,000.00 [POSTED]
+  Online betting site (category still blocked by card operations): CRD-TX-010 PKR 5,000.00 [DECLINED]  -> card control CTL-002 block MERCHANT_CATEGORY=GAMBLING (2027-08-10 -> open)
+  Was online use blocked on 10 Aug? True | today? False
+  Noor (view-only) pays a tax bill: BIL-002 PKR 50,000.00 [FAILED]  -> Noor Fatima holds no active 'PAYMENTS' mandate for Ravi Textiles (Pvt) Ltd on 2027-08-12
+  Hamza pays the quarterly sales-tax bill: BIL-003 PKR 1,250,000.00 [AWAITING_AUTHORISATION]
+  Ayesha authorises it as second signatory: BIL-003 PKR 1,250,000.00 [POSTED]
+  Search by Hamza's current card finds 8 payments across the whole chain:
+    CRD-TX-001 2026-02-25    PKR 45,000.00 [POSTED] card CARD-001 at Metro Cash & Carry
+    CRD-TX-002 2026-03-11    PKR 25,000.00 [DECLINED] card CARD-001 at Online Store X
+    CRD-TX-003 2026-03-11    PKR 30,000.00 [POSTED] card CARD-003 at Hyperstar
+    CRD-TX-004 2026-03-11   PKR 120,000.00 [DECLINED] card CARD-003 at Al-Fatah Electronics
+    CRD-TX-007 2027-08-10    PKR 12,000.00 [DECLINED] card CARD-004 at Daraz.pk
+    CRD-TX-008 2027-08-10     PKR 9,500.00 [POSTED] card CARD-004 at Imtiaz Auto Parts
+    CRD-TX-009 2027-08-12    PKR 12,000.00 [POSTED] card CARD-004 at Daraz.pk
+    CRD-TX-010 2027-08-12     PKR 5,000.00 [DECLINED] card CARD-004 at BetWorld
+
+==============================================================================
+SCENARIO 16: Auditor review, record retention, archive versus delete
+==============================================================================
+  [BLOCKED] Teller runs the approvals audit
+            -> AuthorityError: Farah Siddiqui (TELLER) may not run audit reports
+  Auditor Nida Farooq: 22 approvals and authority changes in 2026, e.g.:
+    APR-003: DECLINE by Zainab Qureshi acting as CREDIT_OFFICER @ LHR-01 on 2026-04-17
+    APR-004: APPROVE by Zainab Qureshi acting as CREDIT_OFFICER @ LHR-01 on 2026-04-17
+    APR-005: DISBURSE by Zainab Qureshi acting as CREDIT_OFFICER @ LHR-01 on 2026-04-23
+    APR-006: RESTRUCTURE by Zainab Qureshi acting as CREDIT_OFFICER @ LHR-01 on 2026-07-28
+    2026-09-20 REVOKE_MANDATE    MND-002   by Omar Raza: resigned as director
+  [BLOCKED] Delete closed savings account SAV-001
+            -> InvalidStateError: SAV-001 cannot be deleted: must be retained until 2037-02-01; archive it instead
+  Archived SAV-001, Danish's ended relationship and DSP-001: working list 9 -> 8 arrangements; all records still held
+  SAV-001 may not be destroyed before 2037-02-01
+  [OK]      Delete a payee that was never used
+  [BLOCKED] Delete Lahore Yarn Traders (used by past payments)
+            -> InvalidStateError: Lahore Yarn Traders is used by TRF-001, TRF-002, TRF-004, TRF-006, TRF-012, TRF-013, TRF-014; deactivate it instead
 
 ==============================================================================
 OPEN ITEMS: work still waiting at the end of the simulation
 ==============================================================================
-  Waiting for a second signatory: TRF-019 PKR 1,200,000.00 [AWAITING_AUTHORISATION]
-  Held for compliance review: TRF-020 PKR 1,100,000.00 [HELD_FOR_REVIEW]
-  Open dispute DSP-002 on CRD-TX-007; Ravi available balance PKR 2,546,164.65
+  Waiting for a second signatory: TRF-026 PKR 1,200,000.00 [AWAITING_AUTHORISATION]
+  Held for compliance review: TRF-027 PKR 1,100,000.00 [HELD_FOR_REVIEW]
+  Open dispute DSP-002 on CRD-TX-011; Ravi available balance PKR 5,220,164.65
 
 ==============================================================================
 REPORTS
@@ -253,18 +316,23 @@ REPORTS
   
   Trial balance (double-entry check; credits +, debits -):
   CUR-001            135,000.00  CUR-001 Classic Current (legacy) (Ayesha Khan)
-  CUR-002          3,646,164.65  CUR-002 Business Current (Ravi Textiles (Pvt) Ltd)
+  CUR-002          6,320,164.65  CUR-002 Business Current (Ravi Textiles (Pvt) Ltd)
   SAV-001                  0.00  SAV-001 Business Savings (Ravi Textiles (Pvt) Ltd)
   CUR-003             70,000.00  CUR-003 Personal Current (Bilal Ahmed)
+  CUR-004            277,100.00  CUR-004 Business Current (Imtiaz Ahmed)
+  CUR-005         12,565,000.00  CUR-005 Private Banking Current (Zara Hussain)
+  FTD-001                  0.00  FTD-001 6-Month Term Deposit (Zara Hussain)
+  FTD-002                  0.00  FTD-002 6-Month Term Deposit (Zara Hussain)
   1100                     0.00  1100 Loans receivable
-  2100             4,050,000.00  2100 Outgoing payments clearing
-  2200               158,500.00  2200 Card scheme settlement
-  4000                 6,500.00  4000 Fee income
+  2100             5,100,000.00  2100 Outgoing payments clearing
+  2200               180,000.00  2200 Card scheme settlement
+  2300             1,268,400.00  2300 Biller settlement
+  4000                25,500.00  4000 Fee income
   4100               138,835.35  4100 Financing interest income
-  5000               -71,160.66  5000 Savings interest expense
+  5000              -646,160.66  5000 Deposit interest expense
   1000-HO-01               0.00  1000-HO-01 Vault cash HO-01
-  1000-LHR-01     -8,133,839.34  1000-LHR-01 Vault cash LHR-01
+  1000-LHR-01    -25,433,839.34  1000-LHR-01 Vault cash LHR-01
   1000-LHR-02              0.00  1000-LHR-02 Vault cash LHR-02
   TOTAL                    0.00  <- must be zero
   
-  Totals: 71 transactions, 10 cases, 4 notices, 210 audit events. Nothing was deleted.
+  Totals: 108 transactions, 10 cases, 5 notices, 284 audit events. Nothing was deleted.

@@ -22,9 +22,9 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 49 tests ... OK
+python banking_system.py --test       # expect: Ran 60 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
-python banking_system.py --classes    # expect: 67 domain classes, 7 error classes, 78 Bank operations
+python banking_system.py --classes    # expect: 73 domain classes, 7 error classes, 96 Bank operations
 ```
 
 - [ ] Open `docs/Design_Report.docx` and `docs/Viva_Presentation.pptx` in Word / PowerPoint and check the layout (they could not be previewed where they were generated).
@@ -43,8 +43,8 @@ python banking_system.py --classes    # expect: 67 domain classes, 7 error class
 | `README.md` | How to run, file map, requirement map |
 | `docs/Design_Report.pdf` / `.docx` / `.md` | Written submission, sections 1 to 10 of the brief |
 | `docs/*.png`, `docs/*.svg` | Class overview, four UML hierarchy diagrams, three association diagrams |
-| `docs/demo_output.txt` | Captured output of the 13 scenarios |
+| `docs/demo_output.txt` | Captured output of the 16 scenarios |
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
-| `docs/Viva_Presentation.pptx` | 11-slide deck for the viva, with speaker notes |
+| `docs/Viva_Presentation.pptx` | 12-slide deck for the viva, with speaker notes |
 | `docs/Submission_Checklist.md` | This list |

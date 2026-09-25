@@ -54,12 +54,31 @@ Every fix has a regression test (run `python banking_system.py --test`).
 
 Smaller improvements: `Period.close` refuses to end before it starts; `ProductDefinition.terms_on` picks the latest effective version even when versions are added out of date order; savings interest starts from the opening date for accounts opened mid-month; expired cards are declined; a reversal cannot itself be reversed; reference counters reset at the start of each demo run, so the output is reproducible.
 
-## 4. Verification
+## 4. Review against the brief (second pass)
+
+After the defect fixes, the model was checked against every sentence of Problem 4. All ten critical cases were already covered; these gaps were found and closed:
+
+| Brief says | Gap found | Change |
+|---|---|---|
+| Customers include "sole traders and high-value customers" | Only an assumption; never modelled | `SOLE_TRADER` and `PRIVATE` segments; trading name; enhanced due diligence (source of wealth); scenario 14 |
+| "payment cards, issuance/replacement, **controls**" | Only a daily limit | `CardControl` (online, international, cash, merchant category) with periods; scenario 15 |
+| "external merchants, **billers**" | No bill payments | `Biller`, `BillPayment` (same authority and dual-control rules); scenario 15 |
+| "**collections** personnel" | Collections cases opened but nobody worked them | `COLLECTIONS_OFFICER`, `assign_case`, `record_collections_contact`, `PromiseToPay` marked kept or broken by the batch; scenario 6 |
+| "**auditors** and management"; "audit of approvals and authority changes" | No auditor role or report | `AUDITOR` role, `approvals_and_authority_audit`; scenario 16 |
+| Operations include "view ... **delete** ... **archive**" | No archive or delete operations | `archive_record`, `request_deletion` (refused with retention date), `delete_beneficiary` (only if never used); scenario 16 |
+| Which similarities among savings, transaction facilities, cards, financing and **investments** justify inheritance | No term or investment-like product | `FixedTermDeposit(DepositAccount)` with maturity payout and early-break penalty; `OwnAccountTransfer`; scenario 14 |
+| "one beneficial owner" | The demo had two owners above 25% | Ayesha's share recorded at 10% (below the threshold); scenario 1 prints who counts |
+| Old card transactions "remain **searchable**" | No search | `search_transactions` covers the whole replacement chain; scenario 15 |
+| Eight "questions the specification does not answer" | Answered, but scattered | Report section 3.1 answers each one; section 3.2 maps every participant and scope item |
+
+Each change has a test in `BriefCoverageTests` (11 tests).
+
+## 5. Verification
 
 | Check | Result |
 |---|---|
-| `python banking_system.py --test` | 49 tests, all passing |
+| `python banking_system.py --test` | 60 tests, all passing |
 | Python versions | 3.10, 3.11, 3.12 and 3.13 run the tests green; the file parses as Python 3.9 |
 | `pyflakes banking_system.py` | no warnings |
-| `python banking_system.py` | all 13 scenarios run; 20 refusals, each naming its rule; trial balance total 0.00 |
-| Brief minimums (checked by tests from the code) | 67 domain classes (at least 30), 78 operations (at least 30), four multi-level hierarchies |
+| `python banking_system.py` | all 16 scenarios run; 27 refusals, each naming its rule; trial balance total 0.00 |
+| Brief minimums (checked by tests from the code) | 73 domain classes (at least 30), 96 operations of which 78 are commands (at least 30), four multi-level hierarchies |

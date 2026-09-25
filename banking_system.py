@@ -12,17 +12,17 @@ that contains:
     PART 2  time and history building blocks (Period, StatusHistory, audit)
     PART 3  parties, KYC, roles and mandates      Party -> Organization -> Company
     PART 4  bank organisation and staff           Branch, Employee, Approval
-    PART 5  products and customer arrangements    Arrangement -> DepositAccount -> CurrentAccount
+    PART 5  products and customer arrangements    Arrangement -> DepositAccount -> Current/Savings/FixedTerm
     PART 6  financing (loans)                     FinancingAgreement, schedules, installments
-    PART 7  beneficiaries and standing orders
-    PART 8  transactions (double-entry)           BankTransaction -> CustomerPayment -> TransferPayment
-    PART 9  cards                                 IssuedCard with a replacement chain
+    PART 7  beneficiaries, standing orders and billers
+    PART 8  transactions (double-entry)           BankTransaction -> CustomerPayment -> Transfer/Card/Bill
+    PART 9  cards                                 IssuedCard replacement chain, CardControl
     PART 10 cases                                 Case -> RiskCase -> ComplianceInvestigation
     PART 11 statements and notices
     PART 12 Bank: the application service (every operation, rule and audit event)
-    PART 13 seeded demonstration: 13 complex scenarios on a simulated calendar
+    PART 13 seeded demonstration: 16 complex scenarios on a simulated calendar
     PART 14 automated tests (unittest)
-    PART 15 class-diagram generator (SVG, read from the live classes)
+    PART 15 class and UML diagram generators (SVG, read from the live classes)
     PART 16 command line
 
 How to run
@@ -475,6 +475,7 @@ class CustomerRelationship:
         self.branch_history = [(Period(since), home_branch)]
         self.rm_history = []                     # [(Period, Employee)]
         self.status = StatusHistory("ACTIVE", since, "system", "onboarded")
+        self.archived_on = None                  # set when moved to the retention archive
         if relationship_manager:
             self.set_manager(relationship_manager, since)
 
@@ -602,7 +603,7 @@ class Approval:
 class ProductDefinition:
     """A product the bank offers. Terms are versioned; sale status has a history."""
 
-    CATEGORIES = {"CURRENT", "SAVINGS", "FINANCING", "DEBIT_CARD"}
+    CATEGORIES = {"CURRENT", "SAVINGS", "TERM_DEPOSIT", "FINANCING", "DEBIT_CARD"}
 
     def __init__(self, code, name, category, launched_on):
         if category not in self.CATEGORIES:
@@ -671,6 +672,7 @@ class Arrangement:
         self.servicing_history = [(Period(opened_on), branch)]  # can change
         self.status = StatusHistory("ACTIVE", opened_on, opened_by, "opened")
         self.restrictions: list[Restriction] = []
+        self.archived_on = None                  # set when moved to the retention archive
 
     def terms_on(self, d):
         """The terms version this arrangement was on for a past date."""
@@ -771,6 +773,42 @@ class SavingsAccount(DepositAccount):
         limit = self.terms.get("max_monthly_withdrawals", 99)
         if self.withdrawals_in_month(on) >= limit:
             raise BankingError(f"{self.number}: savings withdrawal limit of {limit}/month reached")
+        super().check_debit(amount, on)
+
+
+class FixedTermDeposit(DepositAccount):
+    """Money placed for a fixed term at a fixed rate (the closest thing to an investment
+    product in this model). No withdrawals before maturity: the deposit is either paid
+    out at maturity with interest, or broken early with interest forfeited and a penalty.
+    """
+
+    prefix = "FTD"
+    PRODUCT_CATEGORY = "TERM_DEPOSIT"
+
+    def __init__(self, product, holders, opened_on, branch, opened_by):
+        super().__init__(product, holders, opened_on, branch, opened_by)
+        self.term_months = int(self.terms.get("term_months", 12))
+        self.annual_rate = Decimal(str(self.terms.get("annual_rate", 0)))
+        self.maturity_on = add_months(opened_on, self.term_months)
+        self.payout_account: DepositAccount | None = None
+
+    def principal(self):
+        """The amount placed (the balance before any maturity payout)."""
+        return self.ledger_balance()
+
+    def maturity_interest(self):
+        """Simple interest for the whole term on the amount placed."""
+        return money(self.principal() * self.annual_rate * self.term_months / 12)
+
+    def ensure_usable(self, direction, on):
+        super().ensure_usable(direction, on)
+        if direction == "CREDIT" and self.entries:
+            raise BankingError(f"{self.number} is funded once, at placement")
+
+    def check_debit(self, amount, on):
+        if on < self.maturity_on:
+            raise BankingError(f"{self.number} is fixed until {self.maturity_on}; "
+                               f"break the deposit instead of withdrawing")
         super().check_debit(amount, on)
 
 
@@ -1062,6 +1100,25 @@ class StandingOrder:
         self.payments: list[TransferPayment] = []
 
 
+class Biller:
+    """An external organisation customers pay bills to (utility, telecom, tax authority).
+
+    A counterparty, not a Party: the bank holds no KYC or relationship with it,
+    only the collection arrangement. Deactivating it keeps past bill payments intact.
+    """
+
+    CATEGORIES = {"UTILITY", "TELECOM", "TAX", "EDUCATION", "INSURANCE"}
+
+    def __init__(self, code, name, category, registered_on):
+        if category not in self.CATEGORIES:
+            raise BankingError(f"unknown biller category {category}")
+        self.code, self.name, self.category = code, name, category
+        self.status = StatusHistory("ACTIVE", registered_on)
+
+    def __str__(self):
+        return f"{self.name} ({self.category})"
+
+
 # =============================================================================
 # PART 8 - Transactions (double-entry)
 #   BankTransaction -> CustomerPayment -> TransferPayment / CardPayment    (multi-level)
@@ -1157,10 +1214,36 @@ class CardPayment(CustomerPayment):
 
     prefix = "CRD-TX"
 
-    def __init__(self, amount, initiated_on, card, merchant):
+    def __init__(self, amount, initiated_on, card, merchant, channel="POS", country="PK",
+                 merchant_category="RETAIL"):
         super().__init__(amount, initiated_on, f"card purchase at {merchant}",
                          card.account, card.cardholder, "CARD")
         self.card, self.merchant = card, merchant
+        self.card_channel, self.country, self.merchant_category = channel, country, merchant_category
+
+
+class BillPayment(CustomerPayment):
+    """A payment to a registered biller against the customer's consumer reference."""
+
+    prefix = "BIL"
+
+    def __init__(self, amount, initiated_on, source_account, biller, consumer_reference,
+                 initiated_by, channel):
+        super().__init__(amount, initiated_on, f"bill {biller.name} ref {consumer_reference}",
+                         source_account, initiated_by, channel)
+        self.biller, self.consumer_reference = biller, consumer_reference
+
+
+class OwnAccountTransfer(CustomerPayment):
+    """A transfer between two accounts at this bank that the same customer controls
+    (for example funding a term deposit from a current account)."""
+
+    prefix = "OAT"
+
+    def __init__(self, amount, initiated_on, source_account, target_account, initiated_by, channel):
+        super().__init__(amount, initiated_on, f"transfer to own account {target_account.number}",
+                         source_account, initiated_by, channel)
+        self.target_account = target_account
 
 
 class CashTransaction(BankTransaction):
@@ -1206,7 +1289,8 @@ class Reversal(BankTransaction):
 
 
 class InternalTransfer(BankTransaction):
-    """A movement between the bank's own ledgers (e.g. vault cash on branch closure)."""
+    """A bank-initiated movement no customer instructed: vault cash on branch closure,
+    or a term deposit paid out at maturity."""
 
     prefix = "INTL"
 
@@ -1272,6 +1356,7 @@ class IssuedCard:
         self.replaces, self.replaced_by = replaces, None
         self.payments: list[CardPayment] = []
         self.events: list[tuple] = []
+        self.controls: list[CardControl] = []
 
     def daily_limit_on(self, d):
         result = None
@@ -1300,6 +1385,38 @@ class IssuedCard:
         return f"{self.card_id} {self.masked_number} ({self.cardholder.name})"
 
 
+class CardControl:
+    """A usage control on one card (online, international, cash, a merchant category),
+    in force for a period. Turning it off closes the period, so "was this card blocked
+    for online use on the day of the disputed purchase?" stays answerable.
+    """
+
+    TYPES = {"ONLINE", "INTERNATIONAL", "CASH_WITHDRAWAL", "MERCHANT_CATEGORY"}
+
+    def __init__(self, card, control_type, value, start, set_by):
+        if control_type not in self.TYPES:
+            raise BankingError(f"unknown card control {control_type}")
+        if control_type == "MERCHANT_CATEGORY" and not value:
+            raise BankingError("a merchant-category control needs a category")
+        self.control_id = next_id("CTL")
+        self.card, self.control_type, self.value = card, control_type, value
+        self.period = Period(start)
+        self.set_by, self.removed_by = str(set_by), None
+
+    def blocks(self, channel, country, merchant_category, on):
+        """True if this control stopped such a card payment on that date."""
+        if not self.period.contains(on):
+            return False
+        return {"ONLINE": channel == "ONLINE",
+                "INTERNATIONAL": country != "PK",
+                "CASH_WITHDRAWAL": channel == "ATM",
+                "MERCHANT_CATEGORY": merchant_category == self.value}[self.control_type]
+
+    def __str__(self):
+        what = self.control_type + (f"={self.value}" if self.value else "")
+        return f"{self.control_id} block {what} ({self.period})"
+
+
 # =============================================================================
 # PART 10 - Cases
 #   Case -> CustomerCase -> Dispute / Complaint / ServiceRequest          (multi-level)
@@ -1321,6 +1438,7 @@ class Case:
         self.evidence: list[CaseEvidence] = []
         self.linked_cases: list[Case] = []
         self.outcome = None
+        self.archived_on = None                  # set when moved to the retention archive
 
     @property
     def kind(self):
@@ -1445,6 +1563,17 @@ class CollectionsCase(Case):
         super().__init__(subject, opened_on, "arrears-batch",
                          f"{agreement.number} overdue {fmt(overdue_amount)}")
         self.agreement, self.overdue_at_opening = agreement, overdue_amount
+        self.promises: list[PromiseToPay] = []
+
+
+class PromiseToPay:
+    """A customer's promise, recorded by collections staff, to pay an amount by a date.
+    The arrears batch later marks it KEPT or BROKEN; the promise itself is never edited."""
+
+    def __init__(self, case, amount, due_on, recorded_on, recorded_by):
+        self.case, self.amount, self.due_on = case, money(amount), due_on
+        self.recorded_on, self.recorded_by = recorded_on, str(recorded_by)
+        self.status = StatusHistory("OPEN", recorded_on, recorded_by, f"promise {fmt(self.amount)}")
 
 
 # =============================================================================
@@ -1494,6 +1623,10 @@ class Bank:
     COMPLIANCE_ROLES = {"COMPLIANCE_ANALYST", "COMPLIANCE_MANAGER"}
     CREDIT_ROLES = {"CREDIT_OFFICER", "CREDIT_MANAGER"}
     CARD_ROLES = {"CARD_OPERATIONS"}
+    COLLECTIONS_ROLES = {"COLLECTIONS_OFFICER"}
+    AUDIT_ROLES = {"AUDITOR", "BRANCH_MANAGER"}
+    SEGMENTS = {"RETAIL", "SOLE_TRADER", "PRIVATE", "SME", "CORPORATE", "NON_PROFIT"}
+    RETENTION_YEARS = 10          # assumption A31: records kept at least 10 years after closure
     REVERSAL_ROLES = CARD_ROLES | COMPLIANCE_ROLES | {"OPERATIONS_OFFICER"}
     # Delegated credit authority: the largest amount each role may approve (assumption A24).
     CREDIT_LIMITS = {"CREDIT_OFFICER": money(5_000_000), "CREDIT_MANAGER": money(25_000_000)}
@@ -1504,14 +1637,16 @@ class Bank:
         self.arrangements, self.transactions, self.cards, self.beneficiaries = {}, {}, {}, {}
         self.standing_orders, self.applications, self.cases = {}, {}, {}
         self.statements, self.notices, self.audit = [], [], []
+        self.approvals, self.billers = [], {}
         self.gl = {}
         for code, gl_name, gl_type in [
                 ("1100", "Loans receivable", "ASSET"),
                 ("2100", "Outgoing payments clearing", "LIABILITY"),
                 ("2200", "Card scheme settlement", "LIABILITY"),
+                ("2300", "Biller settlement", "LIABILITY"),
                 ("4000", "Fee income", "INCOME"),
                 ("4100", "Financing interest income", "INCOME"),
-                ("5000", "Savings interest expense", "EXPENSE")]:
+                ("5000", "Deposit interest expense", "EXPENSE")]:
             self.gl[code] = GeneralLedgerAccount(code, gl_name, gl_type)
 
     # ---------------------------------------------------------------- plumbing
@@ -1556,6 +1691,7 @@ class Bank:
             self.today += timedelta(days=1)
             self.run_standing_orders()
             self.run_arrears_check()
+            self.run_term_deposit_maturity()
             if (self.today + timedelta(days=1)).month != self.today.month:
                 self.charge_monthly_fees()
                 self.credit_savings_interest()
@@ -1727,18 +1863,32 @@ class Bank:
         self._log(by, "CORRECT_DETAIL", party.party_id, f"{key}: '{c.old_value}' -> '{value}'")
         return c
 
-    def become_customer(self, party, by, segment):
+    def become_customer(self, party, by, segment, trading_name=None):
         """Operation: onboard a party. Refused if the party or its connected persons
-        are not verified TODAY (documents can expire while onboarding is pending)."""
+        are not verified TODAY (documents can expire while onboarding is pending).
+        A sole trader is a Person trading under a name (no separate legal entity);
+        a PRIVATE (high-value) customer also needs a verified source-of-wealth document."""
         assignment = self._require_role(by, self.BRANCH_ROLES, "onboard customers")
+        if segment not in self.SEGMENTS:
+            raise BankingError(f"unknown segment {segment}")
         if party.relationship and party.relationship.status.current == "ACTIVE":
             raise InvalidStateError(f"{party.name} is already a customer")
+        if segment in ("SOLE_TRADER", "PRIVATE", "RETAIL") and not isinstance(party, Person):
+            raise BankingError(f"segment {segment} is for individuals; {party.name} is an organisation")
+        if segment == "SOLE_TRADER" and not trading_name:
+            raise BankingError("a sole trader must state the trading name")
         gaps = party.kyc_gaps(self.today)
+        if segment == "PRIVATE" and not any(
+                c.result == "PASS" and c.document.doc_type == "SOURCE_OF_WEALTH"
+                and c.document.valid_on(self.today) for c in party.checks):
+            gaps.append(f"{party.name}: enhanced due diligence needs a verified source-of-wealth document")
         if gaps:
             self._log(by, "ONBOARDING_BLOCKED", party.party_id, "; ".join(gaps))
             raise KycIncomplete("; ".join(gaps))
         rm = by if assignment.role == "RELATIONSHIP_MANAGER" else None
         party.relationship = CustomerRelationship(party, self.today, assignment.branch, segment, rm)
+        if trading_name:
+            party.record_detail("trading_name", trading_name)
         self._log(by, "ONBOARD", party.party_id, f"{segment} customer at {assignment.branch.code}")
         return party.relationship
 
@@ -1801,11 +1951,15 @@ class Bank:
         self._log(by, "MIGRATE_TERMS", arrangement.number, f"v{old.version_no} -> v{latest.version_no}")
 
     # ---------------------------------------------------------------- accounts & cash
-    def open_deposit_account(self, account_class, product, holders, by):
-        """Operation: open a current or savings account for onboarded, verified holders."""
+    def open_deposit_account(self, account_class, product, holders, by, payout_account=None):
+        """Operation: open a current, savings or fixed-term deposit account for onboarded,
+        verified holders. A term deposit names the account it pays out to."""
         if not (isinstance(account_class, type) and issubclass(account_class, DepositAccount)
                 and account_class is not DepositAccount):
-            raise ProductNotAvailable("choose CurrentAccount or SavingsAccount")
+            raise ProductNotAvailable("choose CurrentAccount, SavingsAccount or FixedTermDeposit")
+        if account_class is FixedTermDeposit and (
+                payout_account is None or set(payout_account.holders) != set(holders)):
+            raise BankingError("a term deposit needs a payout account with the same holders")
         assignment = self._require_role(by, self.BRANCH_ROLES, "open accounts")
         for h in holders:
             if not h.relationship or h.relationship.status.current != "ACTIVE":
@@ -1814,6 +1968,8 @@ class Bank:
             if gaps:
                 raise KycIncomplete("; ".join(gaps))
         acct = account_class(product, holders, self.today, assignment.branch, by)
+        if payout_account is not None and isinstance(acct, FixedTermDeposit):
+            acct.payout_account = payout_account
         self.arrangements[acct.number] = acct
         self._log(by, "OPEN_ACCOUNT", acct.number, f"{product.name} terms v{acct.terms.version_no}")
         return acct
@@ -1976,6 +2132,8 @@ class Bank:
             txn.source_account.check_debit(txn.amount, self.today)
         except BankingError as e:
             return self._fail(txn, e)
+        if isinstance(txn, BillPayment):
+            return self._complete_bill(txn)
         return self._complete_transfer(txn)
 
     def cancel_pending_payment(self, txn, person, reason):
@@ -2041,6 +2199,7 @@ class Bank:
         if amount > original.net_amount:
             raise BankingError(f"only {fmt(original.net_amount)} of {original.txn_id} is reversible")
         approval = Approval(by, self.today, "REVERSE", original.txn_id, reason)
+        self.approvals.append(approval)
         rev = Reversal(amount, self.today, original, reason, approval)
         ratio = amount / original.amount
         legs = [(e.account, money(-e.amount * ratio)) for e in original.entries]
@@ -2115,9 +2274,10 @@ class Bank:
         self._log(by, "ISSUE_CARD", card.card_id, f"{card} limit {fmt(money(limit))}")
         return card
 
-    def card_purchase(self, card, merchant, amount):
-        """Operation: a card payment from the card network; declined ones are kept."""
-        txn = CardPayment(amount, self.today, card, merchant)
+    def card_purchase(self, card, merchant, amount, channel="POS", country="PK", merchant_category="RETAIL"):
+        """Operation: a card payment from the card network; declined ones are kept.
+        channel is POS, ONLINE or ATM; country is where the merchant is."""
+        txn = CardPayment(amount, self.today, card, merchant, channel, country, merchant_category)
         card.payments.append(txn)
         self.transactions[txn.txn_id] = txn
         try:
@@ -2125,6 +2285,9 @@ class Bank:
                 raise RestrictionViolation(f"card {card.card_id} is {card.status.current}")
             if self.today > card.expires_on:
                 raise RestrictionViolation(f"card {card.card_id} expired on {card.expires_on}")
+            for control in card.controls:
+                if control.blocks(channel, country, merchant_category, self.today):
+                    raise RestrictionViolation(f"card control {control}")
             if card.spent_on(self.today) + txn.amount > card.daily_limit_on(self.today):
                 raise BankingError(f"daily limit {fmt(card.daily_limit_on(self.today))} exceeded")
             txn.mandate_used = self._check_authority(card.account, card.cardholder, "CARD")
@@ -2220,6 +2383,7 @@ class Bank:
                 raise AuthorityError(f"{by} ({assignment.role}) may approve up to {fmt(limit)}; "
                                      f"{fmt(approved)} needs a higher authority")
         app.decision = Approval(by, self.today, "APPROVE" if approve else "DECLINE", app.application_id)
+        self.approvals.append(app.decision)
         if not approve:
             app.status.change("DECLINED", self.today, by, "declined")
         else:
@@ -2260,6 +2424,7 @@ class Bank:
         fin = FinancingAgreement(app, self.today, assignment.branch, by, settlement_account)
         fin.build_schedule(fin.principal, app.annual_rate, app.term_months, first_due, self.today, "original")
         approval = Approval(by, self.today, "DISBURSE", fin.number)
+        self.approvals.append(approval)
         dsb = LoanDisbursement(fin.principal, self.today, fin, settlement_account, approval)
         dsb.post([(settlement_account, dsb.amount), (self.gl["1100"], -dsb.amount)], self.today, by)
         fin.transactions.append(dsb)
@@ -2306,6 +2471,19 @@ class Bank:
                 self._log("arrears-batch", "ARREARS", fin.number, case.case_id)
             elif not overdue and fin.status.current == "IN_ARREARS":
                 fin.status.change("ACTIVE", self.today, "arrears-batch", "arrears cleared")
+        for case in self.cases.values():
+            if not isinstance(case, CollectionsCase):
+                continue
+            for promise in case.promises:
+                if promise.status.current == "OPEN" and promise.due_on < self.today:
+                    kept = not case.agreement.overdue_installments(self.today)
+                    promise.status.change("KEPT" if kept else "BROKEN", self.today, "arrears-batch",
+                                          "arrears cleared" if kept else "still overdue after promised date")
+                    if not kept:
+                        self._notify(case.subject, "BROKEN_PROMISE",
+                                     f"{case.agreement.number}: promised payment not received")
+                    self._log("arrears-batch", "PROMISE_" + promise.status.current, case.case_id,
+                              fmt(promise.amount))
 
     def restructure_financing(self, fin, months, annual_rate, first_due, reason, by):
         """Operation: supersede the schedule. Paid installments stay PAID on the old
@@ -2320,6 +2498,7 @@ class Bank:
         if principal <= 0:
             raise InvalidStateError(f"{fin.number} has nothing left to restructure")
         approval = Approval(by, self.today, "RESTRUCTURE", fin.number, reason)
+        self.approvals.append(approval)
         fin.restructure_approvals.append(approval)
         sched = fin.build_schedule(principal, Decimal(str(annual_rate)), months, first_due,
                                    self.today, reason, capitalised)
@@ -2454,6 +2633,259 @@ class Bank:
         case.close(outcome, self.today, by)
         self._log(by, "CLOSE_CASE", case.case_id, outcome)
 
+    # ---------------------------------------------------------------- own-account transfers & term deposits
+    def transfer_between_accounts(self, source, target, amount, initiated_by, channel="DIGITAL"):
+        """Operation: move money between two accounts at this bank that the same customer
+        controls. Needs PAYMENTS authority on the source; the target must accept credits."""
+        txn = OwnAccountTransfer(amount, self.today, source, target, initiated_by, channel)
+        self.transactions[txn.txn_id] = txn
+        try:
+            if set(source.holders) != set(target.holders):
+                raise BankingError("own-account transfers need the same holders on both accounts")
+            txn.mandate_used = self._check_authority(source, initiated_by, "PAYMENTS", txn.amount)
+            source.check_debit(txn.amount, self.today)
+            target.ensure_usable("CREDIT", self.today)
+        except BankingError as e:
+            return self._fail(txn, e)
+        txn.post([(source, -txn.amount), (target, txn.amount)], self.today, initiated_by.name)
+        self._log(initiated_by.name, "OWN_TRANSFER", txn.txn_id,
+                  f"{fmt(txn.amount)} {source.number} -> {target.number}")
+        return txn
+
+    def _pay_out_term_deposit(self, deposit, by, reason):
+        """Move a term deposit's balance to its payout account and close it."""
+        balance = deposit.ledger_balance()
+        if balance > 0:
+            t = InternalTransfer(balance, self.today, f"payout of {deposit.number}: {reason}")
+            t.post([(deposit, -balance), (deposit.payout_account, balance)], self.today, by)
+            self.transactions[t.txn_id] = t
+        deposit.status.change("CLOSED", self.today, by, reason)
+
+    def run_term_deposit_maturity(self):
+        """Batch: on maturity pay principal plus term interest to the payout account."""
+        for dep in list(self.arrangements.values()):
+            if (isinstance(dep, FixedTermDeposit) and dep.status.current == "ACTIVE"
+                    and dep.maturity_on <= self.today):
+                interest = dep.maturity_interest()
+                if interest > 0:
+                    txn = InterestCredit(interest, self.today, dep.payout_account, dep.annual_rate,
+                                         f"term deposit {dep.number} at maturity")
+                    txn.post([(dep.payout_account, interest), (self.gl["5000"], -interest)], self.today)
+                    self.transactions[txn.txn_id] = txn
+                self._pay_out_term_deposit(dep, "system", "matured")
+                self._log("system", "TERM_DEPOSIT_MATURED", dep.number, f"interest {fmt(interest)}")
+
+    def break_term_deposit(self, deposit, by, reason):
+        """Operation: break a term deposit early - interest is forfeited, a penalty is
+        charged under the pinned terms, and the rest goes to the payout account."""
+        self._require_role(by, self.BRANCH_ROLES, "break term deposits")
+        if not isinstance(deposit, FixedTermDeposit) or deposit.status.current != "ACTIVE":
+            raise InvalidStateError(f"{deposit.number} is not an active term deposit")
+        if self.today >= deposit.maturity_on:
+            raise InvalidStateError(f"{deposit.number} has matured; it pays out automatically")
+        penalty = money(deposit.ledger_balance()
+                        * Decimal(str(deposit.terms.get("early_break_penalty", "0.01"))))
+        if penalty > 0:
+            self.charge_fee(deposit, "EARLY_BREAK_PENALTY", penalty, by)
+        self._pay_out_term_deposit(deposit, by, f"broken early: {reason}")
+        self._log(by, "BREAK_TERM_DEPOSIT", deposit.number, f"penalty {fmt(penalty)}")
+        return penalty
+
+    # ---------------------------------------------------------------- bill payments
+    def register_biller(self, code, name, category):
+        """Operation: add a biller the bank collects payments for."""
+        if code in self.billers:
+            raise InvalidStateError(f"biller code {code} already used")
+        b = Biller(code, name, category, self.today)
+        self.billers[code] = b
+        self._log("payments-ops", "REGISTER_BILLER", code, str(b))
+        return b
+
+    def deactivate_biller(self, biller, reason):
+        """Operation: stop accepting payments for a biller; past payments stay."""
+        biller.status.change("INACTIVE", self.today, "payments-ops", reason, allowed_from={"ACTIVE"})
+        self._log("payments-ops", "DEACTIVATE_BILLER", biller.code, reason)
+
+    def pay_bill(self, account, biller, consumer_reference, amount, initiated_by, channel="DIGITAL"):
+        """Operation: pay a bill. Same authority, restriction and dual-control rules as a
+        transfer; refused payments are kept as FAILED."""
+        txn = BillPayment(amount, self.today, account, biller, consumer_reference, initiated_by, channel)
+        self.transactions[txn.txn_id] = txn
+        try:
+            if biller.status.current != "ACTIVE":
+                raise BankingError(f"{biller.name} no longer accepts payments")
+            if not str(consumer_reference).strip():
+                raise BankingError("a bill payment needs the consumer reference")
+            txn.mandate_used = self._check_authority(account, initiated_by, "PAYMENTS", txn.amount)
+            account.check_debit(txn.amount, self.today)
+        except BankingError as e:
+            return self._fail(txn, e)
+        if txn.mandate_used and txn.mandate_used.needs_second_signatory(txn.amount):
+            txn.status.change("AWAITING_AUTHORISATION", self.today, initiated_by.name,
+                              "second signatory needed")
+            self._log(initiated_by.name, "TXN_PENDING_2ND_SIGNATORY", txn.txn_id, fmt(txn.amount))
+            return txn
+        return self._complete_bill(txn)
+
+    def _complete_bill(self, txn):
+        txn.post([(txn.source_account, -txn.amount), (self.gl["2300"], txn.amount)], self.today,
+                 txn.initiated_by.name)
+        self._log(txn.initiated_by.name, "BILL_PAYMENT", txn.txn_id,
+                  f"{fmt(txn.amount)} to {txn.biller.name} ref {txn.consumer_reference}")
+        return txn
+
+    # ---------------------------------------------------------------- card controls
+    def add_card_control(self, card, control_type, by, value=None):
+        """Operation: switch on a card control. The cardholder or card operations may do it."""
+        if isinstance(by, Employee):
+            self._require_role(by, self.CARD_ROLES, "set card controls")
+        elif by is not card.cardholder:
+            raise AuthorityError(f"only the cardholder or card operations may control {card.card_id}")
+        if card.status.current != "ACTIVE":
+            raise InvalidStateError(f"{card.card_id} is {card.status.current}")
+        if any(c.control_type == control_type and c.value == value and c.period.end is None
+               for c in card.controls):
+            raise InvalidStateError(f"{control_type} is already on for {card.card_id}")
+        control = CardControl(card, control_type, value, self.today, by)
+        card.controls.append(control)
+        self._log(by, "CARD_CONTROL_ON", card.card_id, str(control))
+        return control
+
+    def remove_card_control(self, control, by):
+        """Operation: switch a card control off from today (its period stays on record)."""
+        if isinstance(by, Employee):
+            self._require_role(by, self.CARD_ROLES, "set card controls")
+        elif by is not control.card.cardholder:
+            raise AuthorityError("only the cardholder or card operations may change card controls")
+        control.period.close(self.today)
+        control.removed_by = str(by)
+        self._log(by, "CARD_CONTROL_OFF", control.card.card_id, str(control))
+
+    # ---------------------------------------------------------------- collections
+    def assign_case(self, case, employee, by):
+        """Operation: give a case to an employee whose role fits the case type."""
+        roles = (self.COLLECTIONS_ROLES if isinstance(case, CollectionsCase)
+                 else self.COMPLIANCE_ROLES if isinstance(case, RiskCase)
+                 else self.BRANCH_ROLES | self.CARD_ROLES)
+        self._require_role(employee, roles, f"work {case.kind} cases")
+        if not case.is_open:
+            raise InvalidStateError(f"{case.case_id} is closed")
+        case.assign(employee, self.today)
+        self._log(by, "ASSIGN_CASE", case.case_id, str(employee))
+
+    def record_collections_contact(self, case, by, outcome, promise_amount=None, promise_date=None):
+        """Operation: collections staff record a call with the customer and, optionally,
+        a promise to pay that the arrears batch later marks KEPT or BROKEN."""
+        self._require_role(by, self.COLLECTIONS_ROLES, "record collections contacts")
+        if not isinstance(case, CollectionsCase) or not case.is_open:
+            raise InvalidStateError("contacts are recorded on an open collections case")
+        case.add_note(outcome, self.today, by)
+        promise = None
+        if promise_amount is not None:
+            if promise_date is None or promise_date <= self.today:
+                raise BankingError("a promise to pay needs a future date")
+            promise = PromiseToPay(case, promise_amount, promise_date, self.today, by)
+            case.promises.append(promise)
+        self._log(by, "COLLECTIONS_CONTACT", case.case_id,
+                  outcome + (f"; promise {fmt(promise.amount)} by {promise.due_on}" if promise else ""))
+        return promise
+
+    # ---------------------------------------------------------------- retention, archive, deletion
+    def archive_record(self, record, by):
+        """Operation: move a finished record (closed account, settled financing, closed case,
+        ended relationship) out of the working lists. Nothing is removed."""
+        finished = {Arrangement: ("CLOSED", "SETTLED"), Case: ("CLOSED",), CustomerRelationship: ("ENDED",)}
+        kind = next((k for k in finished if isinstance(record, k)), None)
+        if kind is None:
+            raise BankingError(f"{type(record).__name__} records are not archived")
+        if record.status.current not in finished[kind]:
+            raise InvalidStateError(f"only finished records can be archived; this one is {record.status.current}")
+        if record.archived_on is not None:
+            raise InvalidStateError(f"already archived on {record.archived_on}")
+        record.archived_on = self.today
+        self._log(by, "ARCHIVE", self._label(record), f"retain until {self.retention_until(record)}")
+
+    def retention_until(self, record):
+        """Query: the earliest date the record could ever be destroyed (None while live)."""
+        finished = [c.on for c in record.status.changes if c.status in ("CLOSED", "SETTLED", "ENDED")]
+        if not finished:
+            return None
+        end = finished[-1]
+        return date(end.year + self.RETENTION_YEARS, end.month, min(end.day, 28 if end.month == 2 else end.day))
+
+    def request_deletion(self, record, by):
+        """Operation: a request to delete a financial record is always refused and logged;
+        the answer says what to do instead and how long the record must be kept."""
+        until = self.retention_until(record)
+        reason = ("still in use; close it first" if until is None
+                  else f"must be retained until {until}; archive it instead")
+        self._log(by, "DELETION_REFUSED", self._label(record), reason)
+        raise InvalidStateError(f"{self._label(record)} cannot be deleted: {reason}")
+
+    def delete_beneficiary(self, beneficiary, by):
+        """Operation: delete a saved payee. Allowed only if no payment or standing order ever
+        used it (nothing refers to it); otherwise it must be deactivated so history stays."""
+        uses = [t.txn_id for t in self.transactions.values()
+                if getattr(t, "beneficiary", None) is beneficiary]
+        uses += [so.order_id for so in self.standing_orders.values() if so.beneficiary is beneficiary]
+        if uses:
+            raise InvalidStateError(f"{beneficiary.nickname} is used by {', '.join(uses)}; deactivate it instead")
+        beneficiary.status.change("DELETED", self.today, by, "never used")
+        self._log(by, "DELETE_BENEFICIARY", beneficiary.beneficiary_id, beneficiary.nickname)
+
+    @staticmethod
+    def _label(record):
+        for attr in ("number", "case_id", "txn_id", "beneficiary_id"):
+            if hasattr(record, attr):
+                return getattr(record, attr)
+        return f"relationship of {record.party.name}" if isinstance(record, CustomerRelationship) else str(record)
+
+    def active_customers(self):
+        """Query: customers in the working list (relationship active and not archived)."""
+        return [p for p in self.parties.values() if p.relationship
+                and p.relationship.status.current == "ACTIVE" and p.relationship.archived_on is None]
+
+    def active_arrangements(self):
+        """Query: arrangements in the working list (archived ones are kept but hidden)."""
+        return [a for a in self.arrangements.values() if a.archived_on is None]
+
+    # ---------------------------------------------------------------- audit and search
+    def approvals_and_authority_audit(self, by, start, end):
+        """Report for auditors and management: every staff approval with the role held at the
+        time, and every change of customer-side authority, between two dates."""
+        self._require_role(by, self.AUDIT_ROLES, "run audit reports")
+        out = [f"Approvals by staff {start} to {end}:"]
+        out += [f"  {a}" for a in self.approvals if start <= a.decided_on <= end]
+        out.append("Authority changes (mandates, officers, second signatories, staff roles):")
+        actions = {"GRANT_MANDATE", "REVOKE_MANDATE", "APPOINT_OFFICER", "END_OFFICER",
+                   "AUTHORISE_PAYMENT", "ROLE_CHANGE"}
+        out += [f"  {e.on} {e.action:<17} {e.subject:<9} by {e.actor}: {e.detail}"
+                for e in self.audit if e.action in actions and start <= e.on <= end]
+        self._log(by, "AUDIT_REVIEW", "approvals", f"{start} to {end}")
+        return out
+
+    def search_transactions(self, card=None, account=None, merchant=None, start=None, end=None,
+                            kind=None, include_card_chain=True):
+        """Query: find transactions. A card search covers every card in its replacement
+        chain by default, so old cards' payments stay searchable after replacement."""
+        cards = set(card.lineage() if include_card_chain else [card]) if card else None
+        found = []
+        for t in self.transactions.values():
+            if cards is not None and getattr(t, "card", None) not in cards:
+                continue
+            if account is not None and account not in (getattr(t, "source_account", None),
+                                                       getattr(t, "account", None),
+                                                       getattr(t, "target_account", None)):
+                continue
+            if merchant and merchant.lower() not in str(getattr(t, "merchant", "")).lower():
+                continue
+            if start and t.initiated_on < start or end and t.initiated_on > end:
+                continue
+            if kind and not isinstance(t, kind):
+                continue
+            found.append(t)
+        return found
+
     # ---------------------------------------------------------------- history & reporting
     def capacities_of(self, person):
         """Report: every capacity one person holds across the bank (one record, many roles)."""
@@ -2535,7 +2967,7 @@ class Bank:
 # =============================================================================
 # PART 13 - Seeded demonstration
 # A fictional bank (Indus Commercial Bank, Lahore) is seeded and then driven
-# through 13 scenarios on a simulated calendar (Jan 2026 - Feb 2027). Each
+# through 16 scenarios on a simulated calendar (Jan 2026 - Aug 2027). Each
 # scenario starts as a normal workflow and is broken by an exception,
 # dependency or conflict. [OK] = allowed, [BLOCKED] = refused by a named rule.
 # =============================================================================
@@ -2589,6 +3021,8 @@ def run_demo():
     rabia = staff("Rabia Anwar", "TELLER", mall)
     kamran = staff("Kamran Javed", "COMPLIANCE_ANALYST", ho)
     hina = staff("Hina Aslam", "CARD_OPERATIONS", ho)
+    imran = staff("Imran Shah", "COLLECTIONS_OFFICER", ho)
+    nida = staff("Nida Farooq", "AUDITOR", ho)
 
     classic = bank.define_product("CUR-CLASSIC", "Classic Current (legacy)", "CURRENT", monthly_fee=0)
     personal = bank.define_product("CUR-PERS", "Personal Current", "CURRENT", monthly_fee=0)
@@ -2627,8 +3061,13 @@ def run_demo():
     bank.appoint_officer(ravi, ayesha, omar)          # SAME Person record as the retail customer
     bank.appoint_officer(ravi, bilal, omar)
     bank.record_beneficial_owner(ravi, sara, 40, omar)
-    bank.record_beneficial_owner(ravi, ayesha, 35, omar)
-    _show("Ayesha reused her existing verified identity; no duplicate Person was created.")
+    bank.record_beneficial_owner(ravi, ayesha, 10, omar)       # recorded, but below the 25% threshold
+    _show("Ayesha reused her existing verified identity; no duplicate Person was created.",
+          "Beneficial owners at or above 25%: "
+          + ", ".join(o.person.name for o in ravi.owners if o.percent >= ravi.OWNERSHIP_THRESHOLD)
+          + " (Ayesha's 10% is recorded but is below the threshold)",
+          "People whose KYC the company file depends on: "
+          + ", ".join(p.name for p in ravi.connected_persons(bank.today)))
 
     bank.advance_to(date(2026, 2, 12))                # board paperwork took time; Bilal's CNIC expired on 10 Feb
     _attempt("Onboard Ravi Textiles on 12 Feb", lambda: bank.become_customer(ravi, omar, "SME"))
@@ -2819,7 +3258,13 @@ def run_demo():
     bank.advance_to(date(2026, 7, 24))                 # July installment missed; batch flags it
     col = [c for c in bank.cases.values() if c.kind == "CollectionsCase"][-1]
     _show(f"{fin.number} status {fin.status.current}; {col.case_id}: {col.summary}")
+    bank.assign_case(col, imran, "Head of Collections")
+    promise = bank.record_collections_contact(col, imran, "director promised payment after export receipt",
+                                              col.overdue_at_opening, date(2026, 7, 27))
+    _attempt("Teller records a collections call", lambda: bank.record_collections_contact(col, farah, "called"))
     bank.advance_to(date(2026, 7, 28))
+    _show(f"Promise to pay {fmt(promise.amount)} by {promise.due_on}: {promise.status.current} "
+          f"-> credit decides to restructure")
     sched2 = bank.restructure_financing(fin, 18, "0.17", date(2026, 8, 28), "cash-flow delay on export order", zainab)
     _show(f"Schedule v2: {fmt(sched2.principal)} (incl. capitalised interest {fmt(sched2.capitalised_interest)}), "
           f"{len(sched2.installments)} installments; collections case {col.status.current} ({col.outcome})")
@@ -2967,9 +3412,116 @@ def run_demo():
     _show(f"Danish's record kept: {newbie} relationship {newbie.relationship.status.trail()}")
 
     # -------------------------------------------------------------------------
+    _section("SCENARIO 14: Sole trader and high-value customer; fixed-term deposits")
+    # -------------------------------------------------------------------------
+    bank.advance_to(date(2027, 2, 8))
+    private_cur = bank.define_product("CUR-PRIV", "Private Banking Current", "CURRENT", monthly_fee=0)
+    ftd6 = bank.define_product("FTD-6M", "6-Month Term Deposit", "TERM_DEPOSIT", term_months=6,
+                               annual_rate="0.115", early_break_penalty="0.01")
+    imtiaz = bank.register_person("Imtiaz Ahmed", date(1979, 5, 5), maryam)
+    bank.verify_party(imtiaz, bank.add_identity_document(imtiaz, "CNIC", "35202-5555555-6",
+                                                         date(2021, 3, 1), date(2031, 3, 1), maryam), maryam)
+    _attempt("Onboard Imtiaz as a sole trader without a trading name",
+             lambda: bank.become_customer(imtiaz, maryam, "SOLE_TRADER"))
+    bank.become_customer(imtiaz, maryam, "SOLE_TRADER", trading_name="Imtiaz Auto Parts")
+    imtiaz_acct = bank.open_deposit_account(CurrentAccount, biz_cur, [imtiaz], maryam)
+    bank.deposit_cash(imtiaz_acct, 300_000, farah, imtiaz)
+    lesco = bank.register_biller("LESCO", "Lahore Electric Supply Co", "UTILITY")
+    fbr = bank.register_biller("FBR", "Federal Board of Revenue", "TAX")
+    _txn_line("Imtiaz pays the shop's electricity bill",
+              bank.pay_bill(imtiaz_acct, lesco, "04-11234-5567", 18_400, imtiaz))
+    _show(f"{imtiaz.name} trades as '{imtiaz.detail('trading_name')}': one Person, segment "
+          f"{imtiaz.relationship.segment}, personally liable (no separate Organization record)")
+
+    zara = bank.register_person("Zara Hussain", date(1975, 10, 10), maryam)
+    bank.verify_party(zara, bank.add_identity_document(zara, "PASSPORT", "ZH7654321",
+                                                       date(2024, 6, 1), date(2034, 6, 1), maryam), maryam)
+    _attempt("Onboard Zara as a high-value (PRIVATE) customer",
+             lambda: bank.become_customer(zara, maryam, "PRIVATE"))
+    sow = bank.add_identity_document(zara, "SOURCE_OF_WEALTH", "Sale deed DHA plot 14-B",
+                                     date(2026, 11, 20), None, maryam)
+    bank.verify_party(zara, sow, kamran)
+    _attempt("Onboard Zara after enhanced due diligence", lambda: bank.become_customer(zara, maryam, "PRIVATE"))
+    zara_cur = bank.open_deposit_account(CurrentAccount, private_cur, [zara], maryam)
+    bank.deposit_cash(zara_cur, 12_000_000, farah, zara)
+    ftd_a = bank.open_deposit_account(FixedTermDeposit, ftd6, [zara], maryam, payout_account=zara_cur)
+    ftd_b = bank.open_deposit_account(FixedTermDeposit, ftd6, [zara], maryam, payout_account=zara_cur)
+    bank.transfer_between_accounts(zara_cur, ftd_a, 10_000_000, zara)
+    bank.transfer_between_accounts(zara_cur, ftd_b, 1_000_000, zara)
+    _show(f"{ftd_a.number} PKR 10m and {ftd_b.number} PKR 1m placed at 11.5% for 6 months, "
+          f"maturing {ftd_a.maturity_on}")
+    _txn_line("Zara tries to withdraw cash from the term deposit",
+              bank.withdraw_cash(ftd_a, 500_000, farah, zara))
+    _txn_line("Zara tries to top up the term deposit",
+              bank.transfer_between_accounts(zara_cur, ftd_a, 100_000, zara))
+    bank.advance_to(date(2027, 3, 10))
+    penalty = bank.break_term_deposit(ftd_b, maryam, "customer needs funds for a car")
+    _show(f"{ftd_b.number} broken early: interest forfeited, penalty {fmt(penalty)}; "
+          f"status {ftd_b.status.trail()}")
+    bank.advance_to(ftd_a.maturity_on)
+    interest = [t for t in bank.transactions.values()
+                if isinstance(t, InterestCredit) and ftd_a.number in t.narrative][0]
+    _show(f"{ftd_a.number} matured {ftd_a.maturity_on}: interest {fmt(interest.amount)} and principal "
+          f"paid to {zara_cur.number}; deposit {ftd_a.status.current}, "
+          f"{len(ftd_a.entries)} ledger entries retained")
+
+    # -------------------------------------------------------------------------
+    _section("SCENARIO 15: Card controls, bill payments under dual control, searchable card history")
+    # -------------------------------------------------------------------------
+    bank.advance_to(date(2027, 8, 10))
+    bank.deposit_cash(ravi_cur, 5_000_000, farah, hamza)
+    online_block = bank.add_card_control(card3, "ONLINE", hamza)
+    bank.add_card_control(card3, "MERCHANT_CATEGORY", hina, value="GAMBLING")
+    _attempt("Noor (not the cardholder) switches off Hamza's online block",
+             lambda: bank.remove_card_control(online_block, noor))
+    _txn_line("Online purchase while blocked",
+              bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
+    _txn_line("In-store purchase", bank.card_purchase(card3, "Imtiaz Auto Parts", 9_500))
+    bank.advance_to(date(2027, 8, 12))
+    bank.remove_card_control(online_block, hamza)
+    _txn_line("Online purchase after Hamza lifts his block",
+              bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
+    _txn_line("Online betting site (category still blocked by card operations)",
+              bank.card_purchase(card3, "BetWorld", 5_000, channel="ONLINE", merchant_category="GAMBLING"))
+    _show(f"Was online use blocked on 10 Aug? {online_block.blocks('ONLINE', 'PK', 'RETAIL', date(2027, 8, 10))}"
+          f" | today? {online_block.blocks('ONLINE', 'PK', 'RETAIL', bank.today)}")
+    _txn_line("Noor (view-only) pays a tax bill", bank.pay_bill(ravi_cur, fbr, "NTN-4455667", 50_000, noor))
+    tax = bank.pay_bill(ravi_cur, fbr, "NTN-4455667", 1_250_000, hamza)
+    _txn_line("Hamza pays the quarterly sales-tax bill", tax)
+    bank.authorise_payment(tax, ayesha)
+    _txn_line("Ayesha authorises it as second signatory", tax)
+    hits = bank.search_transactions(card=card3)
+    _show(f"Search by Hamza's current card finds {len(hits)} payments across the whole chain:",
+          *[f"  {t.txn_id} {t.initiated_on} {fmt(t.amount):>16} [{t.status.current}] "
+            f"card {t.card.card_id} at {t.merchant}" for t in hits])
+
+    # -------------------------------------------------------------------------
+    _section("SCENARIO 16: Auditor review, record retention, archive versus delete")
+    # -------------------------------------------------------------------------
+    bank.advance_to(date(2027, 8, 20))
+    _attempt("Teller runs the approvals audit",
+             lambda: bank.approvals_and_authority_audit(farah, date(2026, 1, 1), date(2026, 12, 31)))
+    audit_lines = bank.approvals_and_authority_audit(nida, date(2026, 1, 1), date(2026, 12, 31))
+    _show(f"Auditor {nida.person.name}: {len(audit_lines) - 2} approvals and authority changes in 2026, e.g.:",
+          *[line for line in audit_lines if "CREDIT_OFFICER" in line or "REVOKE_MANDATE" in line][:5])
+    _attempt(f"Delete closed savings account {ravi_sav.number}",
+             lambda: bank.request_deletion(ravi_sav, maryam))
+    before = len(bank.active_arrangements())
+    bank.archive_record(ravi_sav, maryam)
+    bank.archive_record(newbie.relationship, maryam)
+    bank.archive_record(dispute, maryam)
+    _show(f"Archived {ravi_sav.number}, Danish's ended relationship and {dispute.case_id}: working list "
+          f"{before} -> {len(bank.active_arrangements())} arrangements; all records still held",
+          f"{ravi_sav.number} may not be destroyed before {bank.retention_until(ravi_sav)}")
+    old_payee = bank.add_beneficiary(ravi, "Old courier", "UBL", "7777888899990000", "Swift Couriers", hamza)
+    _attempt("Delete a payee that was never used", lambda: bank.delete_beneficiary(old_payee, maryam))
+    _attempt("Delete Lahore Yarn Traders (used by past payments)",
+             lambda: bank.delete_beneficiary(yarn, maryam))
+
+    # -------------------------------------------------------------------------
     _section("OPEN ITEMS: work still waiting at the end of the simulation")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 2, 4))
+    bank.advance_to(date(2027, 8, 25))
     waiting = bank.initiate_transfer(ravi_cur, yarn, 1_200_000, hamza)      # needs a second signatory
     held = bank.initiate_transfer(ravi_cur, yarn, 1_100_000, ayesha)        # above the review threshold
     books = bank.card_purchase(card3, "Liberty Books", 18_500)
@@ -3432,6 +3984,140 @@ class HistoryTests(unittest.TestCase):
         self.assertEqual(w.card.status.current, "BLOCKED_LOST")
 
 
+class BriefCoverageTests(unittest.TestCase):
+    """Features added after rereading the brief: segments, term deposits, bills, card
+    controls, collections, audit, retention and search."""
+
+    def test_sole_trader_is_a_person_with_a_trading_name(self):
+        w = _World()
+        with self.assertRaises(BankingError):
+            w.bank.become_customer(w.co, w.rm, "SOLE_TRADER", "Co Traders")
+        with self.assertRaises(BankingError):
+            w.bank.become_customer(w.a, w.rm, "SOLE_TRADER")
+        w.bank.become_customer(w.a, w.rm, "SOLE_TRADER", "Alpha Auto Parts")
+        self.assertEqual(w.a.detail("trading_name"), "Alpha Auto Parts")
+
+    def test_high_value_customer_needs_source_of_wealth(self):
+        w = _World()
+        with self.assertRaises(KycIncomplete):
+            w.bank.become_customer(w.b, w.rm, "PRIVATE")
+        sow = w.bank.add_identity_document(w.b, "SOURCE_OF_WEALTH", "SOW-1", date(2025, 12, 1), None, w.rm)
+        w.bank.verify_party(w.b, sow, w.rm)
+        self.assertIsNotNone(w.bank.become_customer(w.b, w.rm, "PRIVATE"))
+
+    def _term_deposit(self, w, amount=1_000_000):
+        ftd = w.bank.define_product("FTD6", "6-month deposit", "TERM_DEPOSIT", term_months=6,
+                                    annual_rate="0.12", early_break_penalty="0.01")
+        dep = w.bank.open_deposit_account(FixedTermDeposit, ftd, [w.co], w.rm, payout_account=w.acct)
+        w.bank.transfer_between_accounts(w.acct, dep, amount, w.a)
+        return dep
+
+    def test_term_deposit_pays_out_at_maturity(self):
+        w = _World()
+        dep = self._term_deposit(w)
+        self.assertEqual(w.bank.withdraw_cash(dep, 100, w.teller, w.a).status.current, "FAILED")
+        self.assertEqual(w.bank.transfer_between_accounts(w.acct, dep, 10, w.a).status.current, "FAILED")
+        before = w.acct.ledger_balance()
+        w.bank.advance_to(dep.maturity_on)
+        self.assertEqual(dep.status.current, "CLOSED")
+        self.assertEqual(dep.ledger_balance(), 0)
+        fees = sum((t.amount for t in w.bank.transactions.values()
+                    if isinstance(t, FeeCharge) and t.account is w.acct), ZERO)
+        self.assertEqual(w.acct.ledger_balance() - before + fees, money(1_000_000 + 60_000))
+        self.assertEqual(w.bank.trial_balance()[1], 0)
+
+    def test_breaking_a_term_deposit_forfeits_interest_and_charges_penalty(self):
+        w = _World()
+        dep = self._term_deposit(w)
+        before = w.acct.ledger_balance()
+        penalty = w.bank.break_term_deposit(dep, w.rm, "cash needed")
+        self.assertEqual(penalty, money(10_000))
+        self.assertEqual(w.acct.ledger_balance() - before, money(990_000))
+        self.assertEqual(dep.status.current, "CLOSED")
+
+    def test_bill_payment_rules(self):
+        w = _World()
+        lesco = w.bank.register_biller("LESCO", "Lahore Electric", "UTILITY")
+        self.assertEqual(w.bank.pay_bill(w.acct, lesco, "0412", 8_000, w.c).status.current, "FAILED")
+        self.assertEqual(w.bank.pay_bill(w.acct, lesco, "0412", 8_000, w.a).status.current, "POSTED")
+        big = w.bank.pay_bill(w.acct, lesco, "0412", 700_000, w.b)
+        self.assertEqual(big.status.current, "AWAITING_AUTHORISATION")
+        w.bank.authorise_payment(big, w.a)
+        self.assertEqual(big.status.current, "POSTED")
+        w.bank.deactivate_biller(lesco, "contract ended")
+        self.assertEqual(w.bank.pay_bill(w.acct, lesco, "0412", 1_000, w.a).status.current, "FAILED")
+        self.assertEqual(w.bank.trial_balance()[1], 0)
+
+    def test_card_controls_block_and_keep_history(self):
+        w = _World()
+        online = w.bank.add_card_control(w.card, "ONLINE", w.b)
+        with self.assertRaises(AuthorityError):
+            w.bank.add_card_control(w.card, "INTERNATIONAL", w.a)        # not the cardholder
+        self.assertEqual(w.bank.card_purchase(w.card, "Web", 1_000, channel="ONLINE").status.current, "DECLINED")
+        self.assertEqual(w.bank.card_purchase(w.card, "Shop", 1_000).status.current, "POSTED")
+        w.bank.advance_to(date(2026, 1, 3))
+        w.bank.remove_card_control(online, w.b)
+        self.assertEqual(w.bank.card_purchase(w.card, "Web", 1_000, channel="ONLINE").status.current, "POSTED")
+        self.assertTrue(online.blocks("ONLINE", "PK", "RETAIL", date(2026, 1, 2)))
+
+    def test_collections_promise_is_marked_broken(self):
+        w = _World()
+        col_staff = w.bank.hire_employee(w.bank.register_person("Col", date(1990, 1, 1), "HR"),
+                                         "COLLECTIONS_OFFICER", w.branch)
+        fin = w.disbursed()
+        w.bank.advance_to(date(2026, 2, 3))                          # first installment missed
+        case = [c for c in w.bank.cases.values() if isinstance(c, CollectionsCase)][-1]
+        with self.assertRaises(AuthorityError):
+            w.bank.record_collections_contact(case, w.teller, "called")
+        w.bank.assign_case(case, col_staff, "supervisor")
+        promise = w.bank.record_collections_contact(case, col_staff, "will pay Friday", 110_000,
+                                                    date(2026, 2, 6))
+        w.bank.advance_to(date(2026, 2, 8))
+        self.assertEqual(promise.status.current, "BROKEN")
+        self.assertEqual(fin.status.current, "IN_ARREARS")
+
+    def test_audit_report_needs_auditor_and_shows_role_at_time(self):
+        w = _World()
+        auditor = w.bank.hire_employee(w.bank.register_person("Aud", date(1980, 1, 1), "HR"), "AUDITOR", w.branch)
+        w.disbursed()
+        with self.assertRaises(AuthorityError):
+            w.bank.approvals_and_authority_audit(w.teller, date(2026, 1, 1), date(2026, 12, 31))
+        report = w.bank.approvals_and_authority_audit(auditor, date(2026, 1, 1), date(2026, 12, 31))
+        self.assertTrue(any("acting as CREDIT_OFFICER" in line for line in report))
+        self.assertTrue(any("GRANT_MANDATE" in line for line in report))
+
+    def test_deletion_refused_archive_allowed(self):
+        w = _World()
+        s = w.bank.open_deposit_account(SavingsAccount, w.sav, [w.co], w.rm)
+        with self.assertRaises(InvalidStateError):
+            w.bank.archive_record(s, w.rm)                               # still open
+        w.bank.close_account(s, "not needed", w.rm)
+        with self.assertRaises(InvalidStateError):
+            w.bank.request_deletion(s, w.rm)
+        self.assertEqual(w.bank.retention_until(s), date(2036, 1, 1))
+        w.bank.archive_record(s, w.rm)
+        self.assertNotIn(s, w.bank.active_arrangements())
+        self.assertIn(s.number, w.bank.arrangements)                     # archived, not deleted
+
+    def test_only_unused_beneficiaries_can_be_deleted(self):
+        w = _World()
+        spare = w.bank.add_beneficiary(w.co, "Spare", "UBL", "5555666677778888", "Spare Ltd", w.a)
+        w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a)
+        with self.assertRaises(InvalidStateError):
+            w.bank.delete_beneficiary(w.ben, w.rm)
+        w.bank.delete_beneficiary(spare, w.rm)
+        self.assertEqual(spare.status.current, "DELETED")
+
+    def test_card_search_covers_the_replacement_chain(self):
+        w = _World()
+        old = w.bank.card_purchase(w.card, "Shop", 1_000)
+        w.bank.report_card(w.card, "STOLEN", w.b)
+        new_card = w.bank.replace_card(w.card, w.cards)
+        new = w.bank.card_purchase(new_card, "Shop", 2_000)
+        self.assertEqual(w.bank.search_transactions(card=new_card), [old, new])
+        self.assertEqual(w.bank.search_transactions(card=new_card, include_card_chain=False), [new])
+
+
 class ModelShapeTests(unittest.TestCase):
     """The brief's minimum scale and inheritance requirements, checked from the code."""
 
@@ -3750,7 +4436,8 @@ _ASSOC_DIAGRAMS = [
     ("uml_assoc_accounts", "Products, accounts and payments", {
         "ProductDefinition": (0, 0), "ProductTermsVersion": (1, 0), "Arrangement": (2, 0), "Party": (3, 0),
         "Notice": (4, 0), "Statement": (0, 1), "Restriction": (2, 1),
-        "AccountHold": (0, 2), "DepositAccount": (1, 2), "IssuedCard": (2, 2),
+        "Biller": (4, 1), "AccountHold": (0, 2), "DepositAccount": (1, 2), "IssuedCard": (2, 2),
+        "CardControl": (3, 2), "BillPayment": (4, 2),
         "GeneralLedgerAccount": (0, 3), "LedgerEntry": (1, 3), "BankTransaction": (2, 3), "Reversal": (3, 3),
         "StandingOrder": (0, 4), "Beneficiary": (1, 4), "CustomerPayment": (3, 4), "Mandate": (4, 4),
         "BeneficiaryVersion": (1, 5), "TransferPayment": (2, 5), "Dispute": (3, 5),
@@ -3768,11 +4455,12 @@ _ASSOC_DIAGRAMS = [
         ("CustomerPayment", "Mandate", "authority used", False),
         ("CustomerPayment", "PaymentAuthorisation", "2nd signatory", True),
         ("Dispute", "CustomerPayment", "disputes", False),
+        ("IssuedCard", "CardControl", "controls *", True), ("BillPayment", "Biller", "pays", False),
     ]),
     ("uml_assoc_lending_cases", "Lending and cases", {
         "Approval": (0, 0), "FinancingApplication": (1, 0), "ApprovalCondition": (2, 0),
         "CollectionsCase": (0, 1), "FinancingAgreement": (1, 1), "RepaymentSchedule": (2, 1),
-        "Installment": (3, 1), "DepositAccount": (1, 2),
+        "Installment": (3, 1), "PromiseToPay": (0, 2), "DepositAccount": (1, 2),
         "CaseEvidence": (0, 3), "Case": (1, 3), "CaseNote": (2, 3),
         "Dispute": (0, 4), "RiskCase": (1, 4), "Restriction": (2, 4), "CustomerPayment": (0, 5),
     }, [
@@ -3782,6 +4470,7 @@ _ASSOC_DIAGRAMS = [
         ("FinancingAgreement", "RepaymentSchedule", "versions", True),
         ("RepaymentSchedule", "Installment", "*", True),
         ("CollectionsCase", "FinancingAgreement", "agreement", False),
+        ("CollectionsCase", "PromiseToPay", "promises *", True),
         ("FinancingAgreement", "DepositAccount", "settlement account", False),
         ("Case", "CaseEvidence", "snapshots", True), ("Case", "CaseNote", "*", True),
         ("RiskCase", "Restriction", "imposed", True), ("Dispute", "CustomerPayment", "disputes", False),

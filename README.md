@@ -7,8 +7,8 @@ Everything is in **one Python file**, `banking_system.py`, using the standard li
 ## Quick start
 
 ```
-python banking_system.py              # run the seeded demonstration (13 scenarios)
-python banking_system.py --test       # run the 49 automated tests
+python banking_system.py              # run the seeded demonstration (16 scenarios)
+python banking_system.py --test       # run the 60 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -25,7 +25,7 @@ docs/
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
-  Viva_Presentation.pptx       11-slide viva deck with speaker notes
+  Viva_Presentation.pptx       12-slide viva deck with speaker notes
   Submission_Checklist.md      what to check and fill in before handing in
 ```
 
@@ -43,9 +43,9 @@ docs/
 | 9 | Issued cards with a replacement chain |
 | 10 | Cases: `Case -> CustomerCase -> Dispute / Complaint / ServiceRequest`, `Case -> RiskCase -> FraudAlert / ComplianceInvestigation` |
 | 11 | Statements and notices |
-| 12 | `Bank`: 78 operations, each checking its rules and writing an audit event |
-| 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Feb 2027) |
-| 14 | 49 automated tests |
+| 12 | `Bank`: 96 operations (78 state-changing commands), each checking its rules and writing an audit event |
+| 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
+| 14 | 60 automated tests |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## Where each requirement of the brief is met
@@ -53,14 +53,14 @@ docs/
 | Required item | Where |
 |---|---|
 | Domain research summary | Report section 1 |
-| Assumptions | Report section 2 (A1 to A28) |
+| Assumptions | Report section 2 (A1 to A36) |
 | Requirements interpretation | Report section 3 |
 | Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams |
-| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 67 domain classes, 78 operations; report section 5 |
+| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 73 domain classes, 96 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6 |
-| At least three rejected inheritances | Report section 7 (ten given) |
+| At least three rejected inheritances | Report section 7 (twelve given) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |
-| At least five complex scenarios | 13 scenarios, report section 9 |
+| At least five complex scenarios | 16 scenarios, report section 9 |
 | Limitations and scaling | Report section 10 |
 
 ## The brief's critical cases
@@ -72,11 +72,15 @@ docs/
 | Product no longer sold but valid for old customers | 10 | `test_withdrawn_product_blocks_new_but_not_existing`, `test_terms_pinned_until_migration` |
 | Person loses signing authority; history still shows it | 7 | `test_revoked_mandate_still_provable_for_past_dates` |
 | Customer temporarily restricted then cleared | 5 | `test_restriction_blocks_then_lifts_with_history`, `test_risk_case_cannot_close_with_live_restriction` |
-| Card replaced multiple times; old transactions searchable | 3, 10 | `test_stolen_replaced_card_cannot_be_reactivated` |
+| Card replaced multiple times; old transactions searchable | 3, 10, 15 | `test_stolen_replaced_card_cannot_be_reactivated`, `test_card_search_covers_the_replacement_chain` |
 | Financing restructured after installments paid | 6 | `test_restructure_supersedes_schedule_and_keeps_paid` |
 | Beneficiary changes after old transfers | 8 | `test_beneficiary_snapshot_survives_amendment` |
 | Branch closes; customers and staff transferred | 11 | `test_branch_closure_moves_but_keeps_history`, `test_branch_closure_moves_vault_cash` |
 | Compliance case references data later corrected | 9 | `test_correction_keeps_past_value`, `test_evidence_snapshot_is_not_rewritten_by_correction` |
+
+## Beyond the critical cases
+
+Report section 3.2 maps every participant, research area and scope item in the brief to the model. Scenarios 14 to 16 cover what the critical cases do not: sole traders and high-value customers (enhanced due diligence), fixed-term deposits, card controls, bill payments, collections staff and promises to pay, the auditor's approvals and authority report, and record retention (archive versus delete). Report section 3.1 answers the brief's eight open questions one by one.
 
 ## Notes
 

@@ -26,7 +26,7 @@ Companies and charities both have officers, owners and mandates, and both are on
 For behaviour many unrelated classes need: `StatusHistory` and `Period`. Accounts, cards, cases, branches and employees all have lifecycles, but they are not the same kind of thing, so each has a `StatusHistory` rather than inheriting from a common base.
 
 **How many classes and operations, and how do you know?**
-Run `python banking_system.py --classes`: 67 domain classes, 7 error classes, 78 `Bank` operations, counted from the code. A test (`ModelShapeTests`) fails if either count drops below 30.
+Run `python banking_system.py --classes`: 73 domain classes, 7 error classes, 96 `Bank` operations (78 of them state-changing commands), counted from the code. A test (`ModelShapeTests`) fails if either count drops below 30.
 
 ## Historical correctness
 
@@ -58,6 +58,18 @@ If it got as far as being a payment, it is kept with status FAILED or DECLINED a
 
 **Who may approve financing?**
 Credit staff within their delegated limit: an officer up to PKR 5m, a manager up to PKR 25m. Scenario 6 shows an 8m request refused for the officer.
+
+**Why is a fixed-term deposit a `DepositAccount`, but a card is not?**
+A term deposit holds customer money, so it reuses the ledger, holds and balances unchanged and only overrides two rules: no debits before maturity (`check_debit`) and only one credit, the placement (`ensure_usable`). A card holds no money; many cards can draw on one account, so it is a credential that points to an account.
+
+**How is a sole trader different from a company?**
+A sole trader has no separate legal personality, so it is a `Person` in the `SOLE_TRADER` segment with a trading name. Making it an `Organization` would wrongly suggest a separate entity with its own liability and officers.
+
+**What does "delete" do in your system?**
+`request_deletion` is always refused and logged with the retention date (10 years after closure). Finished records can be archived: they leave the working lists but stay in every registry and report. The only real delete is a payee nobody ever paid, because nothing refers to it.
+
+**How does the auditor see who approved what?**
+`approvals_and_authority_audit` lists every staff `Approval` with the role held at the time, plus every mandate, officer and role change from the audit log. Only auditors and branch managers may run it, and each run is itself logged (scenario 16).
 
 ## The code review
 
