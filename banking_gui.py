@@ -36,10 +36,15 @@ import gc
 import inspect
 import io
 import sys
-import tkinter as tk
-import tkinter.font as tkfont
 from datetime import date, timedelta
-from tkinter import messagebox, ttk
+
+try:
+    import tkinter as tk
+    import tkinter.font as tkfont
+    from tkinter import messagebox, ttk
+except ImportError:                                   # pragma: no cover - depends on the OS
+    sys.exit("Tkinter is not installed. Windows/macOS: reinstall Python with 'tcl/tk' ticked. "
+             "Linux: sudo apt install python3-tk")
 
 import banking_system as bs
 
@@ -1652,7 +1657,8 @@ def main():
         app = BankingApp()
     except tk.TclError as e:
         print("Could not open a window:", e, file=sys.stderr)
-        print("On Linux, install Tkinter with: sudo apt install python3-tk", file=sys.stderr)
+        print("The GUI needs a graphical desktop session. "
+              "Without one, run: python banking_system.py", file=sys.stderr)
         return 1
     app.mainloop()
     return 0
