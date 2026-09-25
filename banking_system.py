@@ -30,7 +30,7 @@ How to run
     python banking_system.py              # run the seeded demonstration
     python banking_system.py --test       # run the automated tests
     python banking_system.py --classes    # print the inheritance tree and counts
-    python banking_system.py --diagram DIR  # write the class diagram SVG into DIR
+    python banking_system.py --diagram DIR  # write the class and UML diagrams (SVG) into DIR
 
 Core design rule
 ----------------
@@ -3446,6 +3446,14 @@ class ModelShapeTests(unittest.TestCase):
         self.assertTrue(issubclass(Company, Organization) and issubclass(Organization, Party))
         self.assertTrue(issubclass(ComplianceInvestigation, RiskCase) and issubclass(RiskCase, Case))
 
+    def test_uml_diagrams_name_only_real_classes(self):
+        names = {c.__name__ for c in domain_classes()}
+        for _, _, layout, edges in _ASSOC_DIAGRAMS:
+            self.assertTrue(set(layout) <= names)
+            self.assertTrue(all(a in layout and b in layout for a, b, _, _ in edges))
+        self.assertIn("overdraft_limit()  [override]", _own_members(CurrentAccount)[1])
+        self.assertIn("holds", _own_attributes(DepositAccount))
+
     def test_the_whole_demo_runs_and_balances(self):
         import contextlib
         import io
@@ -3455,7 +3463,7 @@ class ModelShapeTests(unittest.TestCase):
 
 
 # =============================================================================
-# PART 15 - Introspection and class-diagram generator
+# PART 15 - Introspection, class diagram and UML diagram generators
 # The diagram is drawn from the live classes, so it can never drift from the code.
 # =============================================================================
 def domain_classes():
@@ -3579,6 +3587,264 @@ def write_class_diagram(folder):
     return path
 
 
+def _own_attributes(cls):
+    """Instance attributes first assigned in this class's own __init__ (read from the source)."""
+    import ast
+    import inspect
+    import textwrap
+    init = cls.__dict__.get("__init__")
+    if init is None:
+        return []
+    tree = ast.parse(textwrap.dedent(inspect.getsource(init)))
+    names = []
+    for node in ast.walk(tree):
+        targets = []
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign):
+            targets = [node.target]
+        for t in targets:
+            for el in (t.elts if isinstance(t, ast.Tuple) else [t]):
+                if (isinstance(el, ast.Attribute) and isinstance(el.value, ast.Name)
+                        and el.value.id == "self" and el.attr not in names):
+                    names.append(el.attr)
+    return [n for n in names if not n.startswith("_")] + [n for n in names if n.startswith("_")]
+
+
+def _own_members(cls):
+    """(class constants, methods) defined or overridden at this level."""
+    consts, methods = [], []
+    for name, value in cls.__dict__.items():
+        if name.startswith("__"):
+            continue
+        if callable(value) or isinstance(value, property):
+            parent_has = any(name in b.__dict__ for b in cls.__mro__[1:])
+            methods.append(name + "()" + ("  [override]" if parent_has else ""))
+        elif name.isupper() or name in ("prefix", "id_prefix", "officer_title"):
+            consts.append(name)
+    return consts, methods
+
+
+def _svg_text(s):
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def write_uml_diagrams(folder):
+    """Write one UML class diagram per inheritance hierarchy (attributes and methods that
+    each level adds) and three association diagrams. Returns the file paths."""
+    import os
+    os.makedirs(folder, exist_ok=True)
+    classes = domain_classes()
+    children = {c: sorted((s for s in classes if s.__bases__[0] is c), key=lambda s: s.__name__)
+                for c in classes}
+    hierarchies = [("uml_parties", Party), ("uml_arrangements", Arrangement),
+                   ("uml_transactions", BankTransaction), ("uml_cases", Case)]
+    paths = []
+    box_w, line_h, gap_x, gap_y = 250, 14, 18, 46
+
+    def compartments(c):
+        consts, methods = _own_members(c)
+        attrs = _own_attributes(c)
+        return [c.__name__], [("+ " + a) for a in consts] + [("- " + a) for a in attrs], methods
+
+    def height(c):
+        head, attrs, methods = compartments(c)
+        return 24 + (max(1, len(attrs)) + max(1, len(methods))) * line_h + 16
+
+    for fname, root in hierarchies:
+        pos = {}
+
+        def leaves(c):
+            return max(1, sum(leaves(s) for s in children[c]))
+
+        level_h = {}
+
+        def depth_scan(c, d):
+            level_h[d] = max(level_h.get(d, 0), height(c))
+            for s in children[c]:
+                depth_scan(s, d + 1)
+
+        depth_scan(root, 0)
+        tops = {0: 60}
+        for d in range(1, len(level_h)):
+            tops[d] = tops[d - 1] + level_h[d - 1] + gap_y
+
+        def place(c, x0, d):
+            width = leaves(c) * (box_w + gap_x)
+            pos[c] = (x0 + width / 2 - box_w / 2, tops[d])
+            x = x0
+            for s in children[c]:
+                place(s, x, d + 1)
+                x += leaves(s) * (box_w + gap_x)
+
+        place(root, 20, 0)
+        width = max(p[0] for p in pos.values()) + box_w + 30
+        total_h = max(pos[c][1] + height(c) for c in pos) + 30
+        svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width:.0f}" height="{total_h:.0f}" '
+               f'font-family="Helvetica, Arial, sans-serif" font-size="11">',
+               '<rect width="100%" height="100%" fill="#ffffff"/>',
+               '<defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="11" '
+               'markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" '
+               'stroke="#34495e"/></marker></defs>',
+               f'<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">{root.__name__} '
+               'hierarchy - what each level adds (- attribute, + class constant, () method)</text>']
+        for c in pos:
+            if c is not root:
+                px, py = pos[c.__bases__[0]]
+                cx, cy = pos[c]
+                ph = height(c.__bases__[0])
+                mid = py + ph + gap_y / 2
+                svg.append(f'<polyline points="{cx + box_w / 2:.0f},{cy:.0f} {cx + box_w / 2:.0f},{mid:.0f} '
+                           f'{px + box_w / 2:.0f},{mid:.0f} {px + box_w / 2:.0f},{py + ph:.0f}" fill="none" '
+                           f'stroke="#34495e" marker-end="url(#tri)"/>')
+        for c, (x, y) in pos.items():
+            head, attrs, methods = compartments(c)
+            h = height(c)
+            svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{box_w}" height="{h}" fill="#f4f8fb" '
+                       f'stroke="#34495e"/>')
+            svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{box_w}" height="22" fill="#d8e6f3" '
+                       f'stroke="#34495e"/>')
+            svg.append(f'<text x="{x + box_w / 2:.0f}" y="{y + 15:.0f}" text-anchor="middle" '
+                       f'font-weight="bold" font-size="12" fill="#1d2b3a">{head[0]}</text>')
+            ty = y + 22 + line_h
+            for a in attrs or ["(inherits all attributes)"]:
+                svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="#1d2b3a">{_svg_text(a)}</text>')
+                ty += line_h
+            svg.append(f'<line x1="{x:.0f}" y1="{ty - line_h + 5:.0f}" x2="{x + box_w:.0f}" '
+                       f'y2="{ty - line_h + 5:.0f}" stroke="#34495e"/>')
+            ty += 4
+            for m in methods or ["(no new methods)"]:
+                color = "#9c3d10" if "override" in m else "#1d2b3a"
+                svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="{color}">{_svg_text(m)}</text>')
+                ty += line_h
+        svg.append("</svg>")
+        path = os.path.join(folder, fname + ".svg")
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write("\n".join(svg))
+        paths.append(path)
+    paths += _write_association_diagram(folder)
+    return paths
+
+
+# Association diagrams, one per area. Layout = hand-placed (column, row) grid cells chosen
+# so every line joins neighbouring boxes. Edge = (from, to, label, composition?), where
+# composition means the owner keeps a dated history of these.
+_ASSOC_DIAGRAMS = [
+    ("uml_assoc_parties", "Parties, roles and staff", {
+        "BeneficialOwnership": (0, 0), "Organization": (1, 0), "OfficerRole": (2, 0), "Approval": (4, 0),
+        "Mandate": (1, 1), "Person": (2, 1), "Employee": (3, 1), "RoleAssignment": (4, 1),
+        "IdentityDocument": (0, 2), "Party": (1, 2), "CustomerRelationship": (2, 2), "Branch": (4, 2),
+        "VerificationCheck": (0, 3), "Correction": (1, 3), "Restriction": (2, 3),
+    }, [
+        ("Organization", "BeneficialOwnership", "owners *", True),
+        ("Organization", "OfficerRole", "officers *", True),
+        ("Organization", "Mandate", "mandates *", True), ("OfficerRole", "Person", "held by", False),
+        ("Mandate", "Person", "for", False), ("Employee", "Person", "is", False),
+        ("Employee", "RoleAssignment", "*", True), ("RoleAssignment", "Branch", "at", False),
+        ("Approval", "Employee", "role frozen", False), ("Party", "IdentityDocument", "*", True),
+        ("Party", "VerificationCheck", "*", True), ("Party", "Correction", "*", True),
+        ("Party", "CustomerRelationship", "0..1", True), ("Party", "Restriction", "*", True),
+        ("CustomerRelationship", "Employee", "RM history", False),
+        ("CustomerRelationship", "Branch", "home branch history", False),
+    ]),
+    ("uml_assoc_accounts", "Products, accounts and payments", {
+        "ProductDefinition": (0, 0), "ProductTermsVersion": (1, 0), "Arrangement": (2, 0), "Party": (3, 0),
+        "Notice": (4, 0), "Statement": (0, 1), "Restriction": (2, 1),
+        "AccountHold": (0, 2), "DepositAccount": (1, 2), "IssuedCard": (2, 2),
+        "GeneralLedgerAccount": (0, 3), "LedgerEntry": (1, 3), "BankTransaction": (2, 3), "Reversal": (3, 3),
+        "StandingOrder": (0, 4), "Beneficiary": (1, 4), "CustomerPayment": (3, 4), "Mandate": (4, 4),
+        "BeneficiaryVersion": (1, 5), "TransferPayment": (2, 5), "Dispute": (3, 5),
+        "PaymentAuthorisation": (4, 5),
+    }, [
+        ("ProductDefinition", "ProductTermsVersion", "1..*", True),
+        ("Arrangement", "ProductTermsVersion", "pinned", False), ("Arrangement", "Party", "holders", False),
+        ("Notice", "Party", "to", False), ("Arrangement", "Restriction", "*", True),
+        ("Statement", "DepositAccount", "of", False), ("DepositAccount", "AccountHold", "*", True),
+        ("IssuedCard", "DepositAccount", "draws on", False), ("DepositAccount", "LedgerEntry", "*", True),
+        ("GeneralLedgerAccount", "LedgerEntry", "*", True), ("LedgerEntry", "BankTransaction", "from", False),
+        ("Reversal", "BankTransaction", "original", False), ("StandingOrder", "Beneficiary", "pays", False),
+        ("Beneficiary", "BeneficiaryVersion", "1..*", True),
+        ("TransferPayment", "BeneficiaryVersion", "snapshot", False),
+        ("CustomerPayment", "Mandate", "authority used", False),
+        ("CustomerPayment", "PaymentAuthorisation", "2nd signatory", True),
+        ("Dispute", "CustomerPayment", "disputes", False),
+    ]),
+    ("uml_assoc_lending_cases", "Lending and cases", {
+        "Approval": (0, 0), "FinancingApplication": (1, 0), "ApprovalCondition": (2, 0),
+        "CollectionsCase": (0, 1), "FinancingAgreement": (1, 1), "RepaymentSchedule": (2, 1),
+        "Installment": (3, 1), "DepositAccount": (1, 2),
+        "CaseEvidence": (0, 3), "Case": (1, 3), "CaseNote": (2, 3),
+        "Dispute": (0, 4), "RiskCase": (1, 4), "Restriction": (2, 4), "CustomerPayment": (0, 5),
+    }, [
+        ("FinancingApplication", "Approval", "decision", False),
+        ("FinancingApplication", "ApprovalCondition", "*", True),
+        ("FinancingAgreement", "FinancingApplication", "from", False),
+        ("FinancingAgreement", "RepaymentSchedule", "versions", True),
+        ("RepaymentSchedule", "Installment", "*", True),
+        ("CollectionsCase", "FinancingAgreement", "agreement", False),
+        ("FinancingAgreement", "DepositAccount", "settlement account", False),
+        ("Case", "CaseEvidence", "snapshots", True), ("Case", "CaseNote", "*", True),
+        ("RiskCase", "Restriction", "imposed", True), ("Dispute", "CustomerPayment", "disputes", False),
+    ]),
+]
+
+
+def _write_association_diagram(folder):
+    """Write the three association diagrams; returns their paths."""
+    return [_write_one_association_diagram(folder, *spec) for spec in _ASSOC_DIAGRAMS]
+
+
+def _write_one_association_diagram(folder, fname, title, layout, edges):
+    """Filled diamond = the owner keeps a dated history of these; arrow = reference."""
+    import os
+    cell_w, cell_h, box_w, box_h = 250, 96, 190, 30
+    centre = {n: (30 + c * cell_w + box_w / 2, 70 + r * cell_h + box_h / 2) for n, (c, r) in layout.items()}
+    width = 30 + (max(c for c, _ in layout.values()) + 1) * cell_w
+    height = 70 + (max(r for _, r in layout.values()) + 1) * cell_h
+    svg = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+           f'font-family="Helvetica, Arial, sans-serif" font-size="11">',
+           '<rect width="100%" height="100%" fill="#ffffff"/>',
+           '<defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" '
+           'orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495e"/></marker>'
+           '<marker id="dia" viewBox="0 0 16 10" refX="0" refY="5" markerWidth="14" markerHeight="9" '
+           'orient="auto"><path d="M0,5 L8,0 L16,5 L8,10 z" fill="#34495e"/></marker></defs>',
+           f'<text x="30" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">Associations: {title}</text>',
+           '<text x="30" y="50" font-size="12" fill="#4a6076">filled diamond = the owner keeps a dated '
+           'history of these; arrow = reference to another record</text>']
+
+    def edge_point(a, b):
+        """Point where the line from centre a towards centre b leaves a's box."""
+        (ax, ay), (bx, by) = a, b
+        dx, dy = bx - ax, by - ay
+        sx = (box_w / 2) / abs(dx) if dx else float("inf")
+        sy = (box_h / 2) / abs(dy) if dy else float("inf")
+        k = min(sx, sy)
+        return ax + dx * k, ay + dy * k
+
+    for src, dst, label, comp in edges:
+        x1, y1 = edge_point(centre[src], centre[dst])
+        x2, y2 = edge_point(centre[dst], centre[src])
+        marks = 'marker-start="url(#dia)"' if comp else 'marker-end="url(#arr)"'
+        svg.append(f'<line x1="{x1:.0f}" y1="{y1:.0f}" x2="{x2:.0f}" y2="{y2:.0f}" stroke="#34495e" '
+                   f'stroke-width="1.2" {marks}/>')
+        mx, my = (x1 + x2) / 2, (y1 + y2) / 2
+        w = 6.2 * len(label) + 8
+        svg.append(f'<rect x="{mx - w / 2:.0f}" y="{my - 8:.0f}" width="{w:.0f}" height="15" rx="3" '
+                   f'fill="#ffffff"/>')
+        svg.append(f'<text x="{mx:.0f}" y="{my + 3:.0f}" text-anchor="middle" fill="#5a3d8a" '
+                   f'font-size="10.5">{label}</text>')
+    for name, (cx, cy) in centre.items():
+        svg.append(f'<rect x="{cx - box_w / 2:.0f}" y="{cy - box_h / 2:.0f}" width="{box_w}" '
+                   f'height="{box_h}" rx="5" fill="#eef3f8" stroke="#34495e"/>')
+        svg.append(f'<text x="{cx:.0f}" y="{cy + 4:.0f}" text-anchor="middle" font-weight="bold" '
+                   f'fill="#1d2b3a">{name}</text>')
+    svg.append("</svg>")
+    path = os.path.join(folder, fname + ".svg")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write("\n".join(svg))
+    return path
+
+
 # =============================================================================
 # PART 16 - Command line
 # =============================================================================
@@ -3597,7 +3863,8 @@ def main(argv=None):
     if "--diagram" in argv:
         i = argv.index("--diagram")
         folder = argv[i + 1] if i + 1 < len(argv) else "."
-        print("written", write_class_diagram(folder))
+        for path in [write_class_diagram(folder)] + write_uml_diagrams(folder):
+            print("written", path)
         return 0
     run_demo()
     return 0

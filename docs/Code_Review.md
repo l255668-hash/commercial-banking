@@ -58,7 +58,7 @@ Smaller improvements: `Period.close` refuses to end before it starts; `ProductDe
 
 | Check | Result |
 |---|---|
-| `python banking_system.py --test` | 48 tests, all passing |
+| `python banking_system.py --test` | 49 tests, all passing |
 | Python versions | 3.10, 3.11, 3.12 and 3.13 run the tests green; the file parses as Python 3.9 |
 | `pyflakes banking_system.py` | no warnings |
 | `python banking_system.py` | all 13 scenarios run; 20 refusals, each naming its rule; trial balance total 0.00 |

@@ -8,21 +8,25 @@ Everything is in **one Python file**, `banking_system.py`, using the standard li
 
 ```
 python banking_system.py              # run the seeded demonstration (13 scenarios)
-python banking_system.py --test       # run the 48 automated tests
+python banking_system.py --test       # run the 49 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
-python banking_system.py --diagram docs   # regenerate docs/class_diagram.svg from the code
+python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
 
 ## Files
 
 ```
-banking_system.py          the whole implementation: model, demo, tests, diagram generator
+banking_system.py            the whole implementation: model, demo, tests, diagram generators
 docs/
-  Design_Report.md / .docx the written submission (sections 1 to 10 of the brief)
-  Code_Review.md           analysis of the supplied code, defects found and how each was fixed
-  Viva_Preparation.md      likely questions and model answers
-  class_diagram.png / .svg inheritance diagram generated from the code
-  demo_output.txt          captured output of the demonstration
+  Design_Report.pdf/.docx/.md  the written submission (sections 1 to 10 of the brief)
+  class_diagram.png/.svg       overview of all hierarchies and standalone classes
+  uml_*.png/.svg               UML: four hierarchy diagrams (attributes, methods, overrides)
+                               and three association diagrams
+  demo_output.txt              captured output of the demonstration
+  Code_Review.md               analysis of the supplied code, defects found and how each was fixed
+  Viva_Preparation.md          likely questions and model answers
+  Viva_Presentation.pptx       11-slide viva deck with speaker notes
+  Submission_Checklist.md      what to check and fill in before handing in
 ```
 
 ## Inside `banking_system.py`
@@ -41,8 +45,8 @@ docs/
 | 11 | Statements and notices |
 | 12 | `Bank`: 78 operations, each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Feb 2027) |
-| 14 | 48 automated tests |
-| 15-16 | Class-diagram generator and command line |
+| 14 | 49 automated tests |
+| 15-16 | Class and UML diagram generators, command line |
 
 ## Where each requirement of the brief is met
 
@@ -51,7 +55,7 @@ docs/
 | Domain research summary | Report section 1 |
 | Assumptions | Report section 2 (A1 to A28) |
 | Requirements interpretation | Report section 3 |
-| Class diagram | Report section 4, `docs/class_diagram.png` |
+| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams |
 | Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 67 domain classes, 78 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6 |
 | At least three rejected inheritances | Report section 7 (ten given) |

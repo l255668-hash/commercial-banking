@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="845" height="722" font-family="Helvetica, Arial, sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#34495e"/></marker></defs>
+<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">Party hierarchy - what each level adds (- attribute, + class constant, () method)</text>
+<polyline points="288,370 288,347 422,347 422,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="154,610 154,587 288,587 288,564" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="422,610 422,587 288,587 288,564" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="690,370 690,347 422,347 422,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<rect x="297" y="60" width="250" height="264" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="297" y="60" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="422" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Party</text>
+<text x="303" y="96" fill="#1d2b3a">+ id_prefix</text>
+<text x="303" y="110" fill="#1d2b3a">- party_id</text>
+<text x="303" y="124" fill="#1d2b3a">- registered_on</text>
+<text x="303" y="138" fill="#1d2b3a">- documents</text>
+<text x="303" y="152" fill="#1d2b3a">- checks</text>
+<text x="303" y="166" fill="#1d2b3a">- corrections</text>
+<text x="303" y="180" fill="#1d2b3a">- restrictions</text>
+<text x="303" y="194" fill="#1d2b3a">- relationship</text>
+<text x="303" y="208" fill="#1d2b3a">- _details</text>
+<line x1="297" y1="213" x2="547" y2="213" stroke="#34495e"/>
+<text x="303" y="226" fill="#1d2b3a">name()</text>
+<text x="303" y="240" fill="#1d2b3a">detail()</text>
+<text x="303" y="254" fill="#1d2b3a">record_detail()</text>
+<text x="303" y="268" fill="#1d2b3a">correct_detail()</text>
+<text x="303" y="282" fill="#1d2b3a">detail_on()</text>
+<text x="303" y="296" fill="#1d2b3a">is_verified()</text>
+<text x="303" y="310" fill="#1d2b3a">kyc_gaps()</text>
+<rect x="163" y="370" width="250" height="194" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="163" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="288" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Organization</text>
+<text x="169" y="406" fill="#1d2b3a">+ id_prefix</text>
+<text x="169" y="420" fill="#1d2b3a">+ officer_title</text>
+<text x="169" y="434" fill="#1d2b3a">+ OWNERSHIP_THRESHOLD</text>
+<text x="169" y="448" fill="#1d2b3a">- registration_no</text>
+<text x="169" y="462" fill="#1d2b3a">- officers</text>
+<text x="169" y="476" fill="#1d2b3a">- owners</text>
+<text x="169" y="490" fill="#1d2b3a">- mandates</text>
+<line x1="163" y1="495" x2="413" y2="495" stroke="#34495e"/>
+<text x="169" y="508" fill="#1d2b3a">connected_persons()</text>
+<text x="169" y="522" fill="#1d2b3a">structural_gaps()</text>
+<text x="169" y="536" fill="#9c3d10">kyc_gaps()  [override]</text>
+<text x="169" y="550" fill="#1d2b3a">find_mandate()</text>
+<rect x="29" y="610" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="29" y="610" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="154" y="625" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Charity</text>
+<text x="35" y="646" fill="#1d2b3a">+ officer_title</text>
+<text x="35" y="660" fill="#1d2b3a">+ MIN_TRUSTEES</text>
+<line x1="29" y1="665" x2="279" y2="665" stroke="#34495e"/>
+<text x="35" y="678" fill="#9c3d10">structural_gaps()  [override]</text>
+<rect x="297" y="610" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="297" y="610" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="422" y="625" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Company</text>
+<text x="303" y="646" fill="#1d2b3a">+ officer_title</text>
+<text x="303" y="660" fill="#1d2b3a">- incorporated_on</text>
+<line x1="297" y1="665" x2="547" y2="665" stroke="#34495e"/>
+<text x="303" y="678" fill="#9c3d10">structural_gaps()  [override]</text>
+<rect x="565" y="370" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="565" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="690" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Person</text>
+<text x="571" y="406" fill="#1d2b3a">+ id_prefix</text>
+<text x="571" y="420" fill="#1d2b3a">- date_of_birth</text>
+<line x1="565" y1="425" x2="815" y2="425" stroke="#34495e"/>
+<text x="571" y="438" fill="#1d2b3a">(no new methods)</text>
+</svg>

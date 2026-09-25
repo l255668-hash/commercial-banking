@@ -1,0 +1,138 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2721" height="708" font-family="Helvetica, Arial, sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs><marker id="tri" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="11" markerHeight="11" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#ffffff" stroke="#34495e"/></marker></defs>
+<text x="20" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">BankTransaction hierarchy - what each level adds (- attribute, + class constant, () method)</text>
+<polyline points="154,370 154,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="556,370 556,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="422,554 422,531 556,531 556,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="690,554 690,531 556,531 556,508" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="958,370 958,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1226,370 1226,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1494,370 1494,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2030,370 2030,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="1762,554 1762,461 2030,461 2030,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2030,554 2030,461 2030,461 2030,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2298,554 2298,461 2030,461 2030,438" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<polyline points="2566,370 2566,347 1360,347 1360,324" fill="none" stroke="#34495e" marker-end="url(#tri)"/>
+<rect x="1235" y="60" width="250" height="264" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1235" y="60" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1360" y="75" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">BankTransaction</text>
+<text x="1241" y="96" fill="#1d2b3a">+ prefix</text>
+<text x="1241" y="110" fill="#1d2b3a">- txn_id</text>
+<text x="1241" y="124" fill="#1d2b3a">- amount</text>
+<text x="1241" y="138" fill="#1d2b3a">- initiated_on</text>
+<text x="1241" y="152" fill="#1d2b3a">- narrative</text>
+<text x="1241" y="166" fill="#1d2b3a">- status</text>
+<text x="1241" y="180" fill="#1d2b3a">- entries</text>
+<text x="1241" y="194" fill="#1d2b3a">- reversals</text>
+<text x="1241" y="208" fill="#1d2b3a">- failure_reason</text>
+<text x="1241" y="222" fill="#1d2b3a">- supersedes</text>
+<text x="1241" y="236" fill="#1d2b3a">- superseded_by</text>
+<line x1="1235" y1="241" x2="1485" y2="241" stroke="#34495e"/>
+<text x="1241" y="254" fill="#1d2b3a">kind()</text>
+<text x="1241" y="268" fill="#1d2b3a">post()</text>
+<text x="1241" y="282" fill="#1d2b3a">reversed_amount()</text>
+<text x="1241" y="296" fill="#1d2b3a">net_amount()</text>
+<text x="1241" y="310" fill="#1d2b3a">summary()</text>
+<rect x="29" y="370" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="29" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="154" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CashTransaction</text>
+<text x="35" y="406" fill="#1d2b3a">+ prefix</text>
+<text x="35" y="420" fill="#1d2b3a">- account</text>
+<text x="35" y="434" fill="#1d2b3a">- direction</text>
+<text x="35" y="448" fill="#1d2b3a">- teller</text>
+<text x="35" y="462" fill="#1d2b3a">- presented_by</text>
+<text x="35" y="476" fill="#1d2b3a">- branch</text>
+<line x1="29" y1="481" x2="279" y2="481" stroke="#34495e"/>
+<text x="35" y="494" fill="#1d2b3a">(no new methods)</text>
+<rect x="431" y="370" width="250" height="138" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="431" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="556" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CustomerPayment</text>
+<text x="437" y="406" fill="#1d2b3a">- source_account</text>
+<text x="437" y="420" fill="#1d2b3a">- initiated_by</text>
+<text x="437" y="434" fill="#1d2b3a">- channel</text>
+<text x="437" y="448" fill="#1d2b3a">- mandate_used</text>
+<text x="437" y="462" fill="#1d2b3a">- authorisations</text>
+<text x="437" y="476" fill="#1d2b3a">- disputes</text>
+<line x1="431" y1="481" x2="681" y2="481" stroke="#34495e"/>
+<text x="437" y="494" fill="#1d2b3a">(no new methods)</text>
+<rect x="297" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="297" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="422" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">CardPayment</text>
+<text x="303" y="590" fill="#1d2b3a">+ prefix</text>
+<text x="303" y="604" fill="#1d2b3a">- card</text>
+<text x="303" y="618" fill="#1d2b3a">- merchant</text>
+<line x1="297" y1="623" x2="547" y2="623" stroke="#34495e"/>
+<text x="303" y="636" fill="#1d2b3a">(no new methods)</text>
+<rect x="565" y="554" width="250" height="124" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="565" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="690" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">TransferPayment</text>
+<text x="571" y="590" fill="#1d2b3a">+ prefix</text>
+<text x="571" y="604" fill="#1d2b3a">- beneficiary</text>
+<text x="571" y="618" fill="#1d2b3a">- beneficiary_version</text>
+<text x="571" y="632" fill="#1d2b3a">- hold</text>
+<text x="571" y="646" fill="#1d2b3a">- standing_order</text>
+<line x1="565" y1="651" x2="815" y2="651" stroke="#34495e"/>
+<text x="571" y="664" fill="#1d2b3a">(no new methods)</text>
+<rect x="833" y="370" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="833" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="958" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">FeeCharge</text>
+<text x="839" y="406" fill="#1d2b3a">+ prefix</text>
+<text x="839" y="420" fill="#1d2b3a">- account</text>
+<text x="839" y="434" fill="#1d2b3a">- fee_code</text>
+<text x="839" y="448" fill="#1d2b3a">- terms_version</text>
+<line x1="833" y1="453" x2="1083" y2="453" stroke="#34495e"/>
+<text x="839" y="466" fill="#1d2b3a">(no new methods)</text>
+<rect x="1101" y="370" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1101" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1226" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCredit</text>
+<text x="1107" y="406" fill="#1d2b3a">+ prefix</text>
+<text x="1107" y="420" fill="#1d2b3a">- account</text>
+<text x="1107" y="434" fill="#1d2b3a">- annual_rate</text>
+<line x1="1101" y1="439" x2="1351" y2="439" stroke="#34495e"/>
+<text x="1107" y="452" fill="#1d2b3a">(no new methods)</text>
+<rect x="1369" y="370" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1369" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1494" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InternalTransfer</text>
+<text x="1375" y="406" fill="#1d2b3a">+ prefix</text>
+<line x1="1369" y1="411" x2="1619" y2="411" stroke="#34495e"/>
+<text x="1375" y="424" fill="#1d2b3a">(no new methods)</text>
+<rect x="1905" y="370" width="250" height="68" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1905" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2030" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanTransaction</text>
+<text x="1911" y="406" fill="#1d2b3a">- agreement</text>
+<line x1="1905" y1="411" x2="2155" y2="411" stroke="#34495e"/>
+<text x="1911" y="424" fill="#1d2b3a">(no new methods)</text>
+<rect x="1637" y="554" width="250" height="82" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1637" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="1762" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">InterestCapitalisation</text>
+<text x="1643" y="590" fill="#1d2b3a">+ prefix</text>
+<text x="1643" y="604" fill="#1d2b3a">- approval</text>
+<line x1="1637" y1="609" x2="1887" y2="609" stroke="#34495e"/>
+<text x="1643" y="622" fill="#1d2b3a">(no new methods)</text>
+<rect x="1905" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="1905" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2030" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanDisbursement</text>
+<text x="1911" y="590" fill="#1d2b3a">+ prefix</text>
+<text x="1911" y="604" fill="#1d2b3a">- credit_account</text>
+<text x="1911" y="618" fill="#1d2b3a">- approval</text>
+<line x1="1905" y1="623" x2="2155" y2="623" stroke="#34495e"/>
+<text x="1911" y="636" fill="#1d2b3a">(no new methods)</text>
+<rect x="2173" y="554" width="250" height="96" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2173" y="554" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2298" y="569" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">LoanRepayment</text>
+<text x="2179" y="590" fill="#1d2b3a">+ prefix</text>
+<text x="2179" y="604" fill="#1d2b3a">- debit_account</text>
+<text x="2179" y="618" fill="#1d2b3a">- allocations</text>
+<line x1="2173" y1="623" x2="2423" y2="623" stroke="#34495e"/>
+<text x="2179" y="636" fill="#1d2b3a">(no new methods)</text>
+<rect x="2441" y="370" width="250" height="110" fill="#f4f8fb" stroke="#34495e"/>
+<rect x="2441" y="370" width="250" height="22" fill="#d8e6f3" stroke="#34495e"/>
+<text x="2566" y="385" text-anchor="middle" font-weight="bold" font-size="12" fill="#1d2b3a">Reversal</text>
+<text x="2447" y="406" fill="#1d2b3a">+ prefix</text>
+<text x="2447" y="420" fill="#1d2b3a">- original</text>
+<text x="2447" y="434" fill="#1d2b3a">- reason</text>
+<text x="2447" y="448" fill="#1d2b3a">- approval</text>
+<line x1="2441" y1="453" x2="2691" y2="453" stroke="#34495e"/>
+<text x="2447" y="466" fill="#1d2b3a">(no new methods)</text>
+</svg>

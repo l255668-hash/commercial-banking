@@ -8,13 +8,13 @@
 | Roll number | ______________________________ |
 | Course and instructor | ______________________________ |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 13 scenarios, 48 automated tests and a class-diagram generator.
+The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 13 scenarios, 49 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 48 automated tests
+python banking_system.py --test       # run the 49 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
-python banking_system.py --diagram docs   # regenerate docs/class_diagram.svg from the code
+python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
 
 | Required submission item (brief, Problem 4) | Where |
@@ -22,7 +22,7 @@ python banking_system.py --diagram docs   # regenerate docs/class_diagram.svg fr
 | 1. Domain research summary, sources and terminology | Section 1 |
 | 2. Assumptions | Section 2 (A1 to A28) |
 | 3. Requirements interpretation | Section 3 |
-| 4. Class diagram | Section 4, `docs/class_diagram.png` / `.svg` |
+| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`) |
 | 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (67 domain classes, 78 operations) |
 | 6. Explanation of every inheritance relationship | Section 6 |
 | 7. At least three tempting inheritances rejected | Section 7 (ten given) |
@@ -122,9 +122,43 @@ python banking_system.py --diagram docs   # regenerate docs/class_diagram.svg fr
 
 67 domain classes plus 7 business-rule error classes. The diagram is generated from the live classes by `python banking_system.py --diagram docs`, so it cannot drift from the code.
 
-**Figure 1. Inheritance hierarchies and standalone classes** (arrow points to the parent class)
+All diagrams are generated from the live classes by `python banking_system.py --diagram docs`: the attributes and methods are read from the source code itself, so the diagrams cannot drift from the implementation.
 
-![Class diagram](class_diagram.png)
+**Figure 1. Overview: the four inheritance hierarchies and the standalone classes** (arrow points to the parent class)
+
+![Class diagram overview](class_diagram.png)
+
+**Figures 2 to 5. UML class diagrams, one per hierarchy.** Each box shows only what that level *adds*: `+` class constants, `-` attributes set in that class's own `__init__`, and methods. Methods marked `[override]` (in red) replace or extend the parent's version. This is the visual answer to "why does the shared information belong at this level?" (section 6).
+
+**Figure 2. Party hierarchy**
+
+![Party hierarchy](uml_parties.png)
+
+**Figure 3. Arrangement hierarchy**
+
+![Arrangement hierarchy](uml_arrangements.png)
+
+**Figure 4. BankTransaction hierarchy**
+
+![BankTransaction hierarchy](uml_transactions.png)
+
+**Figure 5. Case hierarchy**
+
+![Case hierarchy](uml_cases.png)
+
+**Figures 6 to 8. Associations** (filled diamond = the owner keeps a dated history of these; arrow = reference)
+
+**Figure 6. Parties, roles and staff**
+
+![Associations: parties, roles and staff](uml_assoc_parties.png)
+
+**Figure 7. Products, accounts and payments**
+
+![Associations: products, accounts and payments](uml_assoc_accounts.png)
+
+**Figure 8. Lending and cases**
+
+![Associations: lending and cases](uml_assoc_lending_cases.png)
 
 **Key associations** (composition and references; these are the relationships that were deliberately *not* modelled as inheritance):
 
@@ -175,7 +209,15 @@ Complete class list by area:
 
 `banking_system.py` is organised in 16 numbered parts (model, service, demo, tests, diagram, command line), each with a header comment. Every class and every public operation has a docstring that states the rule it enforces.
 
-`Bank` exposes 78 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`.
+`Bank` exposes 78 public operations. Each one checks the relevant rule, records the change as new data and writes an `AuditEvent`. The brief says trivial operations do not count, so they are classified honestly:
+
+| Kind | Count | Operations |
+|---|---|---|
+| Commands (create, update, assign, approve, cancel, transfer, close, retire, archive, status change) | 66 | every operation in the table below except those in the next two rows |
+| Batch processes run by the simulated clock | 5 | `advance_to`, `run_standing_orders`, `run_arrears_check`, `charge_monthly_fees`, `credit_savings_interest` |
+| Historical queries and reports | 7 | `authority_on`, `capacities_of`, `transaction_story`, `daily_report`, `trial_balance`, `relationship_history`, `party_snapshot` |
+
+Even counting only the 66 commands, the model is more than twice the brief's minimum of 30.
 
 | Group | Operations |
 |---|---|
@@ -193,7 +235,7 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 48 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), and three tests that check the brief's own requirements from the code: at least 30 classes and 30 operations, multi-level inheritance, and that the whole demonstration runs with a zero trial balance.
+**Automated tests.** 49 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), and four tests that check the brief's own requirements from the code: at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance.
 
 ---
 

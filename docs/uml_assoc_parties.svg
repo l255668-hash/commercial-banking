@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="454" font-family="Helvetica, Arial, sans-serif" font-size="11">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs><marker id="arr" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495e"/></marker><marker id="dia" viewBox="0 0 16 10" refX="0" refY="5" markerWidth="14" markerHeight="9" orient="auto"><path d="M0,5 L8,0 L16,5 L8,10 z" fill="#34495e"/></marker></defs>
+<text x="30" y="30" font-size="17" font-weight="bold" fill="#1d2b3a">Associations: Parties, roles and staff</text>
+<text x="30" y="50" font-size="12" fill="#4a6076">filled diamond = the owner keeps a dated history of these; arrow = reference to another record</text>
+<line x1="280" y1="85" x2="220" y2="85" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="221" y="77" width="58" height="15" rx="3" fill="#ffffff"/>
+<text x="250" y="88" text-anchor="middle" fill="#5a3d8a" font-size="10.5">owners *</text>
+<line x1="470" y1="85" x2="530" y2="85" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="465" y="77" width="70" height="15" rx="3" fill="#ffffff"/>
+<text x="500" y="88" text-anchor="middle" fill="#5a3d8a" font-size="10.5">officers *</text>
+<line x1="375" y1="100" x2="375" y2="166" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="340" y="125" width="70" height="15" rx="3" fill="#ffffff"/>
+<text x="375" y="136" text-anchor="middle" fill="#5a3d8a" font-size="10.5">mandates *</text>
+<line x1="625" y1="100" x2="625" y2="166" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="599" y="125" width="51" height="15" rx="3" fill="#ffffff"/>
+<text x="625" y="136" text-anchor="middle" fill="#5a3d8a" font-size="10.5">held by</text>
+<line x1="470" y1="181" x2="530" y2="181" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="487" y="173" width="27" height="15" rx="3" fill="#ffffff"/>
+<text x="500" y="184" text-anchor="middle" fill="#5a3d8a" font-size="10.5">for</text>
+<line x1="780" y1="181" x2="720" y2="181" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="740" y="173" width="20" height="15" rx="3" fill="#ffffff"/>
+<text x="750" y="184" text-anchor="middle" fill="#5a3d8a" font-size="10.5">is</text>
+<line x1="970" y1="181" x2="1030" y2="181" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="993" y="173" width="14" height="15" rx="3" fill="#ffffff"/>
+<text x="1000" y="184" text-anchor="middle" fill="#5a3d8a" font-size="10.5">*</text>
+<line x1="1125" y1="196" x2="1125" y2="262" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="1115" y="221" width="20" height="15" rx="3" fill="#ffffff"/>
+<text x="1125" y="232" text-anchor="middle" fill="#5a3d8a" font-size="10.5">at</text>
+<line x1="1086" y1="100" x2="914" y2="166" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="962" y="125" width="76" height="15" rx="3" fill="#ffffff"/>
+<text x="1000" y="136" text-anchor="middle" fill="#5a3d8a" font-size="10.5">role frozen</text>
+<line x1="280" y1="277" x2="220" y2="277" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="243" y="269" width="14" height="15" rx="3" fill="#ffffff"/>
+<text x="250" y="280" text-anchor="middle" fill="#5a3d8a" font-size="10.5">*</text>
+<line x1="336" y1="292" x2="164" y2="358" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="243" y="317" width="14" height="15" rx="3" fill="#ffffff"/>
+<text x="250" y="328" text-anchor="middle" fill="#5a3d8a" font-size="10.5">*</text>
+<line x1="375" y1="292" x2="375" y2="358" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="368" y="317" width="14" height="15" rx="3" fill="#ffffff"/>
+<text x="375" y="328" text-anchor="middle" fill="#5a3d8a" font-size="10.5">*</text>
+<line x1="470" y1="277" x2="530" y2="277" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="484" y="269" width="33" height="15" rx="3" fill="#ffffff"/>
+<text x="500" y="280" text-anchor="middle" fill="#5a3d8a" font-size="10.5">0..1</text>
+<line x1="414" y1="292" x2="586" y2="358" stroke="#34495e" stroke-width="1.2" marker-start="url(#dia)"/>
+<rect x="493" y="317" width="14" height="15" rx="3" fill="#ffffff"/>
+<text x="500" y="328" text-anchor="middle" fill="#5a3d8a" font-size="10.5">*</text>
+<line x1="664" y1="262" x2="836" y2="196" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="715" y="221" width="70" height="15" rx="3" fill="#ffffff"/>
+<text x="750" y="232" text-anchor="middle" fill="#5a3d8a" font-size="10.5">RM history</text>
+<line x1="720" y1="277" x2="1030" y2="277" stroke="#34495e" stroke-width="1.2" marker-end="url(#arr)"/>
+<rect x="812" y="269" width="126" height="15" rx="3" fill="#ffffff"/>
+<text x="875" y="280" text-anchor="middle" fill="#5a3d8a" font-size="10.5">home branch history</text>
+<rect x="30" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="125" y="89" text-anchor="middle" font-weight="bold" fill="#1d2b3a">BeneficialOwnership</text>
+<rect x="280" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="375" y="89" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Organization</text>
+<rect x="530" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="625" y="89" text-anchor="middle" font-weight="bold" fill="#1d2b3a">OfficerRole</text>
+<rect x="1030" y="70" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="1125" y="89" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Approval</text>
+<rect x="280" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="375" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Mandate</text>
+<rect x="530" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="625" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Person</text>
+<rect x="780" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="875" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Employee</text>
+<rect x="1030" y="166" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="1125" y="185" text-anchor="middle" font-weight="bold" fill="#1d2b3a">RoleAssignment</text>
+<rect x="30" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="125" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">IdentityDocument</text>
+<rect x="280" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="375" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Party</text>
+<rect x="530" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="625" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">CustomerRelationship</text>
+<rect x="1030" y="262" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="1125" y="281" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Branch</text>
+<rect x="30" y="358" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="125" y="377" text-anchor="middle" font-weight="bold" fill="#1d2b3a">VerificationCheck</text>
+<rect x="280" y="358" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="375" y="377" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Correction</text>
+<rect x="530" y="358" width="190" height="30" rx="5" fill="#eef3f8" stroke="#34495e"/>
+<text x="625" y="377" text-anchor="middle" font-weight="bold" fill="#1d2b3a">Restriction</text>
+</svg>
