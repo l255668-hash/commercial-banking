@@ -20,6 +20,8 @@ python banking_system.py --test       # run the 73 automated tests
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 python banking_gui.py                 # open the desktop app (sign in as staff or as a customer)
+python banking_assistant.py           # chat with the AI assistant in the terminal (optional)
+python banking_assistant.py --test    # the assistant's 9 tests
 ```
 
 On Windows and macOS, Tkinter comes with Python. On Linux you may need `sudo apt install python3-tk`.
@@ -29,6 +31,7 @@ On Windows and macOS, Tkinter comes with Python. On Linux you may need `sudo apt
 ```
 banking_system.py            the whole implementation: model, demo, tests, diagram generators
 banking_gui.py               desktop GUI (Tkinter): every button calls one Bank operation
+banking_assistant.py         optional AI assistant: answers from the records, prepares forms (Claude or offline)
 docs/
   Design_Report.pdf/.docx/.md  the written submission (sections 1 to 10 of the brief)
   class_diagram.png/.svg       overview of all hierarchies and standalone classes
@@ -121,6 +124,7 @@ Staff console screens:
 | Cases | Customer, risk and collections cases, with evidence snapshots compared against the corrected record |
 | Staff / Products & branches | Role history and every approval with the role held then; products with terms versions and holders; branches and their history |
 | Books & audit | Trial balance on any date (always zero) and a searchable audit log |
+| Assistant | Ask about any record in plain words ("Why was BIL-002 refused?", "Which payments are waiting?"), or ask for a form ("Deposit 5,000 into CUR-001"): the assistant fills it in, you check it and press Run. See below |
 | Reports | Who held which mandate on a past date; the auditors' approvals-and-authority report (refused for a teller, itself logged); everything that happened on a given day |
 | Class model *(teaching section)* | The inheritance tree read from the code (abstract classes marked), what each level adds, each class's lifecycle, and live object counts |
 | Scenario log *(teaching section)* | The 16 seeded scenarios with refusals highlighted |
@@ -136,6 +140,31 @@ Digital banking screens (for the signed-in customer or signatory):
 | Help | Complaints and service requests, and the cases the person has raised |
 
 The GUI never edits an object directly: every button calls one `Bank` operation, so all rules, refusals and audit events are the model's own. The top bar advances the business date (running the end-of-day batch) or resets the seeded data. The GUI is itself built from classes and inheritance (`Page -> MasterDetailPage -> CustomersPage` and so on).
+
+## The AI assistant (`banking_assistant.py`, optional)
+
+The Assistant screen, and `python banking_assistant.py` in a terminal, answer questions about the bank's records and turn requests into pre-filled operation forms. It is built with the same OOP ideas it serves:
+
+```
+Assistant (abstract)        keeps the conversation (history is never overwritten); finds the records a question names
+  -> OfflineAssistant       answers from the records by rule; prepares forms; needs nothing installed
+      -> ClaudeAssistant    the same retrieval and forms, but Claude writes the answer (also in Urdu / Roman Urdu);
+                            if Claude cannot be reached it gives the offline answer instead
+```
+
+Safety by design: the assistant only **reads** and **pre-fills**. It may prepare only six listed forms (deposit, withdrawal, transfer, card report, dispute, complaint) and never fills the "performed by" field; a person checks the form and presses Run, and the model's rules and audit log apply as for any other operation. Claude sees only the facts retrieved for the question.
+
+**Offline (default):** nothing to do. **With Claude** (optional, needs internet and an API key from console.anthropic.com):
+
+```
+pip install anthropic
+set ANTHROPIC_API_KEY=your-key        (Windows)      export ANTHROPIC_API_KEY=your-key   (macOS / Linux)
+python banking_gui.py
+```
+
+Keep the key on your own computer: never put it in the code, a screenshot or the repository. The model used is `claude-opus-5`, with the API's automatic fallback enabled if a request is declined.
+
+![Assistant](docs/screenshots/gui_14_assistant.png)
 
 ## Where each requirement of the brief is met
 

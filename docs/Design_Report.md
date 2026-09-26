@@ -522,7 +522,7 @@ The brief assesses classes and inheritance, so the front end exists to make the 
 
 **Designed to be read.** Status and role codes are shown in plain words ("Awaiting 2nd signatory", "Relationship manager") while the model keeps its exact codes. A record's status history is drawn as a row of coloured steps, each with the date it began (green: in good standing; red: refused or blocked; amber: waiting on someone; blue: in progress; grey: finished and kept for history), so "Active 20 Feb 2026 -> Blocked (stolen) 10 Mar 2026 -> Destroyed 12 Mar 2026" reads at a glance. Tables size their columns to their content, amounts are right-aligned, and the tables inside a record's details re-fit when the window or the divider is resized. A statement opens in its own window and is itself logged. The sidebar uses line icons drawn from canvas shapes, so the program needs no image files and looks the same on Windows, macOS and Linux. The Overview has three charts (largest depositors, customer payments per month, payment outcomes), a queue of payments that need attention with the actions to clear them, and an activity feed written as sentences ("Hamza Sheikh paid by card CRD-TX-011").
 
-**Fourteen console screens in two sections.** **Bank** (12 screens) is what staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 80 forms in ten groups, enough to run every workflow of the brief's operational scenario by hand, plus 14 guided rule checks:
+**Fifteen console screens in two sections.** **Bank** (13 screens, including the Assistant described in section 11.1) is what staff would use. **Teaching & simulation** (Class model, Scenario log) holds two aids a real staff application would not have; they are kept because the brief describes the model as being for teaching and simulation, and they let an examiner see the inheritance tree and the seeded scenarios from inside the running program. The Operations screen has 80 forms in ten groups, enough to run every workflow of the brief's operational scenario by hand, plus 14 guided rule checks:
 
 | Group | Forms | What can be done |
 |---|---|---|
@@ -556,6 +556,7 @@ The brief assesses classes and inheritance, so the front end exists to make the 
 | `DataTable`, `DetailView`, `ScrollFrame` | `ttk.Frame` | Self-sizing table, rich text pane and scrolling area |
 | `Panel`, `StatCard`, `Banner` | `tk.Frame` | Card, dashboard tile and result strip |
 | `TimelineCanvas`, `IconBadge`, `Avatar` | `tk.Canvas` | Validity periods as ribbons; icon badge; initials |
+| `AssistantPage` | `Page` | The assistant screen: conversation, suggestions, and "open the filled form" |
 | `OperationSpec`, `BankController`, `CurrentBank`, `Outcome`, `Theme`, `Icons` | - | A form definition that knows which roles may use it; the only object that talks to the model; a stand-in that follows "Reset data"; a result in words; colours, fonts and styles; drawn icons |
 
 `MasterDetailPage` and `CustomerView` follow the same reasoning as the model's hierarchies: every list screen (or every digital-banking screen) shares its layout and behaviour, and only what differs is written in the subclass. `Chart -> BarChart / ColumnChart / DonutChart` is a small template: the base class draws the title and the empty state and redraws on resize, and each subclass draws only its own marks.
@@ -613,3 +614,30 @@ The brief assesses classes and inheritance, so the front end exists to make the 
 **Figure 21. Approvals, signed in as Ayesha:** Hamza's PKR 1,200,000 payment waits for her as the second signatory; the model refuses Hamza approving his own.
 
 ![Digital banking approvals](screenshots/gui_13_digital_approvals.png)
+
+### 11.1 AI assistant (optional automation)
+
+`banking_assistant.py` adds an assistant to the console (and to the terminal). A member of staff asks about a record in plain words, or asks for an operation, and the assistant answers from the bank's own records or prepares the form. It is optional: the project runs without it, and without an internet connection.
+
+**Designed as a hierarchy, for the same reasons as the model.**
+
+| Class | Inherits from | What the level adds |
+|---|---|---|
+| `Assistant` | (abstract) | The conversation, kept in order and never overwritten (`Exchange`); retrieval of the records a question names, by reference number or name, described through the model's own methods (`transaction_story`, `capacities_of`, `lineage`...); `ask()` as a template method |
+| `OfflineAssistant` | `Assistant` | Answers by rule (why a payment was refused, what records show) and turns requests such as "deposit 5,000 into CUR-001" or "report CARD-004 stolen" into a `FormAction`. Needs no package, key or internet |
+| `ClaudeAssistant` | `OfflineAssistant` | Sends the question and only the retrieved facts to Claude (`claude-opus-5`, Anthropic's official `anthropic` package), which writes the answer, in Urdu or Roman Urdu if asked in them. It *is* an offline assistant that writes better answers, so it inherits retrieval and form parsing, and falls back to the offline answer when Claude cannot be reached or declines |
+
+`FormAction`, `Reply` and `Exchange` are standalone value classes. `ClaudeAssistant` extends `OfflineAssistant` rather than being a sibling because it needs every offline behaviour: the fallback answer, the retrieval and the form parser.
+
+**Rules that keep the bank's rules in charge.**
+
+- **Reads and pre-fills only.** The assistant cannot run an operation. It prepares one of six listed forms (`FORMS`), and never the "performed by" field. A person checks the form and presses Run, so authority checks, refusals and the audit log apply exactly as for a form filled by hand.
+- **Validated suggestions.** A suggestion from Claude that names another operation or field is discarded, never run.
+- **Minimum data.** Claude sees only the facts retrieved for the question, not the whole bank.
+- **No secrets in the code.** The API key is read from the environment on the user's computer.
+
+**Tested without the internet.** Nine unit tests (`python banking_assistant.py --test`, run on GitHub for every push) cover the refusal explanation, form preparation that posts nothing, the rejected suggestion, the fallback when Claude is unreachable, and the kept conversation. In them Claude is replaced by a stand-in object. The GUI smoke test asks the assistant for a deposit, opens the prepared form, runs it and checks that exactly one PKR 5,000 deposit was posted.
+
+**Figure 22. The assistant:** it explains a refused payment from the record, lists the payments waiting, and prepares a deposit form that the user opens, checks and runs.
+
+![Assistant](screenshots/gui_14_assistant.png)

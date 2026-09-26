@@ -63,6 +63,7 @@ except ImportError:                                   # pragma: no cover - depen
              "Linux: sudo apt install python3-tk")
 
 import banking_system as bs
+import banking_assistant as ba
 
 
 # =============================================================================
@@ -343,6 +344,11 @@ class Icons:
         elif name == "lending":
             L(X(1), Y(14), X(15), Y(14)); L(X(2), Y(11), X(6), Y(7), X(9), Y(9.5), X(14), Y(3))
             L(X(10.5), Y(3), X(14), Y(3), X(14), Y(6.5))
+        elif name == "assistant":
+            L(X(1), Y(2), X(15), Y(2), X(15), Y(11), X(7), Y(11), X(3), Y(14.5), X(4), Y(11), X(1), Y(11), X(1), Y(2))
+            for v in (5, 8):
+                O(X(v), Y(6), X(v + 1.4), Y(7.4), fill=col)
+            O(X(10.6), Y(6), X(12), Y(7.4), fill=col)
         elif name == "phone":
             R(X(4), Y(1), X(12), Y(15)); L(X(7), Y(12.5), X(9), Y(12.5))
         else:
@@ -2381,6 +2387,7 @@ class OperationsPage(Page):
         self._show_guide()
 
     def _show_guide(self):
+        self.current_spec = None
         t = self.theme
         self.form.destroy()
         self.form = Panel(self.form_frame, t, "Choose an operation", icon="operations")
@@ -2414,11 +2421,40 @@ class OperationsPage(Page):
 
     def _pick_operation(self, _event=None):
         sel = self.op_tree.selection()
-        if not sel or sel[0] not in self.specs:
+        if not sel or sel[0] not in self.specs or self.specs[sel[0]] is self.current_spec:
             return
         self._render_form(self.specs[sel[0]])
 
+    def prefill(self, operation, values):
+        """Open one form with some fields filled in (from the assistant). The user still presses Run."""
+        spec = next((x for x in self.all_specs if x.label == operation), None)
+        if spec is None:
+            return False
+        if not self._visible(spec):
+            self.show_all.set(True)
+        self.search.delete(0, "end")
+        self._populate()
+        self.content.winfo_children()[0].select(0)
+        self._render_form(spec)
+        iid = next(i for i, x in self.specs.items() if x is spec)
+        self.op_tree.item(self.op_tree.parent(iid), open=True)
+        self.op_tree.selection_set(iid)
+        self.op_tree.see(iid)
+        for (name, _kind), (widget, mapping) in zip(spec.fields, self.inputs):
+            if name not in values or isinstance(widget, _Fixed):
+                continue
+            wanted = str(values[name]).lower()
+            if mapping is None:
+                widget.delete(0, "end")
+                widget.insert(0, values[name])
+            else:
+                match = next((label for label in widget["values"] if wanted in label.lower()), None)
+                if match:
+                    widget.set(match)
+        return True
+
     def _render_form(self, spec):
+        self.current_spec = spec
         t = self.theme
         self.form.destroy()
         self.form = Panel(self.form_frame, t, spec.label, icon="operations")
@@ -2808,6 +2844,110 @@ class ReportsPage(Page):
         self.out.kv("Events", len(lines))
         for line in lines:
             self.out.bullet(line.strip())
+
+
+# ----------------------------------------------------------------------------- assistant
+class AssistantPage(Page):
+    """Ask questions about the records in plain words (English, Urdu or Roman Urdu with Claude), or ask
+    for a form to be prepared. The assistant only reads and pre-fills: a person presses Run, and the
+    model's rules still decide. Uses Claude when the anthropic package and a key are present,
+    otherwise the offline assistant (banking_assistant.py)."""
+
+    title = "Assistant"
+    subtitle = "Ask about any record, or ask for a form to be prepared; you check it and press Run"
+    SUGGESTIONS = ["Why was BIL-002 refused?", "Who could pay for Ravi Textiles?",
+                   "Which payments are waiting?", "Tell me about CARD-001", "Deposit 5,000 into CUR-001",
+                   "Report card CARD-004 stolen", "Dispute CRD-TX-011", "Show open cases"]
+
+    def build(self):
+        t = self.theme
+        self.assistant = None
+        self.content.columnconfigure(0, weight=3, uniform="asst")
+        self.content.columnconfigure(1, weight=1, uniform="asst")
+        self.content.rowconfigure(0, weight=1)
+        chat = Panel(self.content, t, "Conversation", icon="assistant")
+        chat.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        self.log = tk.Text(chat.body, wrap="word", relief="flat", bd=0, bg=t.CARD, fg=t.INK, font=t.f_body,
+                           cursor="arrow", spacing1=3, spacing3=3, padx=4)
+        self.log.pack(fill="both", expand=True)
+        self.log.tag_configure("you", foreground=t.TEAL, font=t.f_bold, spacing1=12)
+        self.log.tag_configure("who", foreground=t.BRASS, font=t.f_bold, spacing1=8)
+        self.log.tag_configure("muted", foreground=t.MUTED, font=t.f_small)
+        self.log.configure(state="disabled")
+        row = tk.Frame(chat.body, bg=t.CARD)
+        row.pack(fill="x", pady=(10, 0))
+        self.entry = ttk.Entry(row)
+        self.entry.pack(side="left", fill="x", expand=True)
+        self.entry.bind("<Return>", lambda _e: self.send())
+        self.send_button = ttk.Button(row, text="Ask", style="Accent.TButton", command=self.send)
+        self.send_button.pack(side="left", padx=(8, 0))
+        side = Panel(self.content, t, "Try asking")
+        side.grid(row=0, column=1, sticky="nsew")
+        for text in self.SUGGESTIONS:
+            ttk.Button(side.body, text=text, style="Link.TButton",
+                       command=lambda q=text: self.send(q)).pack(anchor="w", pady=1)
+        self.status = tk.Label(side.body, text="", bg=t.CARD, fg=t.MUTED, font=t.f_small, justify="left",
+                               anchor="w", wraplength=260)
+        self.status.pack(fill="x", pady=(16, 0))
+
+    def refresh(self):
+        if self.assistant is None:
+            self.assistant = ba.make_assistant(lambda: self.ctl.bank)
+            if isinstance(self.assistant, ba.ClaudeAssistant):
+                note = f"Answers are written by Claude ({ba.ClaudeAssistant.MODEL}) from the records it is given."
+            else:
+                note = ("Offline assistant: answers come from the records by rule. For answers written by Claude "
+                        "(also in Urdu), install the anthropic package and set ANTHROPIC_API_KEY; see README.")
+            self.status.config(text=note + " It can read and prepare forms, never change a record.")
+            self._write("Assistant", "", ba.Reply(ba.OfflineAssistant.HELP))
+
+    def send(self, question=None):
+        question = (question or self.entry.get()).strip()
+        if not question:
+            return
+        self.refresh()
+        self.entry.delete(0, "end")
+        self._write("You", question)
+        if isinstance(self.assistant, ba.ClaudeAssistant):
+            # a Claude call takes a few seconds: ask on a worker thread, show the answer when it arrives
+            import threading
+            self.send_button.state(["disabled"])
+            box = {}
+            threading.Thread(target=lambda: box.setdefault("reply", self.assistant.ask(question)), daemon=True).start()
+            self._wait(box)
+        else:
+            self._write("Assistant", "", self.assistant.ask(question))
+
+    def _wait(self, box):
+        if "reply" in box:
+            self.send_button.state(["!disabled"])
+            self._write("Assistant", "", box["reply"])
+        else:
+            self.after(150, lambda: self._wait(box))
+
+    def _write(self, who, text, reply=None):
+        log = self.log
+        log.configure(state="normal")
+        if reply is None:
+            log.insert("end", "You\n", "you")
+            log.insert("end", text + "\n")
+        else:
+            log.insert("end", ("Claude" if reply.source != "offline" else "Assistant") + "\n", "who")
+            log.insert("end", nice(reply.text) + "\n")
+            if reply.action:
+                action = reply.action
+                button = ttk.Button(log, text=f"Open the filled form: {action.operation}", style="Accent.TButton",
+                                    command=lambda: self.open_form(action))
+                log.window_create("end", window=button, pady=4)
+                log.insert("end", "\n")
+            if reply.facts and reply.source != "offline":
+                log.insert("end", f"from {len(reply.facts)} lines of the bank's records\n", "muted")
+        log.configure(state="disabled")
+        log.see("end")
+
+    def open_form(self, action):
+        self.app.show("Operations")
+        self.app.pages["Operations"].prefill(action.operation, action.values)
 
 
 # ----------------------------------------------------------------------------- scenario log
@@ -3645,13 +3785,14 @@ class BankingApp(tk.Tk):
         ("Bank", [("Overview", DashboardPage), ("Operations", OperationsPage), ("Customers", CustomersPage),
                   ("Accounts", AccountsPage), ("Transactions", TransactionsPage), ("Cards", CardsPage),
                   ("Counterparties", CounterpartiesPage), ("Cases", CasesPage), ("Staff", StaffPage),
-                  ("Products & branches", ProductsPage), ("Books & audit", BooksPage), ("Reports", ReportsPage)]),
+                  ("Products & branches", ProductsPage), ("Books & audit", BooksPage), ("Reports", ReportsPage),
+                  ("Assistant", AssistantPage)]),
         ("Teaching & simulation", [("Class model", ClassModelPage), ("Scenario log", ScenarioLogPage)]),
     ]
     PAGES = [page for _section, pages in SECTIONS for page in pages]
     ICONS = {"Overview": "overview", "Operations": "operations", "Customers": "customers", "Accounts": "accounts",
              "Transactions": "transactions", "Cards": "cards", "Counterparties": "counterparties", "Cases": "cases",
-             "Staff": "staff", "Products & branches": "products", "Books & audit": "books", "Reports": "reports",
+             "Staff": "staff", "Products & branches": "products", "Books & audit": "books", "Reports": "reports", "Assistant": "assistant",
              "Class model": "classes", "Scenario log": "log"}
 
     def __init__(self, sign_in=True):

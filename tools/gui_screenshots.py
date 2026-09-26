@@ -3,8 +3,8 @@
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py
     xvfb-run -a -s "-screen 0 1440x880x24" python tools/gui_screenshots.py --all /tmp/shots
 
-The default run rewrites the thirteen report figures in docs/screenshots/
-(gui_01 to gui_13). ``--all DIR`` instead saves every screen to DIR, for
+The default run rewrites the fourteen report figures in docs/screenshots/
+(gui_01 to gui_14). ``--all DIR`` instead saves every screen to DIR, for
 checking the layout after a change.
 
 The whole X screen is grabbed with ``xwd`` and converted with netpbm
@@ -85,6 +85,13 @@ def counterparty(app):
     select(app.pages["Counterparties"], lambda x: getattr(x, "name", "") == "Imtiaz Auto Parts")
 
 
+def assistant(app):
+    staff("Maryam Tahir", "Assistant")(app)
+    page = app.pages["Assistant"]
+    for q in ("Why was BIL-002 refused?", "Which payments are waiting?", "Deposit 5,000 into CUR-001"):
+        page.send(q)
+
+
 def main(argv):
     app = g.BankingApp()
     app.geometry("1440x880+0+0")
@@ -107,7 +114,8 @@ def main(argv):
                  ("gui_10_class_model.png", class_model),
                  ("gui_11_digital_home.png", customer("Hamza Sheikh")),
                  ("gui_12_digital_cards.png", customer("Hamza Sheikh", "Cards")),
-                 ("gui_13_digital_approvals.png", customer("Ayesha Khan", "Approvals"))]
+                 ("gui_13_digital_approvals.png", customer("Ayesha Khan", "Approvals")),
+                 ("gui_14_assistant.png", assistant)]
     queue = list(steps)
 
     def step():

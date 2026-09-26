@@ -26,6 +26,7 @@ python banking_system.py --test       # expect: Ran 73 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
 python banking_system.py --classes    # expect: 77 domain classes (71 business + 6 supporting), 7 error classes, 98 Bank operations
 python banking_gui.py                 # the sign-in screen opens (Linux: sudo apt install python3-tk)
+python banking_assistant.py --test    # expect "Ran 9 tests ... OK"
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)
 ```
 
@@ -49,6 +50,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 |---|---|
 | `banking_system.py` | The whole implementation: model, demo, tests, diagram generators |
 | `banking_gui.py` | Optional desktop GUI (Tkinter); every button calls one Bank operation |
+| `banking_assistant.py` | Optional AI assistant (offline, or Claude with an API key); used by the GUI's Assistant screen |
 | `README.md` | How to run, file map, requirement map |
 | `docs/Design_Report.pdf` / `.docx` / `.md` | Written submission, sections 1 to 10 of the brief (flowcharts in 4.1, GUI in 11) |
 | `docs/*.png`, `docs/*.svg` | Class overview, four UML hierarchy diagrams, three association diagrams, six flowcharts, four state machine diagrams |

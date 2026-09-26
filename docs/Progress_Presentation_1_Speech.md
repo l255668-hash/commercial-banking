@@ -53,7 +53,7 @@ Brief کہتا ہے کہ model بنانے سے پہلے industry کو سمجھو
 
 ### سلائیڈ 8: Implementation اور GUI (3:55 تا 4:35)
 
-اب implementation کی progress۔ Core model Python میں بن رہا ہے: parties، accounts، transactions اور double-entry ledger کا کام ہو چکا ہے، اور ہر rule کے ساتھ test لکھ رہا ہوں۔ اس وقت میں cards اور lending کے workflows اور brief کے exception scenarios پر کام کر رہا ہوں۔ ساتھ ہی Tkinter میں GUI کا prototype بن رہا ہے، یہ اس کی screen ہے، جہاں staff اور customer دونوں اپنے role کے حساب سے کام کر سکیں گے۔
+اب implementation کی progress۔ Core model Python میں بن رہا ہے: parties، accounts، transactions اور double-entry ledger کا کام ہو چکا ہے، اور ہر rule کے ساتھ test لکھ رہا ہوں۔ اس وقت میں cards اور lending کے workflows اور brief کے exception scenarios پر کام کر رہا ہوں۔ ساتھ ہی Tkinter میں GUI کا prototype بن رہا ہے، یہ اس کی screen ہے، جہاں staff اور customer دونوں اپنے role کے حساب سے کام کر سکیں گے۔ اور میں ایک AI assistant بھی جوڑ رہا ہوں، جو Claude API سے bank کے records پڑھ کر سوالوں کا جواب دیتا ہے، مگر خود کوئی record نہیں بدل سکتا۔
 
 ### سلائیڈ 9: اگلے steps (4:35 تا 5:00)
 
@@ -93,7 +93,7 @@ Yeh flowchart ek poora workflow dikhata hai: digital banking se ek bara transfer
 
 ### Slide 8 (3:55-4:35)
 
-Ab implementation ki progress. Core model Python mein ban raha hai: parties, accounts, transactions aur double-entry ledger ka kaam ho chuka hai, aur har rule ke saath test likh raha hoon. Is waqt main cards aur lending ke workflows aur brief ke exception scenarios par kaam kar raha hoon. Saath hi Tkinter mein GUI ka prototype ban raha hai, yeh us ki screen hai, jahan staff aur customer dono apne role ke hisaab se kaam kar sakenge.
+Ab implementation ki progress. Core model Python mein ban raha hai: parties, accounts, transactions aur double-entry ledger ka kaam ho chuka hai, aur har rule ke saath test likh raha hoon. Is waqt main cards aur lending ke workflows aur brief ke exception scenarios par kaam kar raha hoon. Saath hi Tkinter mein GUI ka prototype ban raha hai, yeh us ki screen hai, jahan staff aur customer dono apne role ke hisaab se kaam kar sakenge. Aur main ek AI assistant bhi jor raha hoon, jo Claude API se bank ke records parh kar sawalon ka jawab deta hai, magar khud koi record nahi badal sakta.
 
 ### Slide 9 (4:35-5:00)
 
@@ -110,6 +110,8 @@ Agle steps: implementation aur GUI mukammal karna, brief ke har critical case ko
 **Purani authority kaise dikhate ho?** Mandate ka ek validity period hai. Revoke karne se period band hota hai, mandate delete nahi hota, aur har payment apna mandate store karti hai.
 
 **Research ke kaun se sources?** FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa aur Mastercard dispute rules, IFRS 9, BIAN aur Martin Fowler ki Analysis Patterns.
+
+**AI assistant kyun, aur kya yeh khatarnak nahi?** Assistant sirf records parhta hai aur form bhar kar deta hai; Run insaan dabata hai, is liye bank ke saare rules aur audit log waise hi lagte hain. Internet na ho to offline assistant jawab deta hai.
 
 **Abhi kya baqi hai?** Implementation aur GUI mukammal karna, har critical case ka test, files/JSON persistence, SOLID review, aur final report aur viva.
 

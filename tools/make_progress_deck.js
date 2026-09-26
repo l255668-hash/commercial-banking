@@ -174,7 +174,7 @@ header(s, "Implementation and GUI: in progress", "Python, standard library only;
 fitImage(s, "screenshots/gui_02_overview.png", 0.4, 1.35, 5.0, 3.2);
 s.addText("GUI prototype: staff overview screen", { x: 0.4, y: 4.6, w: 5.0, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, align: "center", margin: 0, isTextBox: true });
 const work = [["Built", GREEN, ["Party, Arrangement and Transaction hierarchies", "Double-entry ledger: balances derived, never stored", "KYC checks and dated mandates"]],
-  ["In progress", AMBER, ["Card and lending workflows", "Exception scenarios from the brief", "GUI screens for staff and customers"]]];
+  ["In progress", AMBER, ["Card and lending workflows", "Exception scenarios from the brief", "GUI screens for staff and customers", "AI assistant (Claude) that answers from the records"]]];
 let y = 1.35;
 work.forEach(([tag, col, items]) => {
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.7, y, w: 1.3, h: 0.34, fill: { color: col }, rectRadius: 0.08, line: { color: col } });

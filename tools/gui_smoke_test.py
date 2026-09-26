@@ -320,6 +320,32 @@ def digital_banking_story(app):
     app.sign_out()
 
 
+def assistant_story(app):
+    """The assistant explains a refusal and prepares a form; the form is run by the user, not by it."""
+    print("== assistant: answers from the records, prepares forms, never acts by itself")
+    page = app.pages["Assistant"]
+    app.show("Assistant")
+    page.assistant = g.ba.OfflineAssistant(lambda: app.ctl.bank)     # the test must not depend on a key
+    refused = next(t for t in app.ctl.bank.transactions.values() if t.status.current == "FAILED")
+    reply = page.assistant.ask(f"Why was {refused.txn_id} refused?")
+    if refused.failure_reason not in reply.text:
+        problems.append("the assistant did not explain a refused payment")
+    before = len(app.ctl.bank.transactions)
+    page.send("Deposit 5,000 into CUR-001")
+    action = page.assistant.conversation[-1].reply.action
+    if len(app.ctl.bank.transactions) != before or action is None:
+        problems.append("the assistant should prepare the deposit form without posting anything")
+        return
+    page.open_form(action)
+    ops = app.pages["Operations"]
+    ops._execute(ops.current_spec)
+    last = list(app.ctl.bank.transactions.values())[-1]
+    if not (last.txn_id.startswith("CSH") and last.amount == 5000 and last.status.current == "POSTED"):
+        problems.append(f"the prepared deposit form did not post correctly ({last})")
+    else:
+        print(f"  ok       explained {refused.txn_id}; prepared and ran a deposit form: {last.txn_id} POSTED")
+
+
 def main():
     app = g.BankingApp()
     try:
@@ -335,6 +361,7 @@ def main():
         app.ctl.reset()
         digital_banking_story(app)
         app.sign_in_staff(None)
+        assistant_story(app)
         print("== every screen refreshed")
         app.show("Overview")
         overview = app.pages["Overview"]

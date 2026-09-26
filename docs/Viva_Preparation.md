@@ -149,3 +149,17 @@ Single currency, simple interest calculations, two-signatory dual control only, 
 ## Before the viva
 
 Run `python banking_system.py` and read the output once alongside report section 9. Run `python banking_system.py --test`. Be able to explain `Arrangement`, `DepositAccount`, `SavingsAccount.check_debit`, `Bank.initiate_transfer`, `Bank.reverse_transaction` and `Bank.repay_financing` line by line. Check that the source list in report section 1 matches documents you have actually looked at.
+
+## The AI assistant (optional)
+
+**Q: What does the assistant do, and why is it safe in a bank?**
+It answers questions from the bank's own records and prepares one of six listed forms. It cannot run anything: a person checks the prepared form and presses Run, so the mandate checks, refusals and audit log apply exactly as for a form filled by hand. A suggestion naming any other operation or field is discarded.
+
+**Q: Where is the inheritance?**
+`Assistant` (abstract: conversation and retrieval) -> `OfflineAssistant` (rule-based answers and form parsing) -> `ClaudeAssistant` (Claude writes the answer). `ClaudeAssistant` extends `OfflineAssistant` because it needs all of its behaviour, including the offline answer as a fallback when Claude cannot be reached.
+
+**Q: What if there is no internet or no API key?**
+`make_assistant()` chooses the offline assistant, and a failed Claude call returns the offline answer, so the demo never depends on the network. The tests replace Claude with a stand-in object.
+
+**Q: What does Claude see?**
+Only the facts retrieved for that question, never the whole bank. The API key comes from the user's environment and is never in the code or the repository.

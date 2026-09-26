@@ -41,4 +41,4 @@ If Chromium is not found automatically, set `CHROME=/path/to/chrome`. On Debian/
 
 ## Continuous integration
 
-`.github/workflows/tests.yml` runs on every push: the unit tests, the demonstration (it must end with a zero trial balance) and a lint check on Python 3.9, 3.11 and 3.13; the GUI smoke test under a virtual display; and a check that regenerating every SVG from the code gives exactly the committed files, so the diagrams can never drift from the code.
+`.github/workflows/tests.yml` runs on every push: the unit tests, the assistant's tests, the demonstration (it must end with a zero trial balance) and a lint check on Python 3.9, 3.11 and 3.13; the GUI smoke test under a virtual display; and a check that regenerating every SVG from the code gives exactly the committed files, so the diagrams can never drift from the code.
