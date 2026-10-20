@@ -57,9 +57,9 @@ SCENARIO 3: Card stolen, replaced twice with different limits, old card found
   [BLOCKED] Reactivate the found card
             -> InvalidStateError: CARD-001 is DESTROYED and replaced by CARD-003
   Service request SR-001: BLOCK_CARD_STOLEN -> CLOSED (replacement CARD-003 issued)
-  CARD-001 4213 **** **** 8919 (Hamza Sheikh) status=DESTROYED limit=PKR 200,000.00 payments=['CRD-TX-001:POSTED', 'CRD-TX-002:DECLINED']
-  CARD-003 4213 **** **** 6757 (Hamza Sheikh) status=BLOCKED_DAMAGED limit=PKR 100,000.00 payments=['CRD-TX-003:POSTED', 'CRD-TX-004:DECLINED']
-  CARD-004 4213 **** **** 5676 (Hamza Sheikh) status=ACTIVE limit=PKR 200,000.00 payments=[]
+  CARD-001 4213 **** **** 9193 (Hamza Sheikh) status=DESTROYED limit=PKR 200,000.00 payments=['CRD-TX-001:POSTED', 'CRD-TX-002:DECLINED']
+  CARD-003 4213 **** **** 7575 (Hamza Sheikh) status=BLOCKED_DAMAGED limit=PKR 100,000.00 payments=['CRD-TX-003:POSTED', 'CRD-TX-004:DECLINED']
+  CARD-004 4213 **** **** 6766 (Hamza Sheikh) status=ACTIVE limit=PKR 200,000.00 payments=[]
 
 ==============================================================================
 SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial chargeback
@@ -72,14 +72,14 @@ SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial c
     status trail: INITIATED(2026-03-20) > POSTED(2026-03-20) > REVERSED(2026-03-21)
     initiated by Usman Ali via CARD
     authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD with no limit, valid 2026-02-13 -> open
-    card used: CARD-002 4213 **** **** 7838 (Usman Ali)
+    card used: CARD-002 4213 **** **** 8384 (Usman Ali)
     superseded by CRD-TX-006
     reversal REV-001 PKR 120,000.00: APR-001: REVERSAL by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-03-21
   CRD-TX-006 CardPayment PKR 105,000.00 [PARTIALLY_REVERSED] card purchase at Packages Mall Electronics
     status trail: INITIATED(2026-03-20) > POSTED(2026-03-21) > PARTIALLY_REVERSED(2026-04-09)
     initiated by Usman Ali via CARD
     authority: MND-005 Usman Ali for Ravi Textiles (Pvt) Ltd: CARD with no limit, valid 2026-02-13 -> open
-    card used: CARD-002 4213 **** **** 7838 (Usman Ali)
+    card used: CARD-002 4213 **** **** 8384 (Usman Ali)
     corrects CRD-TX-005
     chargeback CHB-001 PKR 40,000.00: APR-002: CHARGEBACK by Hina Aslam acting as CARD_OPERATIONS @ HO-01 on 2026-04-09
     dispute DSP-001: PARTIALLY_UPHELD
@@ -313,7 +313,7 @@ REPORTS
   End-of-day audit for 10-11 March 2026 (what changed, who, why):
   card-hotline           SERVICE_REQUEST            SR-001     BLOCK_CARD_STOLEN
   Hamza Sheikh           CARD_REPORTED              CARD-001   STOLEN; SR-001
-  Hina Aslam             ISSUE_CARD                 CARD-003   CARD-003 4213 **** **** 6757 (Hamza Sheikh) limit PKR 100,000.00
+  Hina Aslam             ISSUE_CARD                 CARD-003   CARD-003 4213 **** **** 7575 (Hamza Sheikh) limit PKR 100,000.00
   Hina Aslam             REPLACE_CARD               CARD-001   -> CARD-003
   system                 TXN_DECLINED               CRD-TX-002 card CARD-001 is BLOCKED_STOLEN
   Hamza Sheikh           CARD_PAYMENT               CRD-TX-003 PKR 30,000.00 at Hyperstar

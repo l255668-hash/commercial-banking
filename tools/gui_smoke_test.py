@@ -10,7 +10,7 @@ Three passes, each through ``BankController.run`` exactly as a button would:
 3. a full onboarding story typed into the Customers forms: register a
    person, refuse KYC on an expired document, verify a valid one, onboard,
    open an account (and be refused the wrong product), deposit, grant and
-   revoke a mandate, add a beneficiary.
+   revoke a mandate, add a beneficiary (a mistyped IBAN is refused).
 
 Refusals and blocked outcomes are expected; the script fails (exit code 1)
 only if something crashes, an outcome is not the expected kind, or the
@@ -123,7 +123,11 @@ def onboarding_story(app):
     run("Grant a mandate", [company, kashif, "PAYMENTS", "100000", "", officer], "ok")
     mandate = next(m for m in company.mandates if m.person is kashif)
     run("Revoke a mandate", [mandate, "left the company", officer], "ok")
-    run("Add a beneficiary", [kashif, "Landlord", "UBL", "1234567890", "Mr Landlord", kashif], "ok")
+    run("Add a beneficiary", [kashif, "Landlord", "UBL", "PK07 UNIL 0000 0012 3456 7891", "Mr Landlord", kashif],
+        "blocked")                                              # one digit mistyped: the check digits catch it
+    run("Add a beneficiary", [kashif, "Landlord", "HBL", "PK07 UNIL 0000 0012 3456 7890", "Mr Landlord", kashif],
+        "blocked")                                              # a UBL IBAN given as HBL
+    run("Add a beneficiary", [kashif, "Landlord", "UBL", "PK07 UNIL 0000 0012 3456 7890", "Mr Landlord", kashif], "ok")
 
 
 def lending_and_dispute_story(app):

@@ -23,6 +23,8 @@ jobs:
         run: python banking_system.py | tee demo.txt | grep -E "TOTAL +0\.00"
       - name: Class and operation counts
         run: python banking_system.py --classes | tail -1
+      - name: Save the bank to a file and load it back
+        run: python banking_system.py --save bank.json && python banking_system.py --load bank.json | grep "trial balance 0.00"
       - name: Assistant tests (offline; Claude is replaced by a stand-in)
         run: python banking_assistant.py --test
       - name: Lint

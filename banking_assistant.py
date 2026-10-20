@@ -17,7 +17,9 @@ Class hierarchy (multi-level):
       -> OfflineAssistant      answers from the records with rules; always available
           -> ClaudeAssistant   the same, but Claude writes the answer; falls back to offline
 
-Nothing to install for the offline assistant. For Claude (optional):
+Like banking_system.py it uses no libraries: requests are read word by word,
+and the tests use the model's own TestCase and TestRunner. The only optional
+package is Anthropic's client, needed only for Claude:
     pip install anthropic
     set ANTHROPIC_API_KEY=...      (Windows)   export ANTHROPIC_API_KEY=... (macOS/Linux)
 Never put the key in the code or the repository.
@@ -27,14 +29,7 @@ Never put the key in the code or the repository.
 """
 from __future__ import annotations
 
-import contextlib
-import io
-import json
-import re
-import sys
-import unittest
-from abc import ABC, abstractmethod
-from decimal import Decimal, InvalidOperation
+import sys          # only for the command line (sys.argv) and the exit code
 
 import banking_system as bs
 
@@ -51,8 +46,39 @@ FORMS = {
 
 
 def _plain(amount):
-    """Decimal('5000.00') -> '5000', Decimal('2.50') -> '2.5' (as typed into a form)."""
-    return format(Decimal(amount).normalize(), "f")
+    """Money('5000.00') -> '5000', Money('2.50') -> '2.5' (as typed into a form)."""
+    return str(bs.Exact(amount))
+
+
+PUNCTUATION = ".,;:!?()'\""
+
+
+def words(text):
+    """The words of a request in lower case, without the punctuation around them:
+    'Deposit 5,000 into CUR-001.' -> ['deposit', '5,000', 'into', 'cur-001']."""
+    return [w.strip(PUNCTUATION) for w in text.lower().split() if w.strip(PUNCTUATION)]
+
+
+def references(text):
+    """Every word that could be a reference number, in capitals: letters and digits joined by
+    hyphens ("Why was BIL-002's payment refused?" -> [..., 'BIL-002', 'S', ...])."""
+    out, word = [], ""
+    for ch in text.upper() + " ":
+        if ch.isalnum() or ch == "-":
+            word += ch
+        elif word:
+            out.append(word.strip("-"))
+            word = ""
+    return out
+
+
+def is_ref(word, prefix, digits=3):
+    """True for a reference such as 'cur-001': is_ref(word, 3) accepts any 3-letter prefix,
+    is_ref(word, 'card') only 'card-' followed by 3 digits."""
+    if isinstance(prefix, int):
+        head, _, tail = word.partition("-")
+        return len(head) == prefix and head.isalpha() and len(tail) == digits and tail.isdigit()
+    return word.startswith(prefix + "-") and len(word) == len(prefix) + 1 + digits and word[-digits:].isdigit()
 
 
 class FormAction:
@@ -87,11 +113,10 @@ class Exchange:
 # =============================================================================
 # Base class: conversation and retrieval shared by every assistant
 # =============================================================================
-class Assistant(ABC):
+class Assistant(bs.Abstract):
     """Answers questions about one bank. Subclasses decide how the answer is written."""
 
     name = "Assistant"
-    ID_RE = re.compile(r"\b(?:[A-Z]{2,5}-){1,2}\d{3}\b|\b(?:[A-Z]{2,4}-[A-Z]{2,8}|[A-Z]{2,4}-\d{2}|WCF|FTD-6M)\b")
 
     def __init__(self, bank_source):
         # bank_source is a callable returning the current Bank, so "Reset data" in the GUI is followed
@@ -110,7 +135,7 @@ class Assistant(ABC):
         self.conversation.append(Exchange(self.bank.today, question, reply))
         return reply
 
-    @abstractmethod
+    @bs.abstract
     def answer(self, question, facts):
         """Write the reply (a Reply) from the question and the facts found."""
 
@@ -120,7 +145,7 @@ class Assistant(ABC):
         bank, found = self.bank, []
         registries = (bank.transactions, bank.arrangements, bank.cards, bank.cases, bank.beneficiaries,
                       bank.products, bank.branches, bank.employees)
-        for ref in self.ID_RE.findall(question.upper()):
+        for ref in references(question):
             for registry in registries:
                 if ref in registry and registry[ref] not in found:
                     found.append(registry[ref])
@@ -197,7 +222,6 @@ class OfflineAssistant(Assistant):
     """Answers from the records with simple rules. No internet, no key, no package needed."""
 
     name = "Offline assistant"
-    AMOUNT = r"(?:pkr|rs\.?)?\s*([\d][\d,]*(?:\.\d+)?)\s*(k|thousand|lakh|lac|m|million)?"
     SCALE = {"k": 1_000, "thousand": 1_000, "lakh": 100_000, "lac": 100_000, "m": 1_000_000, "million": 1_000_000}
 
     def answer(self, question, facts):
@@ -222,37 +246,70 @@ class OfflineAssistant(Assistant):
             "'Report card CARD-004 stolen'.")
 
     def amount(self, number, scale):
-        try:
-            value = Decimal(number.replace(",", ""))
-        except InvalidOperation:
+        """'5,000' -> 5000; '2.5', 'lakh' -> 250000 (None if it is not a number)."""
+        if not number[:1].isdigit():
             return None
-        return value * self.SCALE.get((scale or "").lower(), 1)
+        try:
+            value = bs.Exact(number.replace(",", ""))
+        except ValueError:
+            return None
+        return value * self.SCALE.get(scale, 1)
+
+    def read_amount(self, ws, i):
+        """An amount starting at word i: '5,000', 'pkr 5000', 'rs 2.5 lakh', '5k'.
+        Returns (amount, index of the next word), or None."""
+        if i < len(ws) and ws[i] in ("pkr", "rs"):
+            i += 1
+        if i >= len(ws):
+            return None
+        word = ws[i]
+        for currency in ("pkr", "rs."):              # written together: 'pkr5000'
+            if word.startswith(currency):
+                word = word[len(currency):]
+        end = 0
+        while end < len(word) and (word[end].isdigit() or word[end] in ",."):
+            end += 1
+        number, scale, i = word[:end], word[end:], i + 1
+        if not scale and i < len(ws) and ws[i] in self.SCALE:
+            scale, i = ws[i], i + 1
+        if scale and scale not in self.SCALE:
+            return None
+        value = self.amount(number, scale)
+        return None if value is None else (value, i)
 
     def parse_action(self, question):
-        """Turn a request into a pre-filled form, or None."""
-        low = question.lower()
-        m = re.search(r"\b(deposit|withdraw)\s+" + self.AMOUNT + r"\s+(?:into|in|to|from)\s+([a-z]{3}-\d{3})", low)
-        if m:
-            value = self.amount(m.group(2), m.group(3))
-            if value is not None:
-                op = "Deposit cash" if m.group(1) == "deposit" else "Withdraw cash"
-                return FormAction(op, {"Account": m.group(4).upper(), "Amount": _plain(value)})
-        m = re.search(r"\b(?:report|block)\b.*?\b(card-\d{3})\b.*?\b(lost|stolen|damaged)\b", low) or \
-            re.search(r"\b(?:report|block)\b.*?\b(lost|stolen|damaged)\b.*?\b(card-\d{3})\b", low)
-        if m:
-            card, kind = sorted(m.groups(), key=lambda g: not g.startswith("card"))
-            values = {"Card": card.upper(), "Report": kind.upper()}
-            holder = self.bank.cards.get(card.upper())
-            if holder is not None:
-                values["Reported by"] = holder.cardholder.name
-            return FormAction("Report a card", values)
-        m = re.search(r"\bdispute\b.*?\b(crd-tx-\d{3})\b", low)
-        if m:
-            txn = self.bank.transactions.get(m.group(1).upper())
-            values = {"Payment": m.group(1).upper()}
-            if txn is not None:
-                values["Amount"] = _plain(txn.amount)
-            return FormAction("Open a dispute", values)
+        """Turn a request into a pre-filled form, or None. The words are read in order:
+        'deposit <amount> into <account>', 'report|block ... <card> ... lost|stolen|damaged',
+        'dispute ... <card payment>'."""
+        ws = words(question)
+        for i, word in enumerate(ws):
+            if word in ("deposit", "withdraw"):
+                found = self.read_amount(ws, i + 1)
+                if found:
+                    value, j = found
+                    if j + 1 < len(ws) and ws[j] in ("into", "in", "to", "from") and is_ref(ws[j + 1], 3):
+                        op = "Deposit cash" if word == "deposit" else "Withdraw cash"
+                        return FormAction(op, {"Account": ws[j + 1].upper(), "Amount": _plain(value)})
+            if word in ("report", "block"):
+                later = ws[i + 1:]
+                cards = [w for w in later if is_ref(w, "card")]
+                kinds = [w for w in later if w in ("lost", "stolen", "damaged")]
+                if cards and kinds:
+                    card = cards[0].upper()
+                    values = {"Card": card, "Report": kinds[0].upper()}
+                    holder = self.bank.cards.get(card)
+                    if holder is not None:
+                        values["Reported by"] = holder.cardholder.name
+                    return FormAction("Report a card", values)
+            if word == "dispute":
+                payments = [w for w in ws[i + 1:] if is_ref(w, "crd-tx")]
+                if payments:
+                    ref = payments[0].upper()
+                    txn = self.bank.transactions.get(ref)
+                    values = {"Payment": ref}
+                    if txn is not None:
+                        values["Amount"] = _plain(txn.amount)
+                    return FormAction("Open a dispute", values)
         return None
 
 
@@ -326,9 +383,9 @@ class ClaudeAssistant(OfflineAssistant):
         for line in text.splitlines():
             if line.strip().startswith("ACTION:"):
                 try:
-                    data = json.loads(line.split("ACTION:", 1)[1])
+                    data = bs.Json.loads(line.split("ACTION:", 1)[1])
                     action = FormAction(data["operation"], data.get("values", {}))
-                except (ValueError, KeyError, TypeError):
+                except (ValueError, KeyError, TypeError, AttributeError):
                     pass                         # an unusable suggestion is ignored, never run
             else:
                 lines.append(line)
@@ -346,8 +403,7 @@ def make_assistant(bank_source):
 # Tests (python banking_assistant.py --test)
 # =============================================================================
 def _demo_bank():
-    with contextlib.redirect_stdout(io.StringIO()):
-        return bs.run_demo()
+    return bs.run_demo(bs.DemoLog(echo=False))
 
 
 class _FakeClaude:
@@ -377,7 +433,7 @@ class _FakeClaude:
         self.beta = _Beta()
 
 
-class AssistantTests(unittest.TestCase):
+class AssistantTests(bs.TestCase):
     bank = None
 
     @classmethod
@@ -439,8 +495,7 @@ class AssistantTests(unittest.TestCase):
 
 def main(argv):
     if "--test" in argv:
-        result = unittest.main(argv=[sys.argv[0]], exit=False, verbosity=1).result
-        return 0 if result.wasSuccessful() else 1
+        return 0 if bs.TestRunner(globals()).run() else 1
     bank = _demo_bank()
     assistant = make_assistant(bank)
     print(f"{assistant.name} for {bank.name} (business date {bank.today}). Empty line to quit.")

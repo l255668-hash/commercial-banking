@@ -6,24 +6,25 @@ Problem 4 - Commercial Banking, Lending, Payments and Compliance
 (OOP project: assessed concepts are CLASSES and INHERITANCE)
 Prepared by: Khizar Rizwan (instructor: Bilal Nadeem, CS2012 Introduction to OOP)
 
-A single, self-contained Python file (standard library only, Python 3.9+)
-that contains:
+A single, self-contained Python file (Python 3.9+) that uses no libraries: the
+building blocks a library would normally provide (exact money, dates, abstract
+classes, JSON, a test framework) are written here as classes. It contains:
 
-    PART 1  helpers and business-rule errors
+    PART 1  own building blocks: Abstract, Exact -> Money, Date; errors
     PART 2  time and history building blocks (Period, StatusHistory, audit)
     PART 3  parties, KYC, roles and mandates      Party -> Organization -> Company
     PART 4  bank organisation and staff           Branch, Employee, Approval
     PART 5  products and customer arrangements    Arrangement -> DepositAccount -> Current/Savings/FixedTerm
     PART 6  financing (loans)                     FinancingAgreement, schedules, installments
-    PART 7  beneficiaries, standing orders and billers
+    PART 7  beneficiaries, standing orders, billers  Iban (ISO 13616 check digits)
     PART 8  transactions (double-entry)           BankTransaction -> CustomerPayment -> Transfer/Card/Bill
-    PART 9  cards                                 IssuedCard replacement chain, CardControl
+    PART 9  cards                                 CardNumber (Luhn), IssuedCard chain, CardControl
     PART 10 cases                                 Case -> RiskCase -> ComplianceInvestigation
     PART 11 statements and notices
     PART 12 Bank: the application service (every operation, rule and audit event)
     PART 12A saving and loading the whole bank    Repository -> JsonFileRepository / MemoryRepository
     PART 13 seeded demonstration: 16 complex scenarios on a simulated calendar
-    PART 14 automated tests (unittest)
+    PART 14 automated tests (own xUnit-style TestCase and TestRunner)
     PART 15 class and UML diagram generators (SVG, read from the live classes)
     PART 16 command line
 
@@ -60,31 +61,337 @@ Amounts are signed from the bank's books: positive = credit, negative = debit.
 A customer's deposit balance is therefore positive (the bank owes it), while
 the bank's vault cash and loans receivable are negative (debit) balances
 because they are assets. The trial balance of the whole bank is always zero.
-All amounts are Pakistani rupees (PKR) held as Decimal, never float.
+All amounts are Pakistani rupees (PKR) held as Money (whole paisa), never float.
 """
 from __future__ import annotations
 
-import contextlib
-import inspect
-import io
-import json
-import sys
-import tempfile
-import unittest
-from abc import ABC, abstractmethod
-from pathlib import Path
-from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
+import sys          # only for the command line (sys.argv) and the exit code
 
 # =============================================================================
-# PART 1 - Helpers and business-rule errors
+# PART 1 - Own building blocks, written in plain Python (no libraries)
+#   abstract classes, exact numbers and Money, calendar dates
+# Each replaces a library module (abc, decimal, datetime) with a small class whose
+# rules can be read here, so the whole model depends on nothing but Python itself.
 # =============================================================================
-ZERO = Decimal("0.00")
+def abstract(method):
+    """Mark a method that every concrete subclass must implement (like abc.abstractmethod)."""
+    method.is_abstract = True
+    return method
 
 
-def money(value) -> Decimal:
-    """Convert a number or string to a Decimal rounded to paisa (2 places)."""
-    return Decimal(str(value)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+class Abstract:
+    """Base for classes that cannot be created directly: abstract classes.
+
+    A class is abstract while any of its methods is still marked @abstract.
+    Creating an object of such a class raises TypeError; a subclass becomes
+    concrete by implementing every abstract method it inherits.
+    """
+
+    _abstract_cache = {}                 # class -> its abstract method names, worked out once
+
+    def __new__(cls, *args, **kwargs):
+        missing = cls.abstract_methods()
+        if missing:
+            raise TypeError(f"Can't instantiate abstract class {cls.__name__} with abstract "
+                            f"method{'s' if len(missing) > 1 else ''} {', '.join(missing)}")
+        return super().__new__(cls)
+
+    @classmethod
+    def abstract_methods(cls):
+        """The names of the methods this class has not implemented yet (sorted)."""
+        if cls not in Abstract._abstract_cache:
+            Abstract._abstract_cache[cls] = sorted(
+                name for name in dir(cls) if getattr(getattr(cls, name, None), "is_abstract", False))
+        return Abstract._abstract_cache[cls]
+
+
+def is_abstract(cls):
+    """True for a class that cannot be created because some methods are still abstract."""
+    return isinstance(cls, type) and issubclass(cls, Abstract) and bool(cls.abstract_methods())
+
+
+def _gcd(a, b):
+    """Greatest common divisor, by Euclid's algorithm."""
+    a, b = abs(a), abs(b)
+    while b:
+        a, b = b, a % b
+    return a
+
+
+def _divide_rounded(num, den, half_even=False):
+    """num / den rounded to a whole number: ties go away from zero (half up), or to the
+    even neighbour (half even, as used when displaying)."""
+    sign = -1 if (num < 0) != (den < 0) else 1
+    q, r = divmod(abs(num), abs(den))
+    twice = 2 * r
+    if twice > abs(den) or (twice == abs(den) and (not half_even or q % 2 == 1)):
+        q += 1
+    return sign * q
+
+
+class Exact:
+    """An exact number, held as a fraction of two whole numbers.
+
+    A float cannot hold 0.1 exactly, so banks never use floats for money. An Exact
+    keeps every value exact (a rate of 0.18 is 18/100) and is rounded only when a
+    result is wanted, by the bank's rule (Money rounds half up to the paisa).
+    """
+
+    def __init__(self, value=0, denominator=1):
+        if isinstance(value, bool):
+            raise TypeError("a true/false value is not a number")
+        if isinstance(value, Exact):
+            num, den = value.num, value.den * denominator
+        elif isinstance(value, int):
+            num, den = value, denominator
+        elif isinstance(value, (str, float)):
+            num, den = self._parse(repr(value) if isinstance(value, float) else value)
+            den *= denominator
+        else:
+            raise TypeError(f"cannot make an exact number from {type(value).__name__}")
+        if den == 0:
+            raise ZeroDivisionError("division by zero")
+        if den < 0:
+            num, den = -num, -den
+        g = _gcd(num, den) or 1
+        self.num, self.den = num // g, den // g
+
+    @staticmethod
+    def _parse(text):
+        """'-1250.50' -> (-125050, 100); also '1e-05' and '1,250' (commas ignored)."""
+        t = text.strip().replace(",", "").replace("_", "")
+        mantissa, _, exponent = t.lower().partition("e")
+        sign = -1 if mantissa.startswith("-") else 1
+        mantissa = mantissa.lstrip("+-")
+        whole, _, frac = mantissa.partition(".")
+        if not (whole + frac).isdigit() or (exponent and not exponent.lstrip("+-").isdigit()):
+            raise ValueError(f"not a number: {text!r}")
+        num, den = int(whole + frac) * sign, 10 ** len(frac)
+        power = int(exponent) if exponent else 0
+        return (num * 10 ** power, den) if power >= 0 else (num, den * 10 ** -power)
+
+    # ------------------------------------------------------------------ arithmetic
+    @staticmethod
+    def _of(other):
+        if isinstance(other, Exact):
+            return other
+        if isinstance(other, int) and not isinstance(other, bool):
+            return Exact(other)
+        return None
+
+    def __add__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else Exact(self.num * o.den + o.num * self.den, self.den * o.den)
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else Exact(self.num * o.den - o.num * self.den, self.den * o.den)
+
+    def __rsub__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else o.__sub__(self)
+
+    def __mul__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else Exact(self.num * o.num, self.den * o.den)
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __truediv__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else Exact(self.num * o.den, self.den * o.num)
+
+    def __rtruediv__(self, other):
+        o = self._of(other)
+        return NotImplemented if o is None else o.__truediv__(Exact(self))
+
+    def __neg__(self):
+        return Exact(-self.num, self.den)
+
+    def __pos__(self):
+        return self
+
+    def __abs__(self):
+        return Exact(abs(self.num), self.den)
+
+    # ------------------------------------------------------------------ comparison
+    def _compare(self, other):
+        o = self._of(other)
+        return None if o is None else self.num * o.den - o.num * self.den
+
+    def __eq__(self, other):
+        d = self._compare(other)
+        return NotImplemented if d is None else d == 0
+
+    def __lt__(self, other):
+        d = self._compare(other)
+        return NotImplemented if d is None else d < 0
+
+    def __le__(self, other):
+        d = self._compare(other)
+        return NotImplemented if d is None else d <= 0
+
+    def __gt__(self, other):
+        d = self._compare(other)
+        return NotImplemented if d is None else d > 0
+
+    def __ge__(self, other):
+        d = self._compare(other)
+        return NotImplemented if d is None else d >= 0
+
+    def __hash__(self):
+        return hash(self.num) if self.den == 1 else hash((self.num, self.den))
+
+    def __bool__(self):
+        return self.num != 0
+
+    def __float__(self):
+        return self.num / self.den
+
+    def __int__(self):
+        return -(-self.num // self.den) if self.num < 0 else self.num // self.den
+
+    # ------------------------------------------------------------------ text
+    def places(self, places, half_even=False):
+        """The value written with a fixed number of decimal places, e.g. '1250.50'."""
+        scaled = _divide_rounded(self.num * 10 ** places, self.den, half_even)
+        digits = str(abs(scaled)).rjust(places + 1, "0")
+        whole, frac = (digits[:-places], digits[-places:]) if places else (digits, "")
+        return ("-" if scaled < 0 else "") + whole + ("." + frac if places else "")
+
+    def _exact_places(self):
+        """Decimal places needed to write the value exactly (None if it never ends, like 1/3)."""
+        d, twos, fives = self.den, 0, 0
+        while d % 2 == 0:
+            d, twos = d // 2, twos + 1
+        while d % 5 == 0:
+            d, fives = d // 5, fives + 1
+        return max(twos, fives) if d == 1 else None
+
+    def __str__(self):
+        exact = self._exact_places()
+        return self.places(exact) if exact is not None else self.places(28, half_even=True).rstrip("0")
+
+    def __repr__(self):
+        return f"{type(self).__name__}('{self}')"
+
+    def __format__(self, spec):
+        """Python's format mini-language for the parts this program uses, e.g.
+        '{x:,.2f}', '{x:+,.2f}', '{x:>15,.2f}', '{x:.2%}', '{x:,.0f}'."""
+        if not spec:
+            return str(self)
+        fill, align, i = " ", ">", 0
+        if len(spec) > 1 and spec[1] in "<>^=":
+            fill, align, i = spec[0], spec[1], 2
+        elif spec[0] in "<>^=":
+            align, i = spec[0], 1
+        sign = "-"
+        if i < len(spec) and spec[i] in "+- ":
+            sign, i = spec[i], i + 1
+        width = ""
+        while i < len(spec) and spec[i].isdigit():
+            width, i = width + spec[i], i + 1
+        comma = i < len(spec) and spec[i] == ","
+        i += comma
+        precision = None
+        if i < len(spec) and spec[i] == ".":
+            i, digits = i + 1, ""
+            while i < len(spec) and spec[i].isdigit():
+                digits, i = digits + spec[i], i + 1
+            precision = int(digits)
+        kind = spec[i:]
+        if kind not in ("f", "F", "%", ""):
+            raise ValueError(f"format code {kind!r} is not supported for {type(self).__name__}")
+        value = self * 100 if kind == "%" else self
+        text = value.places(6 if precision is None else precision, half_even=True) if kind else str(value)
+        negative = text.startswith("-")
+        body = text.lstrip("-")
+        if comma:
+            whole, dot, frac = body.partition(".")
+            groups = []
+            while len(whole) > 3:
+                groups.insert(0, whole[-3:])
+                whole = whole[:-3]
+            body = ",".join([whole] + groups) + dot + frac
+        lead = "-" if negative else ("+" if sign == "+" else " " if sign == " " else "")
+        body += "%" if kind == "%" else ""
+        pad = max(0, int(width or 0) - len(lead) - len(body))
+        if align == "=":
+            return lead + fill * pad + body
+        text = lead + body
+        if align == "<":
+            return text + fill * pad
+        if align == "^":
+            return fill * (pad // 2) + text + fill * (pad - pad // 2)
+        return fill * pad + text
+
+
+class Money(Exact):
+    """An amount of Pakistani rupees held exactly, in whole paisa (Fowler's Money pattern).
+
+    Creating Money rounds half up to the paisa, the bank's rounding rule. Adding or
+    subtracting Money (or whole rupees) gives Money; multiplying by a rate or dividing
+    gives an Exact, so an interest calculation is rounded once, at the end, by money().
+    """
+
+    CURRENCY = "PKR"
+
+    def __init__(self, value=0):
+        exact = value if isinstance(value, Exact) else Exact(value)
+        super().__init__(_divide_rounded(exact.num * 100, exact.den), 100)
+
+    @property
+    def paisa(self):
+        """The amount as a whole number of paisa (1 rupee = 100 paisa)."""
+        return self.num * (100 // self.den)
+
+    @staticmethod
+    def _money_like(other):
+        return isinstance(other, Money) or (isinstance(other, int) and not isinstance(other, bool))
+
+    def __add__(self, other):
+        r = super().__add__(other)
+        return Money(r) if r is not NotImplemented and self._money_like(other) else r
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        r = super().__sub__(other)
+        return Money(r) if r is not NotImplemented and self._money_like(other) else r
+
+    def __rsub__(self, other):
+        r = super().__rsub__(other)
+        return Money(r) if r is not NotImplemented and self._money_like(other) else r
+
+    def __mul__(self, other):
+        r = super().__mul__(other)
+        whole = isinstance(other, int) and not isinstance(other, bool)
+        return Money(r) if r is not NotImplemented and whole else r
+
+    def __rmul__(self, other):
+        return self.__mul__(other)
+
+    def __neg__(self):
+        return Money(super().__neg__())
+
+    def __abs__(self):
+        return Money(super().__abs__())
+
+    def __str__(self):
+        return self.places(2)
+
+
+ZERO = Money(0)
+
+
+def money(value) -> Money:
+    """Round a number (int, text, Exact or Money) to Money in whole paisa, half up."""
+    return Money(value)
 
 
 def fmt(amount) -> str:
@@ -92,10 +399,151 @@ def fmt(amount) -> str:
     return f"PKR {amount:,.2f}"
 
 
-def add_months(d: date, n: int) -> date:
+class Days:
+    """A length of time in whole days (the difference between two dates)."""
+
+    def __init__(self, days):
+        self.days = int(days)
+
+    def __eq__(self, other):
+        return isinstance(other, Days) and other.days == self.days
+
+    def __hash__(self):
+        return hash(self.days)
+
+    def __repr__(self):
+        return f"Days({self.days})"
+
+
+class Date:
+    """A calendar date in the Gregorian calendar, written here instead of datetime.
+
+    Internally a date is also a day number (day 1 = 1 January of year 1), which makes
+    adding days and finding the gap between two dates simple whole-number sums.
+    """
+
+    MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August",
+              "September", "October", "November", "December"]
+    DAYS_BEFORE_MONTH = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+
+    def __init__(self, year, month, day):
+        if not 1 <= month <= 12:
+            raise ValueError(f"month must be in 1..12, not {month}")
+        if not 1 <= day <= self.days_in_month(year, month):
+            raise ValueError(f"day is out of range for {self.MONTHS[month - 1]} {year}")
+        self.year, self.month, self.day = year, month, day
+
+    @staticmethod
+    def is_leap(year):
+        """Gregorian rule: every 4th year, except centuries, except every 4th century."""
+        return year % 4 == 0 and (year % 100 != 0 or year % 400 == 0)
+
+    @classmethod
+    def days_in_month(cls, year, month):
+        return 29 if month == 2 and cls.is_leap(year) else [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]
+
+    def ordinal(self):
+        """Day number counting 1 January of year 1 as day 1."""
+        y = self.year - 1
+        return (y * 365 + y // 4 - y // 100 + y // 400 + self.DAYS_BEFORE_MONTH[self.month - 1]
+                + (1 if self.month > 2 and self.is_leap(self.year) else 0) + self.day)
+
+    @classmethod
+    def from_ordinal(cls, n):
+        """The date with a given day number (the inverse of ordinal())."""
+        n -= 1
+        n400, n = divmod(n, 146097)            # days in 400 years
+        n100, n = divmod(n, 36524)             # days in 100 years
+        n4, n = divmod(n, 1461)                # days in 4 years
+        n1, n = divmod(n, 365)
+        year = n400 * 400 + n100 * 100 + n4 * 4 + n1 + 1
+        if n1 == 4 or n100 == 4:               # the last day of a leap cycle
+            return cls(year - 1, 12, 31)
+        month = 1
+        while month < 12 and n >= cls.DAYS_BEFORE_MONTH[month] + (1 if month >= 2 and cls.is_leap(year) else 0):
+            month += 1
+        start = cls.DAYS_BEFORE_MONTH[month - 1] + (1 if month > 2 and cls.is_leap(year) else 0)
+        return cls(year, month, n - start + 1)
+
+    @classmethod
+    def fromisoformat(cls, text):
+        """Read 'YYYY-MM-DD'."""
+        parts = str(text).strip().split("-")
+        if len(parts) != 3 or not all(p.isdigit() for p in parts) or len(parts[0]) != 4:
+            raise ValueError(f"Invalid isoformat string: {text!r}")
+        return cls(int(parts[0]), int(parts[1]), int(parts[2]))
+
+    def replace(self, year=None, month=None, day=None):
+        return Date(self.year if year is None else year, self.month if month is None else month,
+                    self.day if day is None else day)
+
+    def __add__(self, other):
+        if isinstance(other, Days):
+            return Date.from_ordinal(self.ordinal() + other.days)
+        return NotImplemented
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, Days):
+            return Date.from_ordinal(self.ordinal() - other.days)
+        if isinstance(other, Date):
+            return Days(self.ordinal() - other.ordinal())
+        return NotImplemented
+
+    def _key(self):
+        return (self.year, self.month, self.day)
+
+    def __eq__(self, other):
+        return isinstance(other, Date) and self._key() == other._key()
+
+    def __lt__(self, other):
+        return self._key() < other._key() if isinstance(other, Date) else NotImplemented
+
+    def __le__(self, other):
+        return self._key() <= other._key() if isinstance(other, Date) else NotImplemented
+
+    def __gt__(self, other):
+        return self._key() > other._key() if isinstance(other, Date) else NotImplemented
+
+    def __ge__(self, other):
+        return self._key() >= other._key() if isinstance(other, Date) else NotImplemented
+
+    def __hash__(self):
+        return hash(self._key())
+
+    def isoformat(self):
+        return f"{self.year:04d}-{self.month:02d}-{self.day:02d}"
+
+    def __str__(self):
+        return self.isoformat()
+
+    def __repr__(self):
+        return f"Date({self.year}, {self.month}, {self.day})"
+
+    def strftime(self, pattern):
+        """Write the date with %d (day), %m (month), %b / %B (month name), %y / %Y (year)."""
+        codes = {"d": f"{self.day:02d}", "m": f"{self.month:02d}", "b": self.MONTHS[self.month - 1][:3],
+                 "B": self.MONTHS[self.month - 1], "y": f"{self.year % 100:02d}", "Y": f"{self.year:04d}", "%": "%"}
+        out, i = "", 0
+        while i < len(pattern):
+            if pattern[i] == "%" and i + 1 < len(pattern):
+                if pattern[i + 1] not in codes:
+                    raise ValueError(f"unsupported date code %{pattern[i + 1]}")
+                out, i = out + codes[pattern[i + 1]], i + 2
+            else:
+                out, i = out + pattern[i], i + 1
+        return out
+
+    def __format__(self, spec):
+        return self.strftime(spec) if spec else str(self)
+
+
+def add_months(d: Date, n: int) -> Date:
     """Add n calendar months. The day is capped at 28 so it exists in every month."""
     idx = d.month - 1 + n
-    return date(d.year + idx // 12, idx % 12 + 1, min(d.day, 28))
+    return Date(d.year + idx // 12, idx % 12 + 1, min(d.day, 28))
 
 
 _counters: dict = {}
@@ -153,14 +601,14 @@ class Period:
     Closing a period ends the fact without erasing that it was once true.
     """
 
-    def __init__(self, start: date, end: date | None = None):
+    def __init__(self, start: Date, end: Date | None = None):
         self.start, self.end = start, end
 
-    def contains(self, on: date) -> bool:
+    def contains(self, on: Date) -> bool:
         """True if the fact was in force on the given date."""
         return self.start <= on and (self.end is None or on < self.end)
 
-    def close(self, on: date):
+    def close(self, on: Date):
         """End the period on a date. A period can only be closed once."""
         if self.end is not None:
             raise InvalidStateError(f"period already closed on {self.end}")
@@ -267,7 +715,7 @@ class AuditEvent:
 # plays (separate objects with periods), never subclasses. One real person is
 # exactly one Person record, however many capacities they hold.
 # =============================================================================
-class Party(ABC):
+class Party(Abstract):
     """Anyone the bank knows about: a legal identity, whether or not a customer.
 
     Holds what every party shares: identity documents, verification checks,
@@ -323,11 +771,11 @@ class Party(ABC):
         return any(c.result == "PASS" and c.performed_on <= on and c.document.valid_on(on)
                    for c in self.checks)
 
-    @abstractmethod
+    @abstract
     def structural_gaps(self, on):
         """Rules about the party's own make-up (e.g. a company needs a director)."""
 
-    @abstractmethod
+    @abstract
     def connected_persons(self, on):
         """People whose verification this party's verification depends on."""
 
@@ -375,7 +823,7 @@ class Organization(Party):
 
     id_prefix = "ORG"
     officer_title = "OFFICER"
-    OWNERSHIP_THRESHOLD = Decimal("25")      # assumption A2: FATF-style 25% threshold
+    OWNERSHIP_THRESHOLD = Exact(25)      # assumption A2: FATF-style 25% threshold
 
     def __init__(self, name, registered_on, registration_no, address):
         super().__init__(name, registered_on)
@@ -489,7 +937,7 @@ class BeneficialOwnership:
     """A person's ownership share of an organisation for a period."""
 
     def __init__(self, organization, person, percent, start):
-        percent = Decimal(str(percent))
+        percent = Exact(percent)
         if not ZERO < percent <= 100:
             raise BankingError(f"ownership percentage {percent} out of range")
         self.organization, self.person = organization, person
@@ -737,7 +1185,7 @@ class ProductTermsVersion:
         return f"{self.product.code} v{self.version_no} (from {self.effective_from}) {self.terms}"
 
 
-class Arrangement(ABC):
+class Arrangement(Abstract):
     """A customer's actual instance of a product (an account or a financing agreement).
 
     Shared by every arrangement: the product, the terms version PINNED at
@@ -806,9 +1254,9 @@ class Arrangement(ABC):
                 raise RestrictionViolation(f"{r.scope} on {r.target_label} since "
                                            f"{r.period.start}: {r.reason}")
 
-    @abstractmethod
+    @abstract
     def position(self, on=None):
-        """The headline figure as (amount, meaning), e.g. (Decimal('500.00'), 'held')."""
+        """The headline figure as (amount, meaning), e.g. (Money('500.00'), 'held')."""
 
     def __str__(self):
         return f"{self.number} {self.product.name} ({', '.join(h.name for h in self.holders)})"
@@ -836,7 +1284,7 @@ class DepositAccount(Arrangement):
     def held_amount(self, on):
         return sum((h.amount for h in self.holds if h.active_on(on)), ZERO)
 
-    @abstractmethod
+    @abstract
     def overdraft_limit(self):
         """How far below zero this account may go."""
 
@@ -900,7 +1348,7 @@ class FixedTermDeposit(DepositAccount):
     def __init__(self, product, holders, opened_on, branch, opened_by):
         super().__init__(product, holders, opened_on, branch, opened_by)
         self.term_months = int(self.terms.get("term_months", 12))
-        self.annual_rate = Decimal(str(self.terms.get("annual_rate", 0)))
+        self.annual_rate = Exact(self.terms.get("annual_rate", 0))
         self.maturity_on = add_months(opened_on, self.term_months)
         self.payout_account: DepositAccount | None = None
 
@@ -1185,6 +1633,82 @@ class ApprovalCondition:
 # =============================================================================
 # PART 7 - Beneficiaries and standing instructions
 # =============================================================================
+class Iban:
+    """An International Bank Account Number (ISO 13616), the account number a payee gives.
+
+    A Pakistani IBAN has 24 characters: 'PK', two check digits, a four-letter bank code
+    and a 16-digit account number, e.g. PK36 SCBL 0000 0011 2345 6702 (State Bank of
+    Pakistan). The check digits make the number leave remainder 1 when divided by 97
+    (ISO 7064 MOD 97-10), so a mistyped or swapped digit is refused before money is sent.
+    """
+
+    LENGTHS = {"PK": 24}                       # countries this bank sends to
+    BANK_CODES = {"ABPA": "Allied Bank", "ALFH": "Bank Alfalah", "HABB": "HBL", "MEZN": "Meezan Bank",
+                  "MUCB": "MCB Bank", "NBPA": "National Bank of Pakistan", "SCBL": "Standard Chartered",
+                  "UNIL": "UBL"}
+
+    def __init__(self, text):
+        compact = "".join(str(text).split()).upper()
+        problem = self.problem(compact)
+        if problem:
+            raise BankingError(f"{text!r} is not a valid IBAN: {problem}")
+        self.text = compact
+
+    @staticmethod
+    def remainder(compact):
+        """The ISO 7064 MOD 97-10 remainder: move the first four characters to the end,
+        replace each letter by two digits (A=10 ... Z=35), divide by 97."""
+        rem = 0
+        for ch in compact[4:] + compact[:4]:
+            for digit in (ch if ch.isdigit() else str(ord(ch) - ord("A") + 10)):
+                rem = (rem * 10 + int(digit)) % 97      # long division, one digit at a time
+        return rem
+
+    @classmethod
+    def problem(cls, compact):
+        """Why the text is not a valid IBAN, or None if it is."""
+        country = compact[:2]
+        if country not in cls.LENGTHS:
+            return f"country {country or '(none)'} is not supported"
+        if len(compact) != cls.LENGTHS[country]:
+            return f"a {country} IBAN has {cls.LENGTHS[country]} characters, not {len(compact)}"
+        if not (compact[2:4].isdigit() and compact[4:8].isalpha() and compact[8:].isdigit()
+                and compact.isascii()):
+            return "expected PK, 2 check digits, a 4-letter bank code and 16 digits"
+        if cls.remainder(compact) != 1:
+            return "the check digits do not match (a digit is mistyped)"
+        return None
+
+    @classmethod
+    def build(cls, bank_code, account_number, country="PK"):
+        """The IBAN of a domestic account number: works out the check digits."""
+        digits = "".join(ch for ch in str(account_number) if ch.isdigit()).rjust(16, "0")
+        check = 98 - cls.remainder(f"{country}00{bank_code.upper()}{digits}")
+        return cls(f"{country}{check:02d}{bank_code.upper()}{digits}")
+
+    @property
+    def bank_code(self):
+        return self.text[4:8]
+
+    @property
+    def bank_name(self):
+        """The bank the code belongs to (None if this bank does not know the code)."""
+        return self.BANK_CODES.get(self.bank_code)
+
+    @property
+    def last_four(self):
+        return self.text[-4:]
+
+    def __eq__(self, other):
+        return isinstance(other, Iban) and other.text == self.text
+
+    def __hash__(self):
+        return hash(self.text)
+
+    def __str__(self):                           # printed in groups of four, as on a statement
+        return " ".join(self.text[i:i + 4] for i in range(0, len(self.text), 4))
+
+
 class Beneficiary:
     """A saved payee. Changing its bank details creates a new VERSION."""
 
@@ -1211,12 +1735,15 @@ class BeneficiaryVersion:
     """The payee's bank details as they were from a date. Payments point at a version."""
 
     def __init__(self, beneficiary, version, bank_name, account_no, title, effective_from):
+        iban = account_no if isinstance(account_no, Iban) else Iban(account_no)
+        if iban.bank_name and iban.bank_name != bank_name:
+            raise BankingError(f"IBAN {iban} belongs to {iban.bank_name}, not {bank_name}")
         self.beneficiary, self.version = beneficiary, version
-        self.bank_name, self.account_no, self.title = bank_name, account_no, title
+        self.bank_name, self.account_no, self.title = bank_name, iban, title
         self.effective_from = effective_from
 
     def __str__(self):
-        return f"v{self.version}: {self.title} / {self.bank_name} / ****{self.account_no[-4:]}"
+        return f"v{self.version}: {self.title} / {self.bank_name} / ****{self.account_no.last_four}"
 
 
 class StandingOrder:
@@ -1294,7 +1821,7 @@ class Merchant:
 #                      InternalTransfer
 # A reversal never deletes the original; it is a new, counter-posting record.
 # =============================================================================
-class BankTransaction(ABC):
+class BankTransaction(Abstract):
     """Any movement of money the bank records.
 
     Shared by all: amount, dates, narrative, status history, the ledger
@@ -1355,7 +1882,7 @@ class BankTransaction(ABC):
     def summary(self):
         return f"{self.txn_id} {self.kind} {fmt(self.amount)} [{self.status.current}] {self.narrative}"
 
-    @abstractmethod
+    @abstract
     def counterparty(self):
         """Who or what is on the other side of this movement, in words."""
 
@@ -1664,6 +2191,59 @@ class LoanRepayment(LoanTransaction):
 # =============================================================================
 # PART 9 - Cards: an issued card is a CREDENTIAL linked to an account, not an account
 # =============================================================================
+class CardNumber:
+    """A payment card number (PAN, ISO/IEC 7812): a six-digit issuer prefix (BIN), the
+    cardholder's account digits and a final Luhn check digit that catches any single
+    mistyped digit and most swapped neighbours.
+
+    The full number is printed on the card and shown once; the bank keeps only the first
+    six and last four digits (truncation, one of the ways PCI DSS requirement 3.5.1 allows
+    a card number to be stored), so no screen, log or saved file can reveal it.
+    """
+
+    LENGTH = 16
+
+    def __init__(self, digits):
+        digits = "".join(str(digits).split())
+        if len(digits) != self.LENGTH or not digits.isdigit() or not digits.isascii():
+            raise BankingError(f"a card number has {self.LENGTH} digits")
+        if not self.is_valid(digits):
+            raise BankingError("card number fails the Luhn check (a digit is mistyped)")
+        self.first_six, self.last_four = digits[:6], digits[-4:]
+
+    @staticmethod
+    def luhn_sum(digits):
+        """Luhn (mod 10): from the right, double every second digit (9 is subtracted when
+        that gives two digits) and add everything up."""
+        total = 0
+        for position, ch in enumerate(reversed(digits)):
+            d = int(ch)
+            if position % 2 == 1:
+                d = d * 2 - 9 if d > 4 else d * 2
+            total += d
+        return total
+
+    @classmethod
+    def is_valid(cls, digits):
+        return cls.luhn_sum(digits) % 10 == 0
+
+    @classmethod
+    def check_digit(cls, partial):
+        """The digit that makes partial + digit pass the Luhn check."""
+        return str((10 - cls.luhn_sum(partial + "0") % 10) % 10)
+
+    @classmethod
+    def issue(cls, bin_prefix, account_digits):
+        partial = bin_prefix + account_digits
+        return cls(partial + cls.check_digit(partial))
+
+    def masked(self):
+        return f"{self.first_six[:4]} **** **** {self.last_four}"
+
+    def __str__(self):
+        return self.masked()
+
+
 class IssuedCard:
     """One physical card with its own number, limits and status.
 
@@ -1678,11 +2258,12 @@ class IssuedCard:
         "BLOCKED_STOLEN": {"DESTROYED": "record_card_found"},
         "BLOCKED_DAMAGED": {"DESTROYED": "record_card_found"},
     }, final={"DESTROYED", "CANCELLED"})
+    BIN = "421337"                             # this bank's issuer prefix (illustrative)
 
     def __init__(self, product, account, cardholder, issued_on, daily_limit, replaces=None):
         self.card_id = next_id("CARD")
         seq = int(self.card_id.split("-")[1])
-        self.masked_number = f"4213 **** **** {(seq * 7919) % 9000 + 1000}"
+        self.card_number = CardNumber.issue(self.BIN, f"{seq:05d}{(seq * 7919) % 9000 + 1000}")
         self.product, self.account, self.cardholder = product, account, cardholder
         self.issued_on, self.expires_on = issued_on, add_months(issued_on, 60)
         self.status = StatusHistory("ACTIVE", issued_on, "card-ops", "issued", lifecycle=self.LIFECYCLE)
@@ -1691,6 +2272,10 @@ class IssuedCard:
         self.payments: list[CardPayment] = []
         self.events: list[tuple] = []
         self.controls: list[CardControl] = []
+
+    @property
+    def masked_number(self):
+        return self.card_number.masked()
 
     def daily_limit_on(self, d):
         result = None
@@ -1757,7 +2342,7 @@ class CardControl:
 #   Case -> RiskCase -> FraudAlert / ComplianceInvestigation              (multi-level)
 #   Case -> CollectionsCase
 # =============================================================================
-class Case(ABC):
+class Case(Abstract):
     """Any piece of tracked work: owner assignments, notes, evidence, links, outcome.
 
     Abstract: every concrete case must say which staff roles may work it
@@ -1788,7 +2373,7 @@ class Case(ABC):
     def is_open(self):
         return self.status.current != "CLOSED"
 
-    @abstractmethod
+    @abstract
     def handler_roles(self):
         """The staff roles allowed to be assigned this case."""
 
@@ -1948,7 +2533,7 @@ class Statement:
             raise BankingError("statement end is before its start")
         self.statement_id = next_id("STM")
         self.account, self.start, self.end, self.generated_on = account, start, end, generated_on
-        self.opening = account.ledger_balance(start - timedelta(days=1))
+        self.opening = account.ledger_balance(start - Days(1))
         self.lines = [e for e in account.entries if start <= e.posted_on <= end]
         self.closing = account.ledger_balance(end)
 
@@ -2049,11 +2634,11 @@ class Bank:
     def advance_to(self, target):
         """Move the simulated clock forward, running the end-of-day batch each day."""
         while self.today < target:
-            self.today += timedelta(days=1)
+            self.today += Days(1)
             self.run_standing_orders()
             self.run_arrears_check()
             self.run_term_deposit_maturity()
-            if (self.today + timedelta(days=1)).month != self.today.month:
+            if (self.today + Days(1)).month != self.today.month:
                 self.charge_monthly_fees()
                 self.credit_savings_interest()
 
@@ -2415,9 +3000,9 @@ class Bank:
         for acct in list(self.arrangements.values()):
             if not isinstance(acct, SavingsAccount) or acct.status.current != "ACTIVE":
                 continue
-            rate = Decimal(str(acct.terms.get("annual_rate", 0)))
+            rate = Exact(acct.terms.get("annual_rate", 0))
             first = max(self.today.replace(day=1), acct.opened_on)
-            lowest = min(acct.ledger_balance(first + timedelta(days=n))
+            lowest = min(acct.ledger_balance(first + Days(n))
                          for n in range((self.today - first).days + 1))
             interest = money(max(lowest, ZERO) * rate / 12)
             if interest > 0:
@@ -2789,7 +3374,7 @@ class Bank:
             app.status.change("DECLINED", self.today, by, "declined")
         else:
             app.approved_amount = approved
-            app.annual_rate = Decimal(str(annual_rate))
+            app.annual_rate = Exact(annual_rate)
             app.conditions = [ApprovalCondition(app, c) for c in conditions]
             status = "APPROVED_WITH_CONDITIONS" if conditions else "APPROVED"
             app.status.change(status, self.today, by, f"{fmt(app.approved_amount)} @ {annual_rate}")
@@ -2901,7 +3486,7 @@ class Bank:
         approval = Approval(by, self.today, "RESTRUCTURE", fin.number, reason)
         self.approvals.append(approval)
         fin.restructure_approvals.append(approval)
-        sched = fin.build_schedule(principal, Decimal(str(annual_rate)), months, first_due,
+        sched = fin.build_schedule(principal, Exact(annual_rate), months, first_due,
                                    self.today, reason, capitalised)
         if capitalised > 0:
             cap = InterestCapitalisation(capitalised, self.today, fin, approval)
@@ -3091,7 +3676,7 @@ class Bank:
         if self.today >= deposit.maturity_on:
             raise InvalidStateError(f"{deposit.number} has matured; it pays out automatically")
         penalty = money(deposit.ledger_balance()
-                        * Decimal(str(deposit.terms.get("early_break_penalty", "0.01"))))
+                        * Exact(deposit.terms.get("early_break_penalty", "0.01")))
         if penalty > 0:
             self.charge_fee(deposit, "EARLY_BREAK_PENALTY", penalty, by)
         self._pay_out_term_deposit(deposit, by, f"broken early: {reason}")
@@ -3215,7 +3800,7 @@ class Bank:
         if not finished:
             return None
         end = finished[-1]
-        return date(end.year + self.RETENTION_YEARS, end.month, min(end.day, 28 if end.month == 2 else end.day))
+        return Date(end.year + self.RETENTION_YEARS, end.month, min(end.day, 28 if end.month == 2 else end.day))
 
     def request_deletion(self, record, by):
         """Operation: a request to delete a financial record is always refused and logged;
@@ -3358,12 +3943,204 @@ class Bank:
 # decides only WHERE the text is kept. Loading restores every object exactly,
 # with its history, so a saved bank carries on as if it had never stopped.
 # =============================================================================
-class Repository(ABC):
+class Json:
+    """Writes and reads JSON text (RFC 8259), written here instead of the json module.
+
+    Values: dict (text keys), list, text, whole numbers, decimals, true/false and null.
+    """
+
+    ESCAPES = {'"': '\\"', "\\": "\\\\", "\n": "\\n", "\r": "\\r", "\t": "\\t", "\b": "\\b", "\f": "\\f"}
+
+    # ------------------------------------------------------------------ writing
+    @classmethod
+    def dumps(cls, value, indent=None):
+        """The JSON text of a value; indent (a number of spaces) puts one item per line."""
+        out = []
+        cls._write(value, out, indent, 0)
+        return "".join(out)
+
+    @classmethod
+    def _text(cls, s):
+        chars = []
+        for ch in s:
+            if ch in cls.ESCAPES:
+                chars.append(cls.ESCAPES[ch])
+            elif ord(ch) < 0x20:
+                chars.append(f"\\u{ord(ch):04x}")
+            else:
+                chars.append(ch)
+        return '"' + "".join(chars) + '"'
+
+    @classmethod
+    def _write(cls, value, out, indent, depth):
+        if value is None:
+            out.append("null")
+        elif value is True or value is False:
+            out.append("true" if value else "false")
+        elif isinstance(value, (int, float)):
+            out.append(repr(value))
+        elif isinstance(value, str):
+            out.append(cls._text(value))
+        elif isinstance(value, (list, dict)):
+            items = list(value.items()) if isinstance(value, dict) else list(value)
+            opening, closing = ("{", "}") if isinstance(value, dict) else ("[", "]")
+            if not items:
+                out.append(opening + closing)
+                return
+            out.append(opening)
+            for k, item in enumerate(items):
+                if k:
+                    out.append(",")
+                if indent is not None:
+                    out.append("\n" + " " * (indent * (depth + 1)))
+                if isinstance(value, dict):
+                    if not isinstance(item[0], str):
+                        raise TypeError("JSON object keys must be text")
+                    out.append(cls._text(item[0]) + (": " if indent is not None else ":"))
+                    item = item[1]
+                cls._write(item, out, indent, depth + 1)
+            if indent is not None:
+                out.append("\n" + " " * (indent * depth))
+            out.append(closing)
+        else:
+            raise TypeError(f"cannot write a {type(value).__name__} as JSON")
+
+    # ------------------------------------------------------------------ reading
+    @classmethod
+    def loads(cls, text):
+        """The value a JSON text describes."""
+        reader = JsonReader(text)
+        value = reader.value()
+        reader.space()
+        if reader.pos != len(text):
+            reader.error("unexpected text after the value")
+        return value
+
+
+class JsonReader:
+    """Reads one JSON value from text, character by character (a recursive-descent parser)."""
+
+    SIMPLE = {'"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t"}
+
+    def __init__(self, text):
+        self.text, self.pos = text, 0
+
+    def error(self, message):
+        raise ValueError(f"invalid JSON at character {self.pos}: {message}")
+
+    def space(self):
+        while self.pos < len(self.text) and self.text[self.pos] in " \t\n\r":
+            self.pos += 1
+
+    def peek(self):
+        return self.text[self.pos:self.pos + 1]
+
+    def expect(self, ch):
+        if self.peek() != ch:
+            self.error(f"expected {ch!r}")
+        self.pos += 1
+
+    def value(self):
+        self.space()
+        ch = self.peek()
+        if ch == "{":
+            return self.object()
+        if ch == "[":
+            return self.array()
+        if ch == '"':
+            return self.string()
+        for word, meaning in (("true", True), ("false", False), ("null", None)):
+            if self.text.startswith(word, self.pos):
+                self.pos += len(word)
+                return meaning
+        return self.number()
+
+    def object(self):
+        self.expect("{")
+        result = {}
+        self.space()
+        if self.peek() == "}":
+            self.pos += 1
+            return result
+        while True:
+            self.space()
+            key = self.string()
+            self.space()
+            self.expect(":")
+            result[key] = self.value()
+            self.space()
+            if self.peek() != ",":
+                self.expect("}")
+                return result
+            self.pos += 1
+
+    def array(self):
+        self.expect("[")
+        result = []
+        self.space()
+        if self.peek() == "]":
+            self.pos += 1
+            return result
+        while True:
+            result.append(self.value())
+            self.space()
+            if self.peek() != ",":
+                self.expect("]")
+                return result
+            self.pos += 1
+
+    def string(self):
+        self.expect('"')
+        chars = []
+        while True:
+            if self.pos >= len(self.text):
+                self.error("unterminated text")
+            ch = self.text[self.pos]
+            self.pos += 1
+            if ch == '"':
+                return "".join(chars)
+            if ch != "\\":
+                chars.append(ch)
+                continue
+            code = self.peek()
+            self.pos += 1
+            if code in self.SIMPLE:
+                chars.append(self.SIMPLE[code])
+            elif code == "u":
+                unit = self.hex4()
+                if 0xD800 <= unit < 0xDC00 and self.text.startswith("\\u", self.pos):   # a surrogate pair
+                    self.pos += 2
+                    unit = 0x10000 + ((unit - 0xD800) << 10) + (self.hex4() - 0xDC00)
+                chars.append(chr(unit))
+            else:
+                self.error(f"unknown escape \\{code}")
+
+    def hex4(self):
+        digits = self.text[self.pos:self.pos + 4]
+        if len(digits) != 4 or any(d not in "0123456789abcdefABCDEF" for d in digits):
+            self.error("bad \\u escape")
+        self.pos += 4
+        return int(digits, 16)
+
+    def number(self):
+        start = self.pos
+        while self.pos < len(self.text) and self.text[self.pos] in "+-0123456789.eE":
+            self.pos += 1
+        token = self.text[start:self.pos]
+        if not token:
+            self.error("expected a value")
+        try:
+            return int(token) if token.lstrip("-").isdigit() else float(token)
+        except ValueError:
+            self.error(f"bad number {token!r}")
+
+
+class Repository(Abstract):
     """Saves a Bank as JSON text and loads it back exactly.
 
     Each object becomes {"class": ..., "fields": {...}}; a reference to another
     object is {"$ref": n}, so shared objects stay shared and cycles are fine.
-    Dates, Decimal amounts, tuples and frozensets keep their types, and each
+    Dates, Money and exact numbers, tuples and frozensets keep their types, and each
     lifecycle is saved by name (it is a class constant, not data).
     """
 
@@ -3371,44 +4148,46 @@ class Repository(ABC):
 
     def save(self, bank):
         """Save the bank (and the reference-number counters)."""
-        self._write(json.dumps(self.encode(bank), indent=1))
+        self._write(Json.dumps(self.encode(bank), indent=1))
 
     def load(self):
         """Load a saved bank. The reference counters continue from the saved values."""
-        return self.decode(json.loads(self._read()))
+        return self.decode(Json.loads(self._read()))
 
-    @abstractmethod
+    @abstract
     def _write(self, text):
         """Keep the JSON text somewhere."""
 
-    @abstractmethod
+    @abstract
     def _read(self):
         """Return the JSON text kept by _write."""
 
     # ------------------------------------------------------------------ encoding
     def encode(self, bank):
-        module = sys.modules[__name__]
+        module = globals()
         lifecycles = {id(lc): f"{cls.__name__}.{attr}" for cls, attr, lc in lifecycle_classes()}
         objects, index, queue = [], {}, []
 
         def value(v):
             if v is None or isinstance(v, (bool, int, float, str)):
                 return v
-            if isinstance(v, Decimal):
-                return {"$dec": str(v)}
-            if isinstance(v, date):
+            if isinstance(v, Money):
+                return {"$money": str(v)}
+            if isinstance(v, Exact):
+                return {"$exact": f"{v.num}/{v.den}"}
+            if isinstance(v, Date):
                 return {"$date": v.isoformat()}
             if isinstance(v, list):
                 return [value(x) for x in v]
             if isinstance(v, tuple):
                 return {"$tuple": [value(x) for x in v]}
             if isinstance(v, frozenset):
-                return {"$frozenset": sorted((value(x) for x in v), key=lambda x: json.dumps(x, sort_keys=True))}
+                return {"$frozenset": sorted((value(x) for x in v), key=Json.dumps)}
             if isinstance(v, dict):
                 return {"$dict": {str(k): value(x) for k, x in v.items()}}
             if id(v) in lifecycles:
                 return {"$lifecycle": lifecycles[id(v)]}
-            if getattr(module, type(v).__name__, None) is type(v) and hasattr(v, "__dict__"):
+            if module.get(type(v).__name__) is type(v) and hasattr(v, "__dict__"):
                 if id(v) not in index:              # first time seen: give it a number, encode it later
                     index[id(v)] = len(objects)
                     objects.append({"class": type(v).__name__})
@@ -3426,10 +4205,10 @@ class Repository(ABC):
     def decode(self, data):
         if data.get("format") != self.FORMAT:
             raise BankingError(f"not a saved bank in format {self.FORMAT}")
-        module = sys.modules[__name__]
+        module = globals()
         made = []
         for slot in data["objects"]:                 # 1st pass: create every object, empty
-            cls = getattr(module, slot["class"], None)
+            cls = module.get(slot["class"])
             if not isinstance(cls, type):
                 raise BankingError(f"unknown class {slot['class']} in the saved bank")
             made.append(cls.__new__(cls))
@@ -3442,10 +4221,13 @@ class Repository(ABC):
             (tag, inner), = v.items()
             if tag == "$ref":
                 return made[inner]
-            if tag == "$dec":
-                return Decimal(inner)
+            if tag == "$money":
+                return Money(inner)
+            if tag == "$exact":
+                num, den = inner.split("/")
+                return Exact(int(num), int(den))
             if tag == "$date":
-                return date.fromisoformat(inner)
+                return Date.fromisoformat(inner)
             if tag == "$tuple":
                 return tuple(value(x) for x in inner)
             if tag == "$frozenset":
@@ -3454,7 +4236,7 @@ class Repository(ABC):
                 return {k: value(x) for k, x in inner.items()}
             if tag == "$lifecycle":
                 cls_name, attr = inner.split(".")
-                return getattr(getattr(module, cls_name), attr)
+                return getattr(module[cls_name], attr)
             raise BankingError(f"unknown value {tag} in the saved bank")
 
         for obj, slot in zip(made, data["objects"]):   # 2nd pass: fill in the fields, links included
@@ -3468,15 +4250,18 @@ class JsonFileRepository(Repository):
     """Keeps the saved bank in a JSON file on disk."""
 
     def __init__(self, path):
-        self.path = Path(path)
+        self.path = str(path)
 
     def _write(self, text):
-        self.path.write_text(text, encoding="utf-8")
+        with open(self.path, "w", encoding="utf-8") as f:
+            f.write(text)
 
     def _read(self):
-        if not self.path.exists():
-            raise BankingError(f"no saved bank at {self.path}")
-        return self.path.read_text(encoding="utf-8")
+        try:
+            with open(self.path, encoding="utf-8") as f:
+                return f.read()
+        except FileNotFoundError:
+            raise BankingError(f"no saved bank at {self.path}") from None
 
 
 class MemoryRepository(Repository):
@@ -3501,8 +4286,31 @@ class MemoryRepository(Repository):
 # scenario starts as a normal workflow and is broken by an exception,
 # dependency or conflict. [OK] = allowed, [BLOCKED] = refused by a named rule.
 # =============================================================================
+class DemoLog:
+    """Where the demonstration writes its lines: on the screen, or only kept as text
+    (the tests run the demo silently; the GUI keeps the text for its Scenario log)."""
+
+    current = None                       # the log the running demonstration writes to
+
+    def __init__(self, echo=True):
+        self.echo, self.lines = echo, []
+
+    def write(self, text):
+        self.lines.append(text)
+        if self.echo:
+            print(text)
+
+    def text(self):
+        """Everything written, exactly as it appeared on the screen."""
+        return "\n".join(self.lines) + ("\n" if self.lines else "")
+
+
+def _say(text):
+    (DemoLog.current or DemoLog()).write(text)
+
+
 def _section(title):
-    print("\n" + "=" * 78 + f"\n{title}\n" + "=" * 78)
+    _say("\n" + "=" * 78 + f"\n{title}\n" + "=" * 78)
 
 
 def _show(*lines):
@@ -3510,29 +4318,32 @@ def _show(*lines):
         if isinstance(line, (list, tuple)):
             _show(*line)
         else:
-            print("  " + str(line))
+            _say("  " + str(line))
 
 
 def _attempt(label, fn):
-    """Run an operation that may be refused and print the outcome."""
+    """Run an operation that may be refused and report the outcome."""
     try:
         result = fn()
-        print(f"  [OK]      {label}")
+        _say(f"  [OK]      {label}")
         return result
     except BankingError as e:
-        print(f"  [BLOCKED] {label}\n            -> {type(e).__name__}: {e}")
+        _say(f"  [BLOCKED] {label}\n            -> {type(e).__name__}: {e}")
         return None
 
 
 def _txn_line(label, txn):
     extra = f"  -> {txn.failure_reason}" if txn.failure_reason else ""
-    print(f"  {label}: {txn.txn_id} {fmt(txn.amount)} [{txn.status.current}]{extra}")
+    _say(f"  {label}: {txn.txn_id} {fmt(txn.amount)} [{txn.status.current}]{extra}")
 
 
-def run_demo():
-    """Seed the bank and run every scenario. Returns the Bank for further inspection."""
+def run_demo(log=None):
+    """Seed the bank and run every scenario. Returns the Bank for further inspection.
+    log: a DemoLog to write to (default: a new one that prints to the screen);
+    pass DemoLog(echo=False) to run silently."""
+    DemoLog.current = log or DemoLog()
     reset_ids()
-    bank = Bank("Indus Commercial Bank", date(2026, 1, 5))
+    bank = Bank("Indus Commercial Bank", Date(2026, 1, 5))
 
     # -------------------------------------------------------------------------
     _section("SEED: branches, staff, products")
@@ -3542,7 +4353,7 @@ def run_demo():
     mall = bank.open_branch("LHR-02", "Mall Road Branch", "Lahore")
 
     def staff(name, role, branch):
-        return bank.hire_employee(bank.register_person(name, date(1990, 1, 1), "HR"), role, branch)
+        return bank.hire_employee(bank.register_person(name, Date(1990, 1, 1), "HR"), role, branch)
 
     farah = staff("Farah Siddiqui", "TELLER", gulberg)
     omar = staff("Omar Raza", "RELATIONSHIP_MANAGER", gulberg)
@@ -3564,9 +4375,9 @@ def run_demo():
     _show(f"{len(bank.branches)} branches, {len(bank.employees)} staff, {len(bank.products)} products")
 
     # Ayesha is an existing personal customer BEFORE the business arrives
-    bank.advance_to(date(2026, 1, 6))
-    ayesha = bank.register_person("Ayesha Khan", date(1985, 4, 2), omar)
-    a_doc = bank.add_identity_document(ayesha, "CNIC", "35202-1111111-2", date(2022, 5, 1), date(2032, 5, 1), omar)
+    bank.advance_to(Date(2026, 1, 6))
+    ayesha = bank.register_person("Ayesha Khan", Date(1985, 4, 2), omar)
+    a_doc = bank.add_identity_document(ayesha, "CNIC", "35202-1111111-2", Date(2022, 5, 1), Date(2032, 5, 1), omar)
     bank.verify_party(ayesha, a_doc, omar)
     bank.become_customer(ayesha, omar, "RETAIL")
     ayesha_acct = bank.open_deposit_account(CurrentAccount, classic, [ayesha], omar)
@@ -3576,16 +4387,16 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 1: Business onboarding blocked by a document that expires mid-process")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 2, 2))
+    bank.advance_to(Date(2026, 2, 2))
     ravi = bank.register_company("Ravi Textiles (Pvt) Ltd", "0098765", "Plot 12, Sundar Industrial Estate",
-                                 date(2019, 8, 1), omar)
-    cert = bank.add_identity_document(ravi, "INCORPORATION_CERT", "0098765", date(2019, 8, 1), None, omar)
-    bilal = bank.register_person("Bilal Ahmed", date(1982, 9, 9), omar)
-    sara = bank.register_person("Sara Malik", date(1988, 3, 3), omar)
-    b_doc = bank.add_identity_document(bilal, "CNIC", "35202-2222222-3", date(2016, 2, 10), date(2026, 2, 10), omar)
-    s_doc = bank.add_identity_document(sara, "PASSPORT", "AB1234567", date(2023, 1, 1), date(2033, 1, 1), omar)
+                                 Date(2019, 8, 1), omar)
+    cert = bank.add_identity_document(ravi, "INCORPORATION_CERT", "0098765", Date(2019, 8, 1), None, omar)
+    bilal = bank.register_person("Bilal Ahmed", Date(1982, 9, 9), omar)
+    sara = bank.register_person("Sara Malik", Date(1988, 3, 3), omar)
+    b_doc = bank.add_identity_document(bilal, "CNIC", "35202-2222222-3", Date(2016, 2, 10), Date(2026, 2, 10), omar)
+    s_doc = bank.add_identity_document(sara, "PASSPORT", "AB1234567", Date(2023, 1, 1), Date(2033, 1, 1), omar)
 
-    bank.advance_to(date(2026, 2, 3))
+    bank.advance_to(Date(2026, 2, 3))
     for party, doc in [(ravi, cert), (bilal, b_doc), (sara, s_doc)]:
         bank.verify_party(party, doc, omar)
     bank.appoint_officer(ravi, ayesha, omar)          # SAME Person record as the retail customer
@@ -3599,20 +4410,20 @@ def run_demo():
           "People whose KYC the company file depends on: "
           + ", ".join(p.name for p in ravi.connected_persons(bank.today)))
 
-    bank.advance_to(date(2026, 2, 12))                # board paperwork took time; Bilal's CNIC expired on 10 Feb
+    bank.advance_to(Date(2026, 2, 12))                # board paperwork took time; Bilal's CNIC expired on 10 Feb
     _attempt("Onboard Ravi Textiles on 12 Feb", lambda: bank.become_customer(ravi, omar, "SME"))
 
-    bank.advance_to(date(2026, 2, 13))
-    b_doc2 = bank.add_identity_document(bilal, "CNIC", "35202-2222222-3", date(2026, 2, 12), date(2036, 2, 12), omar)
+    bank.advance_to(Date(2026, 2, 13))
+    b_doc2 = bank.add_identity_document(bilal, "CNIC", "35202-2222222-3", Date(2026, 2, 12), Date(2036, 2, 12), omar)
     bank.verify_party(bilal, b_doc2, omar)
     _attempt("Onboard Ravi Textiles after renewal", lambda: bank.become_customer(ravi, omar, "SME"))
     _show("Bilal's verification history is kept, not overwritten:",
           *[f"  {c.check_id} on {c.performed_on}: {c.result} against CNIC expiring {c.document.expires_on}"
             for c in bilal.checks])
 
-    hamza = bank.register_person("Hamza Sheikh", date(1992, 6, 6), omar)
-    noor = bank.register_person("Noor Fatima", date(1998, 7, 7), omar)
-    usman = bank.register_person("Usman Ali", date(1990, 1, 20), omar)
+    hamza = bank.register_person("Hamza Sheikh", Date(1992, 6, 6), omar)
+    noor = bank.register_person("Noor Fatima", Date(1998, 7, 7), omar)
+    usman = bank.register_person("Usman Ali", Date(1990, 1, 20), omar)
     bank.grant_mandate(ravi, ayesha, {"PAYMENTS", "BORROWING", "CARD"}, None, omar)
     m_bilal = bank.grant_mandate(ravi, bilal, {"PAYMENTS"}, 5_000_000, omar)
     bank.grant_mandate(ravi, hamza, {"PAYMENTS", "CARD"}, 2_000_000, omar,
@@ -3630,9 +4441,9 @@ def run_demo():
     bank.deposit_cash(bilal_acct, 80_000, rabia, bilal)
 
     # A second organization where Ayesha is a trustee (several capacities, one person)
-    bank.advance_to(date(2026, 2, 16))
+    bank.advance_to(Date(2026, 2, 16))
     roshni = bank.register_charity("Roshni Education Trust", "TR-4411", "12 Canal View, Lahore", omar)
-    bank.verify_party(roshni, bank.add_identity_document(roshni, "TRUST_DEED", "TR-4411", date(2015, 1, 1),
+    bank.verify_party(roshni, bank.add_identity_document(roshni, "TRUST_DEED", "TR-4411", Date(2015, 1, 1),
                                                          None, omar), omar)
     bank.appoint_officer(roshni, ayesha, omar)
     _attempt("Onboard Roshni Trust with one trustee", lambda: bank.become_customer(roshni, omar, "NON_PROFIT"))
@@ -3643,24 +4454,24 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SEED: funding, beneficiaries, standing order, cards")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 2, 20))
+    bank.advance_to(Date(2026, 2, 20))
     bank.deposit_cash(ravi_cur, 8_000_000, farah, hamza)
     bank.deposit_cash(ravi_sav, 1_000_000, farah, hamza)
-    yarn = bank.add_beneficiary(ravi, "Lahore Yarn Traders", "Meezan Bank", "0101-0012345678",
+    yarn = bank.add_beneficiary(ravi, "Lahore Yarn Traders", "Meezan Bank", "PK12 MEZN 0001 0100 1234 5678",
                                 "Lahore Yarn Traders", hamza)
-    landlord = bank.add_beneficiary(ravi, "Model Town Properties", "HBL", "5566-7788990011",
+    landlord = bank.add_beneficiary(ravi, "Model Town Properties", "HBL", "PK08 HABB 0055 6677 8899 0011",
                                     "Model Town Properties", bilal)
     rent = bank.create_standing_order(ravi_cur, landlord, 150_000, 12, bilal)
     hamza_card = bank.issue_card(debit, ravi_cur, hamza, hina)
     usman_card = bank.issue_card(debit, ravi_cur, usman, hina)
-    bank.advance_to(date(2026, 2, 25))
+    bank.advance_to(Date(2026, 2, 25))
     for name, category in [("Metro Cash & Carry", "WHOLESALE"), ("Online Store X", "ONLINE_MARKETPLACE"),
                            ("Hyperstar", "GROCERY"), ("Al-Fatah Electronics", "ELECTRONICS"),
                            ("Packages Mall Electronics", "ELECTRONICS"), ("Daraz.pk", "ONLINE_MARKETPLACE"),
                            ("Imtiaz Auto Parts", "RETAIL"), ("BetWorld", "GAMBLING"), ("Liberty Books", "BOOKS")]:
         bank.record_merchant(name, category)              # as the card network presents them
     bank.card_purchase(hamza_card, "Metro Cash & Carry", 45_000)
-    bank.advance_to(date(2026, 2, 27))
+    bank.advance_to(Date(2026, 2, 27))
     _txn_line("Noor (view-only) tries to pay a supplier",
               bank.initiate_transfer(ravi_cur, yarn, 50_000, noor))
     _attempt("Issue card to Noor", lambda: bank.issue_card(debit, ravi_cur, noor, hina))
@@ -3668,7 +4479,7 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 2: Large transfer: dual control, then held for review, branch contact, release")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 3, 2))
+    bank.advance_to(Date(2026, 3, 2))
     big = bank.initiate_transfer(ravi_cur, yarn, 1_500_000, hamza)
     _txn_line("Hamza sends 1.5m to Lahore Yarn Traders", big)
     _attempt("Hamza authorises his own payment", lambda: bank.authorise_payment(big, hamza))
@@ -3678,7 +4489,7 @@ def run_demo():
     _show(f"Ledger {fmt(ravi_cur.ledger_balance())} | available {fmt(ravi_cur.available_balance(bank.today))}")
     alert = [c for c in bank.cases.values() if c.kind == "FraudAlert"][-1]
 
-    bank.advance_to(date(2026, 3, 3))
+    bank.advance_to(Date(2026, 3, 3))
     complaint = bank.log_complaint(ravi, "Supplier payment stuck, supplier waiting", "BRANCH", hamza,
                                    "PAYMENT_DELAY", omar)
     _attempt("Teller Farah releases the held payment",
@@ -3690,7 +4501,7 @@ def run_demo():
     _show(f"Complaint {complaint.case_id} (customer channel) and investigation {inv.case_id} (risk) are "
           f"separate records, linked to {alert.case_id}")
 
-    bank.advance_to(date(2026, 3, 5))
+    bank.advance_to(Date(2026, 3, 5))
     bank.release_transaction(big, kamran, "Invoices verified; long-standing supplier")
     bank.close_case(alert, "FALSE_POSITIVE", kamran)
     bank.close_case(complaint, "RESOLVED - payment released 5 Mar", omar)
@@ -3699,17 +4510,17 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 3: Card stolen, replaced twice with different limits, old card found")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 3, 10))
+    bank.advance_to(Date(2026, 3, 10))
     block_request = bank.report_card(hamza_card, "STOLEN", hamza)
     card2 = bank.replace_card(hamza_card, hina, daily_limit=100_000)
-    bank.advance_to(date(2026, 3, 11))
+    bank.advance_to(Date(2026, 3, 11))
     _txn_line("Thief tries old card", bank.card_purchase(hamza_card, "Online Store X", 25_000))
     _txn_line("Hamza uses new card", bank.card_purchase(card2, "Hyperstar", 30_000))
     _txn_line("Hamza tries 120k on new card", bank.card_purchase(card2, "Al-Fatah Electronics", 120_000))
-    bank.advance_to(date(2026, 3, 12))
+    bank.advance_to(Date(2026, 3, 12))
     bank.record_card_found(hamza_card, hina, "found in office drawer; destroyed")
     _attempt("Reactivate the found card", lambda: bank.reactivate_card(hamza_card, hina))
-    bank.advance_to(date(2026, 3, 15))
+    bank.advance_to(Date(2026, 3, 15))
     bank.report_card(card2, "DAMAGED", hamza)
     card3 = bank.replace_card(card2, hina)
     _show(f"Service request {block_request.case_id}: {block_request.request_type} -> "
@@ -3721,15 +4532,15 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 4: Posted -> reversed -> re-posted differently -> disputed -> partial chargeback")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 3, 20))
+    bank.advance_to(Date(2026, 3, 20))
     buy = bank.card_purchase(usman_card, "Packages Mall Electronics", 120_000)
-    bank.advance_to(date(2026, 3, 21))
+    bank.advance_to(Date(2026, 3, 21))
     fixed = bank.repost_card_payment(buy, 105_000, "merchant presented corrected amount", hina)
-    bank.advance_to(date(2026, 4, 5))
+    bank.advance_to(Date(2026, 4, 5))
     dispute = bank.open_dispute(fixed, 105_000, ayesha, "PHONE", omar, reason="NOT_AS_DESCRIBED")
     _attempt("Open a second dispute on the same payment",
              lambda: bank.open_dispute(fixed, 1_000, ayesha, "BRANCH", omar))
-    bank.advance_to(date(2026, 4, 9))
+    bank.advance_to(Date(2026, 4, 9))
     bank.resolve_dispute(dispute, "PARTIALLY_UPHELD", 40_000, hina)
     _attempt("Resolve the same dispute again (would refund twice)",
              lambda: bank.resolve_dispute(dispute, "UPHELD", 65_000, hina))
@@ -3740,32 +4551,32 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 5: Customer restricted then cleared; standing order fails in between")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 4, 10))
+    bank.advance_to(Date(2026, 4, 10))
     block = bank.impose_restriction(ravi, "DEBIT_BLOCK", "pending source-of-funds documents", kamran, inv)
     _txn_line("Hamza transfer during restriction", bank.initiate_transfer(ravi_cur, yarn, 300_000, hamza))
     _txn_line("Ayesha's PERSONAL account is unaffected",
               bank.withdraw_cash(ayesha_acct, 20_000, farah, ayesha))
-    bank.advance_to(date(2026, 4, 12))                  # standing order runs in the daily batch
+    bank.advance_to(Date(2026, 4, 12))                  # standing order runs in the daily batch
     _show("Rent standing order: " + ", ".join(f"{t.initiated_on} {t.status.current}" for t in rent.payments))
     _attempt("Close investigation while restriction live", lambda: bank.close_case(inv, "CLEARED", kamran))
-    bank.advance_to(date(2026, 4, 14))
+    bank.advance_to(Date(2026, 4, 14))
     bank.lift_restriction(block, "documents received and satisfactory", kamran)
     _txn_line("Hamza transfer after clearance", bank.initiate_transfer(ravi_cur, yarn, 300_000, hamza))
     _attempt("Close investigation now", lambda: bank.close_case(inv, "CLEARED - no further action", kamran))
-    _show(f"Was Ravi restricted on 11 Apr? {block.blocks('DEBIT', date(2026, 4, 11))} | "
+    _show(f"Was Ravi restricted on 11 Apr? {block.blocks('DEBIT', Date(2026, 4, 11))} | "
           f"today? {block.blocks('DEBIT', bank.today)}")
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 6: Financing with conditions, delegated limits, arrears, restructure, settlement")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 4, 15))
+    bank.advance_to(Date(2026, 4, 15))
     _attempt("Noor applies for financing", lambda: bank.submit_financing_application(
         ravi, wcf, 3_000_000, 12, "working capital", noor))
     app = bank.submit_financing_application(ravi, wcf, 3_000_000, 12, "working capital for export order", ayesha)
     bank.attach_application_document(app, "Management accounts Jan-Mar 2026", zainab)
     bank.attach_application_document(app, "Export order from buyer (USD 40k)", zainab)
     capex = bank.submit_financing_application(ravi, wcf, 8_000_000, 36, "new looms", ayesha)
-    bank.advance_to(date(2026, 4, 17))
+    bank.advance_to(Date(2026, 4, 17))
     _attempt("Credit officer approves 8m (above her 5m delegated limit)",
              lambda: bank.decide_application(capex, zainab, True, 8_000_000, "0.19"))
     bank.decide_application(capex, zainab, False)
@@ -3773,18 +4584,18 @@ def run_demo():
     decision = bank.decide_application(app, zainab, True, 2_500_000, "0.19",
                                        ["Personal guarantee from directors", "Audited FY2025 accounts"])
     _show(str(decision), f"Application status: {app.status.current}")
-    bank.advance_to(date(2026, 4, 20))
+    bank.advance_to(Date(2026, 4, 20))
     _attempt("Disburse before conditions met",
-             lambda: bank.disburse_financing(app, ravi_cur, date(2026, 5, 23), zainab))
-    bank.advance_to(date(2026, 4, 22))
+             lambda: bank.disburse_financing(app, ravi_cur, Date(2026, 5, 23), zainab))
+    bank.advance_to(Date(2026, 4, 22))
     for c in app.conditions:
         bank.satisfy_condition(c, "signed original on file", omar)
-    bank.advance_to(date(2026, 4, 23))
-    fin = bank.disburse_financing(app, ravi_cur, date(2026, 5, 23), zainab)
+    bank.advance_to(Date(2026, 4, 23))
+    fin = bank.disburse_financing(app, ravi_cur, Date(2026, 5, 23), zainab)
     first = fin.current_schedule.installments[0]
     _show(f"{fin.number} disbursed {fmt(fin.principal)}; installment 1 due {first.due_on}: {fmt(first.outstanding)}")
 
-    for due in (date(2026, 5, 23), date(2026, 6, 23)):
+    for due in (Date(2026, 5, 23), Date(2026, 6, 23)):
         bank.advance_to(due)
         inst = next(i for i in fin.current_schedule.installments if i.outstanding > 0)
         bank.repay_financing(fin, inst.outstanding, ravi_cur)
@@ -3792,23 +4603,23 @@ def run_demo():
     _txn_line("Customer tries to overpay by 10m", bank.repay_financing(fin, 10_000_000, ravi_cur))
     _show(f"Outstanding principal unchanged: {fmt(fin.outstanding_principal())}")
 
-    bank.advance_to(date(2026, 7, 24))                 # July installment missed; batch flags it
+    bank.advance_to(Date(2026, 7, 24))                 # July installment missed; batch flags it
     col = [c for c in bank.cases.values() if c.kind == "CollectionsCase"][-1]
     _show(f"{fin.number} status {fin.status.current}; {col.case_id}: {col.summary}")
     bank.assign_case(col, imran, "Head of Collections")
     promise = bank.record_collections_contact(col, imran, "director promised payment after export receipt",
-                                              col.overdue_at_opening, date(2026, 7, 27))
+                                              col.overdue_at_opening, Date(2026, 7, 27))
     _attempt("Teller records a collections call", lambda: bank.record_collections_contact(col, farah, "called"))
-    bank.advance_to(date(2026, 7, 28))
+    bank.advance_to(Date(2026, 7, 28))
     _show(f"Promise to pay {fmt(promise.amount)} by {promise.due_on}: {promise.status.current} "
           f"-> credit decides to restructure")
-    sched2 = bank.restructure_financing(fin, 18, "0.17", date(2026, 8, 28), "cash-flow delay on export order", zainab)
+    sched2 = bank.restructure_financing(fin, 18, "0.17", Date(2026, 8, 28), "cash-flow delay on export order", zainab)
     _show(f"Schedule v2: {fmt(sched2.principal)} (incl. capitalised interest {fmt(sched2.capitalised_interest)}), "
           f"{len(sched2.installments)} installments; collections case {col.status.current} ({col.outcome})")
 
-    bank.advance_to(date(2026, 8, 1))
+    bank.advance_to(Date(2026, 8, 1))
     bank.change_role(zainab, "CREDIT_MANAGER")
-    bank.advance_to(date(2026, 8, 28))
+    bank.advance_to(Date(2026, 8, 28))
     bank.repay_financing(fin, sched2.installments[0].outstanding, ravi_cur)
     for s in fin.schedules:
         states = [i.status_on(bank.today) for i in s.installments]
@@ -3817,42 +4628,42 @@ def run_demo():
     _show(f"Original credit decision still reads: {app.decision}",
           f"Zainab's role today: {zainab.role_on(bank.today).role}")
 
-    bank.advance_to(date(2026, 9, 15))
+    bank.advance_to(Date(2026, 9, 15))
     p, i = fin.settlement_quote(bank.today)
     bank.settle_financing(fin, ravi_cur, zainab)
     _show(f"Settled for {fmt(p + i)}; agreement status {fin.status.trail()}")
     _attempt("Restructure the settled agreement",
-             lambda: bank.restructure_financing(fin, 6, "0.1", date(2026, 10, 15), "late request", zainab))
+             lambda: bank.restructure_financing(fin, 6, "0.1", Date(2026, 10, 15), "late request", zainab))
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 7: Director leaves; old authority stays provable, new attempts fail")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 9, 16))
+    bank.advance_to(Date(2026, 9, 16))
     old_pay = bank.initiate_transfer(ravi_cur, yarn, 500_000, bilal)
     _txn_line("Bilal pays supplier while still a director", old_pay)
-    bank.advance_to(date(2026, 9, 20))
+    bank.advance_to(Date(2026, 9, 20))
     bank.end_officer_role(ravi, bilal, "resigned", omar)
     bank.revoke_mandate(m_bilal, "resigned as director", omar)
     bank.appoint_officer(ravi, usman, omar)
     bank.verify_party(usman, bank.add_identity_document(usman, "CNIC", "35202-3333333-4",
-                                                       date(2024, 1, 1), date(2034, 1, 1), omar), omar)
+                                                       Date(2024, 1, 1), Date(2034, 1, 1), omar), omar)
     bank.grant_mandate(ravi, usman, {"PAYMENTS"}, 1_000_000, omar)
-    bank.advance_to(date(2026, 9, 21))
+    bank.advance_to(Date(2026, 9, 21))
     _txn_line("Bilal tries to pay from Ravi account", bank.initiate_transfer(ravi_cur, yarn, 200_000, bilal))
     _txn_line("Bilal withdraws from his OWN account", bank.withdraw_cash(bilal_acct, 10_000, farah, bilal))
     _show(bank.transaction_story(old_pay))
-    _show(f"Bilal's authority on 16 Sep: {[m.mandate_id for m in bank.authority_on(ravi, bilal, date(2026, 9, 16))]}",
+    _show(f"Bilal's authority on 16 Sep: {[m.mandate_id for m in bank.authority_on(ravi, bilal, Date(2026, 9, 16))]}",
           f"Bilal's authority today:    {[m.mandate_id for m in bank.authority_on(ravi, bilal, bank.today)]}",
           f"Rent standing order (set up by Bilal) continues: {rent.status.current}")
     _show("Ayesha's capacities across the bank:", *["  - " + x for x in bank.capacities_of(ayesha)])
     _show("Time machine - Ravi Textiles as the bank saw it on 11 Apr 2026:",
-          *["  " + x for x in bank.party_snapshot(ravi, date(2026, 4, 11))])
+          *["  " + x for x in bank.party_snapshot(ravi, Date(2026, 4, 11))])
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 8: Beneficiary changes bank details after old transfers")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 9, 22))
-    bank.amend_beneficiary(yarn, "Bank Alfalah", "0200-9988776655", "Lahore Yarn Traders", hamza)
+    bank.advance_to(Date(2026, 9, 22))
+    bank.amend_beneficiary(yarn, "Bank Alfalah", "PK18 ALFH 0002 0099 8877 6655", "Lahore Yarn Traders", hamza)
     new_pay = bank.initiate_transfer(ravi_cur, yarn, 250_000, hamza)
     _show(f"{big.txn_id} was sent to {big.beneficiary_version}",
           f"{new_pay.txn_id} was sent to {new_pay.beneficiary_version}")
@@ -3860,37 +4671,37 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 9: Evidence referenced data that was later corrected")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 9, 25))
+    bank.advance_to(Date(2026, 9, 25))
     bank.correct_party_detail(ravi, "registered_address", "Plot 21, Sundar Industrial Estate",
                               "typo at onboarding (12 vs 21)", omar)
     _show(f"Evidence {ev.evidence_id} captured {ev.captured_on}: {ev.snapshot['registered_address']}",
-          f"Bank's record as of 3 Mar:  {ravi.detail_on('registered_address', date(2026, 3, 3))}",
+          f"Bank's record as of 3 Mar:  {ravi.detail_on('registered_address', Date(2026, 3, 3))}",
           f"Bank's record today:        {ravi.detail('registered_address')}",
           f"Correction: {ravi.corrections[0].reason} (by {ravi.corrections[0].by} on {ravi.corrections[0].on})")
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 10: Product withdrawn / terms revised without rewriting old customers")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2026, 10, 1))
+    bank.advance_to(Date(2026, 10, 1))
     bank.withdraw_from_sale(classic, "replaced by Personal Current")
-    newbie = bank.register_person("Danish Butt", date(2000, 2, 2), omar)
+    newbie = bank.register_person("Danish Butt", Date(2000, 2, 2), omar)
     bank.verify_party(newbie, bank.add_identity_document(newbie, "CNIC", "35202-4444444-5",
-                                                         date(2025, 1, 1), date(2035, 1, 1), omar), omar)
+                                                         Date(2025, 1, 1), Date(2035, 1, 1), omar), omar)
     bank.become_customer(newbie, omar, "RETAIL")
     _attempt("Open Classic Current for a new customer",
              lambda: bank.open_deposit_account(CurrentAccount, classic, [newbie], omar))
     _txn_line("Ayesha still deposits to her Classic account", bank.deposit_cash(ayesha_acct, 5_000, farah, ayesha))
-    bank.revise_product_terms(biz_cur, date(2026, 11, 1), monthly_fee=750)
-    bank.advance_to(date(2026, 11, 30))
+    bank.revise_product_terms(biz_cur, Date(2026, 11, 1), monthly_fee=750)
+    bank.advance_to(Date(2026, 11, 30))
     nov_fee = [t for t in bank.transactions.values() if t.kind == "FeeCharge" and t.initiated_on == bank.today][0]
     _show(f"Nov fee for existing Ravi account: {fmt(nov_fee.amount)} (pinned terms v{nov_fee.terms_version.version_no})")
-    bank.advance_to(date(2026, 12, 1))
+    bank.advance_to(Date(2026, 12, 1))
     bank.migrate_terms(ravi_cur, omar)
-    bank.advance_to(date(2026, 12, 31))
+    bank.advance_to(Date(2026, 12, 31))
     dec_fee = [t for t in bank.transactions.values() if t.kind == "FeeCharge" and t.initiated_on == bank.today][0]
     _show(f"Dec fee after migration + notice: {fmt(dec_fee.amount)} (terms v{dec_fee.terms_version.version_no})",
-          f"Terms in force on 15 Nov: v{ravi_cur.terms_on(date(2026, 11, 15)).version_no}; "
-          f"on 15 Dec: v{ravi_cur.terms_on(date(2026, 12, 15)).version_no}")
+          f"Terms in force on 15 Nov: v{ravi_cur.terms_on(Date(2026, 11, 15)).version_no}; "
+          f"on 15 Dec: v{ravi_cur.terms_on(Date(2026, 12, 15)).version_no}")
     bank.withdraw_from_sale(debit, "new chip-and-PIN card range")
     bank.report_card(usman_card, "LOST", usman)
     usman_card2 = _attempt("Replace a card after its product was withdrawn (existing cardholder)",
@@ -3903,27 +4714,27 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 11: Branch closes; customers, accounts, staff and vault cash move; history stays")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 1, 4))
+    bank.advance_to(Date(2027, 1, 4))
     mall_cash_before = -mall.vault.ledger_balance()
     moved = bank.close_branch(mall, gulberg, "Head of Operations")
     _show(f"Moved: {moved}; vault cash {fmt(mall_cash_before)} moved to {gulberg.code}",
           f"{bilal_acct.number} opened at {bilal_acct.opened_at_branch.code}; "
-          f"served on 1 Dec by {bilal_acct.servicing_branch_on(date(2026, 12, 1)).code}, "
+          f"served on 1 Dec by {bilal_acct.servicing_branch_on(Date(2026, 12, 1)).code}, "
           f"today by {bilal_acct.servicing_branch_on(bank.today).code}",
-          f"Asad on 1 Dec: {asad.role_on(date(2026, 12, 1)).branch.code}; today: {asad.role_on(bank.today).branch.code}",
+          f"Asad on 1 Dec: {asad.role_on(Date(2026, 12, 1)).branch.code}; today: {asad.role_on(bank.today).branch.code}",
           f"Branch status: {mall.status.trail()}")
     _attempt("Hire Sana Mirza as a teller at the closed branch",
-             lambda: bank.hire_employee(bank.register_person("Sana Mirza", date(1995, 1, 1), "HR"), "TELLER", mall))
+             lambda: bank.hire_employee(bank.register_person("Sana Mirza", Date(1995, 1, 1), "HR"), "TELLER", mall))
 
     # -------------------------------------------------------------------------
     _section("SCENARIO 12: Savings withdrawal limit, then account closure (closure is not deletion)")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 1, 5))
+    bank.advance_to(Date(2027, 1, 5))
     _txn_line("Withdrawal 1", bank.withdraw_cash(ravi_sav, 400_000, farah, ayesha))
     _txn_line("Withdrawal 2", bank.withdraw_cash(ravi_sav, 300_000, farah, ayesha))
     _txn_line("Withdrawal 3", bank.withdraw_cash(ravi_sav, 300_000, farah, ayesha))
     _attempt("Close savings with balance", lambda: bank.close_account(ravi_sav, "customer request", omar))
-    bank.advance_to(date(2027, 2, 1))
+    bank.advance_to(Date(2027, 2, 1))
     bank.withdraw_cash(ravi_sav, ravi_sav.ledger_balance(), farah, ayesha)
     _attempt("Close savings at zero balance", lambda: bank.close_account(ravi_sav, "customer request", omar))
     _show(f"{ravi_sav.number}: {ravi_sav.status.trail()}; {len(ravi_sav.entries)} ledger entries retained")
@@ -3931,7 +4742,7 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 13: Staff member and customer leave; history keeps both")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 2, 3))
+    bank.advance_to(Date(2027, 2, 3))
     _attempt("Omar resigns while still managing customers",
              lambda: bank.record_employee_exit(omar, "resigned"))
     maryam = staff("Maryam Tahir", "RELATIONSHIP_MANAGER", gulberg)
@@ -3951,13 +4762,13 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 14: Sole trader and high-value customer; fixed-term deposits")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 2, 8))
+    bank.advance_to(Date(2027, 2, 8))
     private_cur = bank.define_product("CUR-PRIV", "Private Banking Current", "CURRENT", monthly_fee=0)
     ftd6 = bank.define_product("FTD-6M", "6-Month Term Deposit", "TERM_DEPOSIT", term_months=6,
                                annual_rate="0.115", early_break_penalty="0.01")
-    imtiaz = bank.register_person("Imtiaz Ahmed", date(1979, 5, 5), maryam)
+    imtiaz = bank.register_person("Imtiaz Ahmed", Date(1979, 5, 5), maryam)
     bank.verify_party(imtiaz, bank.add_identity_document(imtiaz, "CNIC", "35202-5555555-6",
-                                                         date(2021, 3, 1), date(2031, 3, 1), maryam), maryam)
+                                                         Date(2021, 3, 1), Date(2031, 3, 1), maryam), maryam)
     _attempt("Onboard Imtiaz as a sole trader without a trading name",
              lambda: bank.become_customer(imtiaz, maryam, "SOLE_TRADER"))
     bank.become_customer(imtiaz, maryam, "SOLE_TRADER", trading_name="Imtiaz Auto Parts")
@@ -3970,13 +4781,13 @@ def run_demo():
     _show(f"{imtiaz.name} trades as '{imtiaz.detail('trading_name')}': one Person, segment "
           f"{imtiaz.relationship.segment}, personally liable (no separate Organization record)")
 
-    zara = bank.register_person("Zara Hussain", date(1975, 10, 10), maryam)
+    zara = bank.register_person("Zara Hussain", Date(1975, 10, 10), maryam)
     bank.verify_party(zara, bank.add_identity_document(zara, "PASSPORT", "ZH7654321",
-                                                       date(2024, 6, 1), date(2034, 6, 1), maryam), maryam)
+                                                       Date(2024, 6, 1), Date(2034, 6, 1), maryam), maryam)
     _attempt("Onboard Zara as a high-value (PRIVATE) customer",
              lambda: bank.become_customer(zara, maryam, "PRIVATE"))
     sow = bank.add_identity_document(zara, "SOURCE_OF_WEALTH", "Sale deed DHA plot 14-B",
-                                     date(2026, 11, 20), None, maryam)
+                                     Date(2026, 11, 20), None, maryam)
     bank.verify_party(zara, sow, kamran)
     _attempt("Onboard Zara after enhanced due diligence", lambda: bank.become_customer(zara, maryam, "PRIVATE"))
     zara_cur = bank.open_deposit_account(CurrentAccount, private_cur, [zara], maryam)
@@ -3991,7 +4802,7 @@ def run_demo():
               bank.withdraw_cash(ftd_a, 500_000, farah, zara))
     _txn_line("Zara tries to top up the term deposit",
               bank.transfer_between_accounts(zara_cur, ftd_a, 100_000, zara))
-    bank.advance_to(date(2027, 3, 10))
+    bank.advance_to(Date(2027, 3, 10))
     penalty = bank.break_term_deposit(ftd_b, maryam, "customer needs funds for a car")
     _show(f"{ftd_b.number} broken early: interest forfeited, penalty {fmt(penalty)}; "
           f"status {ftd_b.status.trail()}")
@@ -4005,7 +4816,7 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 15: Card controls, merchant refund, bill payments under dual control, card history")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 8, 10))
+    bank.advance_to(Date(2027, 8, 10))
     bank.deposit_cash(ravi_cur, 5_000_000, farah, hamza)
     online_block = bank.add_card_control(card3, "ONLINE", hamza)
     bank.add_card_control(card3, "MERCHANT_CATEGORY", hina, value="GAMBLING")
@@ -4015,7 +4826,7 @@ def run_demo():
               bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
     parts = bank.card_purchase(card3, "Imtiaz Auto Parts", 9_500)
     _txn_line("In-store purchase", parts)
-    bank.advance_to(date(2027, 8, 12))
+    bank.advance_to(Date(2027, 8, 12))
     returned = bank.merchant_refund(parts, 3_500, "one part returned")
     _txn_line("Imtiaz Auto Parts refunds a returned part (a new credit, not a reversal)", returned)
     _show(f"The purchase {parts.txn_id} stays {parts.status.current}; still disputable: {fmt(parts.net_amount)}")
@@ -4026,7 +4837,7 @@ def run_demo():
               bank.card_purchase(card3, "Daraz.pk", 12_000, channel="ONLINE"))
     _txn_line("Online betting site (category still blocked by card operations)",
               bank.card_purchase(card3, "BetWorld", 5_000, channel="ONLINE"))
-    _show(f"Was online use blocked on 10 Aug? {online_block.blocks('ONLINE', 'PK', 'RETAIL', date(2027, 8, 10))}"
+    _show(f"Was online use blocked on 10 Aug? {online_block.blocks('ONLINE', 'PK', 'RETAIL', Date(2027, 8, 10))}"
           f" | today? {online_block.blocks('ONLINE', 'PK', 'RETAIL', bank.today)}")
     _txn_line("Noor (view-only) pays a tax bill", bank.pay_bill(ravi_cur, fbr, "NTN-4455667", 50_000, noor))
     tax = bank.pay_bill(ravi_cur, fbr, "NTN-4455667", 1_250_000, hamza)
@@ -4041,10 +4852,10 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("SCENARIO 16: Auditor review, record retention, archive versus delete")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 8, 20))
+    bank.advance_to(Date(2027, 8, 20))
     _attempt("Teller runs the approvals audit",
-             lambda: bank.approvals_and_authority_audit(farah, date(2026, 1, 1), date(2026, 12, 31)))
-    audit_lines = bank.approvals_and_authority_audit(nida, date(2026, 1, 1), date(2026, 12, 31))
+             lambda: bank.approvals_and_authority_audit(farah, Date(2026, 1, 1), Date(2026, 12, 31)))
+    audit_lines = bank.approvals_and_authority_audit(nida, Date(2026, 1, 1), Date(2026, 12, 31))
     _show(f"Auditor {nida.person.name}: {len(audit_lines) - 2} approvals and authority changes in 2026, e.g.:",
           *[line for line in audit_lines if "CREDIT_OFFICER" in line or "REVOKE_MANDATE" in line][:5])
     _attempt(f"Delete closed savings account {ravi_sav.number}",
@@ -4056,7 +4867,7 @@ def run_demo():
     _show(f"Archived {ravi_sav.number}, Danish's ended relationship and {dispute.case_id}: working list "
           f"{before} -> {len(bank.active_arrangements())} arrangements; all records still held",
           f"{ravi_sav.number} may not be destroyed before {bank.retention_until(ravi_sav)}")
-    old_payee = bank.add_beneficiary(ravi, "Old courier", "UBL", "7777888899990000", "Swift Couriers", hamza)
+    old_payee = bank.add_beneficiary(ravi, "Old courier", "UBL", "PK64UNIL7777888899990000", "Swift Couriers", hamza)
     _attempt("Delete a payee that was never used", lambda: bank.delete_beneficiary(old_payee, maryam))
     _attempt("Delete Lahore Yarn Traders (used by past payments)",
              lambda: bank.delete_beneficiary(yarn, maryam))
@@ -4064,7 +4875,7 @@ def run_demo():
     # -------------------------------------------------------------------------
     _section("OPEN ITEMS: work still waiting at the end of the simulation")
     # -------------------------------------------------------------------------
-    bank.advance_to(date(2027, 8, 25))
+    bank.advance_to(Date(2027, 8, 25))
     waiting = bank.initiate_transfer(ravi_cur, yarn, 1_200_000, hamza)      # needs a second signatory
     held = bank.initiate_transfer(ravi_cur, yarn, 1_100_000, ayesha)        # above the review threshold
     books = bank.card_purchase(card3, "Liberty Books", 18_500)
@@ -4078,9 +4889,9 @@ def run_demo():
     _section("REPORTS")
     # -------------------------------------------------------------------------
     _show("Statement, Ravi current account, March 2026:")
-    _show(bank.generate_statement(ravi_cur, date(2026, 3, 1), date(2026, 3, 31)).render())
+    _show(bank.generate_statement(ravi_cur, Date(2026, 3, 1), Date(2026, 3, 31)).render())
     _show("", "End-of-day audit for 10-11 March 2026 (what changed, who, why):")
-    _show(bank.daily_report(date(2026, 3, 10)) + bank.daily_report(date(2026, 3, 11)))
+    _show(bank.daily_report(Date(2026, 3, 10)) + bank.daily_report(Date(2026, 3, 11)))
     rows, total = bank.trial_balance()
     _show("", "Trial balance (double-entry check; credits +, debits -):")
     _show(*[f"{num:<12} {bal:>16,.2f}  {name}" for num, name, bal in rows])
@@ -4094,17 +4905,147 @@ def run_demo():
 # PART 14 - Automated tests
 # Run:  python banking_system.py --test
 # Each test builds a fresh, small bank so the tests are independent.
+# The test framework itself is written here too, following the xUnit pattern
+# (Kent Beck): a TestCase class whose test_ methods are run by a TestRunner.
 # =============================================================================
+class TestFailure(Exception):
+    """Raised by an assertion that does not hold."""
+
+
+class TestCase:
+    """Base class for a group of tests (xUnit pattern). Each test_ method is run on a
+    fresh object after setUp(); setUpClass() runs once for the whole group."""
+
+    def __init__(self, method_name):
+        self.method_name = method_name
+
+    @classmethod
+    def setUpClass(cls):
+        """Prepare shared data once, before the group's tests (optional)."""
+
+    def setUp(self):
+        """Prepare data before each test (optional)."""
+
+    def fail(self, message="failed"):
+        raise TestFailure(message)
+
+    def _check(self, ok, default, message):
+        if not ok:
+            raise TestFailure(f"{default}" + (f" : {message}" if message else ""))
+
+    def assertEqual(self, a, b, message=None):
+        self._check(a == b, f"{a!r} != {b!r}", message)
+
+    def assertTrue(self, x, message=None):
+        self._check(bool(x), f"{x!r} is not true", message)
+
+    def assertFalse(self, x, message=None):
+        self._check(not x, f"{x!r} is not false", message)
+
+    def assertIn(self, item, container, message=None):
+        self._check(item in container, f"{item!r} not found in {container!r}", message)
+
+    def assertNotIn(self, item, container, message=None):
+        self._check(item not in container, f"{item!r} unexpectedly found in {container!r}", message)
+
+    def assertIs(self, a, b, message=None):
+        self._check(a is b, f"{a!r} is not {b!r}", message)
+
+    def assertIsNone(self, x, message=None):
+        self._check(x is None, f"{x!r} is not None", message)
+
+    def assertIsNotNone(self, x, message=None):
+        self._check(x is not None, "unexpectedly None", message)
+
+    def assertIsInstance(self, x, cls, message=None):
+        self._check(isinstance(x, cls), f"{x!r} is not an instance of {cls}", message)
+
+    def assertNotIsInstance(self, x, cls, message=None):
+        self._check(not isinstance(x, cls), f"{x!r} is an instance of {cls}", message)
+
+    def assertGreater(self, a, b, message=None):
+        self._check(a > b, f"{a!r} not greater than {b!r}", message)
+
+    def assertGreaterEqual(self, a, b, message=None):
+        self._check(a >= b, f"{a!r} not greater than or equal to {b!r}", message)
+
+    def assertRaises(self, *errors):
+        """Use as: with self.assertRaises(SomeError): ... - the block must raise it."""
+        return _ExpectError(errors)
+
+
+class _ExpectError:
+    """The 'with' block behind assertRaises: passes only if the block raises one of the errors."""
+
+    def __init__(self, errors):
+        self.errors = errors
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, kind, error, trace):
+        if kind is None:
+            raise TestFailure(f"{' or '.join(e.__name__ for e in self.errors)} not raised")
+        return issubclass(kind, self.errors)      # True swallows the expected error
+
+
+class TestRunner:
+    """Finds every TestCase subclass in a namespace, runs its tests and reports, like unittest."""
+
+    def __init__(self, namespace, verbose=True):
+        self.namespace, self.verbose = namespace, verbose
+        self.run_count, self.failures, self.errors = 0, [], []
+
+    def cases(self):
+        return sorted((c for c in self.namespace.values()
+                       if isinstance(c, type) and issubclass(c, TestCase) and c is not TestCase),
+                      key=lambda c: c.__name__)
+
+    def run(self):
+        """Run everything; print one line per test and a summary. True if all passed."""
+        for case in self.cases():
+            names = sorted(n for n in dir(case) if n.startswith("test_") and callable(getattr(case, n)))
+            try:
+                case.setUpClass()
+            except Exception as e:                       # the whole group cannot run
+                self.errors.append((f"setUpClass ({case.__name__})", e))
+                continue
+            for name in names:
+                self.run_count += 1
+                test = case(name)
+                try:
+                    test.setUp()
+                    getattr(test, name)()
+                    outcome = "ok"
+                except TestFailure as e:
+                    self.failures.append((f"{name} ({case.__name__})", e))
+                    outcome = "FAIL"
+                except Exception as e:
+                    self.errors.append((f"{name} ({case.__name__})", e))
+                    outcome = "ERROR"
+                if self.verbose:
+                    print(f"{name} ({case.__name__}) ... {outcome}")
+        for title, problems in (("FAIL", self.failures), ("ERROR", self.errors)):
+            for where, e in problems:
+                print("=" * 70 + f"\n{title}: {where}\n" + "-" * 70 + f"\n{type(e).__name__}: {e}\n")
+        print("-" * 70 + f"\nRan {self.run_count} tests\n")
+        if self.failures or self.errors:
+            print(f"FAILED (failures={len(self.failures)}, errors={len(self.errors)})")
+            return False
+        print("OK")
+        return True
+
+
 class _World:
     """A small bank: one verified company with two directors, accounts, a card, a payee."""
 
     def __init__(self):
-        bank = self.bank = Bank("Test Bank", date(2026, 1, 1))
+        bank = self.bank = Bank("Test Bank", Date(2026, 1, 1))
         self.branch = bank.open_branch("B1", "Main", "Lahore")
         self.branch2 = bank.open_branch("B2", "Second", "Lahore")
 
         def staff(name, role, branch=self.branch):
-            return bank.hire_employee(bank.register_person(name, date(1990, 1, 1), "HR"), role, branch)
+            return bank.hire_employee(bank.register_person(name, Date(1990, 1, 1), "HR"), role, branch)
 
         self.teller, self.rm = staff("Teller", "TELLER"), staff("RM", "RELATIONSHIP_MANAGER")
         self.credit, self.compliance = staff("Credit", "CREDIT_OFFICER"), staff("Compliance", "COMPLIANCE_ANALYST")
@@ -4115,16 +5056,16 @@ class _World:
         self.dc = bank.define_product("DC", "Debit Card", "DEBIT_CARD", default_daily_limit=100_000)
         self.fin = bank.define_product("FIN", "Finance", "FINANCING")
 
-        def person(name, expires=date(2035, 1, 1)):
-            p = bank.register_person(name, date(1985, 1, 1), self.rm)
-            d = bank.add_identity_document(p, "CNIC", name, date(2020, 1, 1), expires, self.rm)
+        def person(name, expires=Date(2035, 1, 1)):
+            p = bank.register_person(name, Date(1985, 1, 1), self.rm)
+            d = bank.add_identity_document(p, "CNIC", name, Date(2020, 1, 1), expires, self.rm)
             bank.verify_party(p, d, self.rm)
             return p
 
         self.person = person
         self.a, self.b, self.c = person("Alpha"), person("Beta"), person("Gamma")
-        co = self.co = bank.register_company("Co Ltd", "1", "Old Address", date(2020, 1, 1), self.rm)
-        bank.verify_party(co, bank.add_identity_document(co, "CERT", "1", date(2020, 1, 1), None, self.rm), self.rm)
+        co = self.co = bank.register_company("Co Ltd", "1", "Old Address", Date(2020, 1, 1), self.rm)
+        bank.verify_party(co, bank.add_identity_document(co, "CERT", "1", Date(2020, 1, 1), None, self.rm), self.rm)
         bank.appoint_officer(co, self.a, self.rm)
         bank.appoint_officer(co, self.b, self.rm)
         bank.become_customer(co, self.rm, "SME")
@@ -4134,7 +5075,7 @@ class _World:
         bank.grant_mandate(co, self.c, {"VIEW"}, None, self.rm)
         self.acct = bank.open_deposit_account(CurrentAccount, self.cur, [co], self.rm)
         bank.deposit_cash(self.acct, 5_000_000, self.teller, self.a)
-        self.ben = bank.add_beneficiary(co, "Supplier", "HBL", "1111222233334444", "Supplier Ltd", self.a)
+        self.ben = bank.add_beneficiary(co, "Supplier", "HBL", "PK11HABB1111222233334444", "Supplier Ltd", self.a)
         self.card = bank.issue_card(self.dc, self.acct, self.b, self.cards)
 
     def disbursed(self, amount=1_200_000, conditions=("guarantee",)):
@@ -4143,23 +5084,23 @@ class _World:
         self.bank.decide_application(app, self.credit, True, amount, "0.12", list(conditions))
         for c in app.conditions:
             self.bank.satisfy_condition(c, "signed", self.rm)
-        return self.bank.disburse_financing(app, self.acct, date(2026, 2, 1), self.credit)
+        return self.bank.disburse_financing(app, self.acct, Date(2026, 2, 1), self.credit)
 
 
-class OnboardingTests(unittest.TestCase):
+class OnboardingTests(TestCase):
     def test_expired_document_blocks_onboarding(self):
         w = _World()
-        late = w.bank.register_person("Late", date(1980, 1, 1), w.rm)
-        doc = w.bank.add_identity_document(late, "CNIC", "9", date(2020, 1, 1), date(2026, 1, 10), w.rm)
+        late = w.bank.register_person("Late", Date(1980, 1, 1), w.rm)
+        doc = w.bank.add_identity_document(late, "CNIC", "9", Date(2020, 1, 1), Date(2026, 1, 10), w.rm)
         w.bank.verify_party(late, doc, w.rm)
-        w.bank.advance_to(date(2026, 1, 11))
+        w.bank.advance_to(Date(2026, 1, 11))
         with self.assertRaises(KycIncomplete):
             w.bank.become_customer(late, w.rm, "RETAIL")
 
     def test_charity_needs_two_trustees(self):
         w = _World()
         ch = w.bank.register_charity("Trust", "T1", "Addr", w.rm)
-        w.bank.verify_party(ch, w.bank.add_identity_document(ch, "DEED", "T1", date(2020, 1, 1), None, w.rm), w.rm)
+        w.bank.verify_party(ch, w.bank.add_identity_document(ch, "DEED", "T1", Date(2020, 1, 1), None, w.rm), w.rm)
         w.bank.appoint_officer(ch, w.a, w.rm)
         with self.assertRaises(KycIncomplete):
             w.bank.become_customer(ch, w.rm, "NON_PROFIT")
@@ -4185,7 +5126,7 @@ class OnboardingTests(unittest.TestCase):
             w.bank.verify_party(w.a, w.b.documents[0], w.rm)
 
 
-class PaymentTests(unittest.TestCase):
+class PaymentTests(TestCase):
     def test_view_only_mandate_cannot_pay_and_failure_is_kept(self):
         w = _World()
         t = w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.c)
@@ -4231,10 +5172,10 @@ class PaymentTests(unittest.TestCase):
         w = _World()
         r = w.bank.impose_restriction(w.co, "DEBIT_BLOCK", "review", w.compliance)
         self.assertEqual(w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a).status.current, "FAILED")
-        w.bank.advance_to(date(2026, 1, 5))
+        w.bank.advance_to(Date(2026, 1, 5))
         w.bank.lift_restriction(r, "cleared", w.compliance)
         self.assertEqual(w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a).status.current, "POSTED")
-        self.assertTrue(r.blocks("DEBIT", date(2026, 1, 3)))
+        self.assertTrue(r.blocks("DEBIT", Date(2026, 1, 3)))
         self.assertFalse(r.blocks("DEBIT", w.bank.today))
 
     def test_partial_reversal_and_over_reversal(self):
@@ -4274,7 +5215,7 @@ class PaymentTests(unittest.TestCase):
     def test_beneficiary_snapshot_survives_amendment(self):
         w = _World()
         t = w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a)
-        w.bank.amend_beneficiary(w.ben, "UBL", "9999888877776666", "Supplier Ltd", w.a)
+        w.bank.amend_beneficiary(w.ben, "UBL", "PK86UNIL9999888877776666", "Supplier Ltd", w.a)
         self.assertEqual(t.beneficiary_version.bank_name, "HBL")
         self.assertEqual(w.ben.current_version.bank_name, "UBL")
 
@@ -4292,11 +5233,29 @@ class PaymentTests(unittest.TestCase):
         w = _World()
         w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a)
         w.bank.card_purchase(w.card, "Shop", 5_000)
-        w.bank.advance_to(date(2026, 2, 1))           # month-end fee
+        w.bank.advance_to(Date(2026, 2, 1))           # month-end fee
         self.assertEqual(w.bank.trial_balance()[1], 0)
 
 
-class CardTests(unittest.TestCase):
+class PayeeIbanTests(TestCase):
+    def test_iban_check_digits_catch_mistakes(self):
+        sbp = Iban("PK36 SCBL 0000 0011 2345 6702")                      # State Bank of Pakistan's example
+        self.assertEqual((sbp.bank_name, sbp.last_four), ("Standard Chartered", "6702"))
+        self.assertEqual(Iban.build("SCBL", "1123456702"), sbp)
+        for wrong in ("PK37SCBL0000001123456702", "PK36SCBL000000112345670", "GB36SCBL0000001123456702"):
+            with self.assertRaises(BankingError):
+                Iban(wrong)
+
+    def test_payee_iban_must_match_its_bank(self):
+        w = _World()
+        before = len(w.bank.beneficiaries)
+        with self.assertRaises(BankingError):
+            w.bank.add_beneficiary(w.co, "Wrong", "UBL", "PK11HABB1111222233334444", "X Ltd", w.a)
+        self.assertEqual(len(w.bank.beneficiaries), before)
+        self.assertEqual(str(w.ben.current_version.account_no), "PK11 HABB 1111 2222 3333 4444")
+
+
+class CardTests(TestCase):
     def test_stolen_replaced_card_cannot_be_reactivated(self):
         w = _World()
         w.bank.report_card(w.card, "STOLEN", w.b)
@@ -4325,14 +5284,25 @@ class CardTests(unittest.TestCase):
         with self.assertRaises(ProductNotAvailable):
             w.bank.issue_card(w.dc, w.acct, w.a, w.cards)
 
+    def test_card_number_has_a_luhn_check_digit_and_is_kept_truncated(self):
+        self.assertTrue(CardNumber.is_valid("4111111111111111"))        # a published test number
+        self.assertEqual(CardNumber.check_digit("7992739871"), "3")      # the standard Luhn example
+        with self.assertRaises(BankingError):
+            CardNumber("4111111111111121")                               # one digit mistyped
+        w = _World()
+        number = w.card.card_number
+        self.assertEqual(number.first_six, IssuedCard.BIN)
+        self.assertEqual(sorted(vars(number)), ["first_six", "last_four"])  # the middle digits are never kept
+        self.assertEqual(w.card.masked_number, f"4213 **** **** {number.last_four}")
 
-class AuthorityAndStaffTests(unittest.TestCase):
+
+class AuthorityAndStaffTests(TestCase):
     def test_revoked_mandate_still_provable_for_past_dates(self):
         w = _World()
         t = w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.b)
-        w.bank.advance_to(date(2026, 1, 10))
+        w.bank.advance_to(Date(2026, 1, 10))
         w.bank.revoke_mandate(w.m_b, "resigned", w.rm)
-        self.assertEqual(w.bank.authority_on(w.co, w.b, date(2026, 1, 1)), [w.m_b])
+        self.assertEqual(w.bank.authority_on(w.co, w.b, Date(2026, 1, 1)), [w.m_b])
         self.assertEqual(w.bank.authority_on(w.co, w.b, w.bank.today), [])
         self.assertIs(t.mandate_used, w.m_b)
         self.assertEqual(w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.b).status.current, "FAILED")
@@ -4341,7 +5311,7 @@ class AuthorityAndStaffTests(unittest.TestCase):
         w = _World()
         app = w.bank.submit_financing_application(w.co, w.fin, 1_000_000, 12, "wc", w.a)
         w.bank.decide_application(app, w.credit, True, 1_000_000, "0.2")
-        w.bank.advance_to(date(2026, 2, 1))
+        w.bank.advance_to(Date(2026, 2, 1))
         w.bank.change_role(w.credit, "CREDIT_MANAGER")
         self.assertEqual(app.decision.role_at_time, "CREDIT_OFFICER")
 
@@ -4369,17 +5339,17 @@ class AuthorityAndStaffTests(unittest.TestCase):
     def test_branch_closure_moves_but_keeps_history(self):
         w = _World()
         acct2 = w.bank.open_deposit_account(CurrentAccount, w.cur, [w.co], w.ops2)
-        w.bank.advance_to(date(2026, 3, 1))
+        w.bank.advance_to(Date(2026, 3, 1))
         w.bank.close_branch(w.branch2, w.branch, "ops")
         self.assertEqual(acct2.opened_at_branch.code, "B2")
-        self.assertEqual(acct2.servicing_branch_on(date(2026, 2, 1)).code, "B2")
+        self.assertEqual(acct2.servicing_branch_on(Date(2026, 2, 1)).code, "B2")
         self.assertEqual(acct2.servicing_branch_on(w.bank.today).code, "B1")
         with self.assertRaises(InvalidStateError):
             w.bank.hire_employee(w.a, "TELLER", w.branch2)
 
     def test_branch_closure_moves_vault_cash(self):
         w = _World()
-        teller2 = w.bank.hire_employee(w.bank.register_person("T2", date(1990, 1, 1), "HR"), "TELLER", w.branch2)
+        teller2 = w.bank.hire_employee(w.bank.register_person("T2", Date(1990, 1, 1), "HR"), "TELLER", w.branch2)
         w.bank.deposit_cash(w.acct, 70_000, teller2, w.a)
         w.bank.close_branch(w.branch2, w.branch, "ops")
         self.assertEqual(w.branch2.vault.ledger_balance(), 0)
@@ -4389,7 +5359,7 @@ class AuthorityAndStaffTests(unittest.TestCase):
             w.bank.close_branch(w.branch, w.branch, "ops")
 
 
-class ProductTests(unittest.TestCase):
+class ProductTests(TestCase):
     def test_withdrawn_product_blocks_new_but_not_existing(self):
         w = _World()
         w.bank.withdraw_from_sale(w.cur, "legacy")
@@ -4399,12 +5369,12 @@ class ProductTests(unittest.TestCase):
 
     def test_terms_pinned_until_migration(self):
         w = _World()
-        w.bank.revise_product_terms(w.cur, date(2026, 2, 1), monthly_fee=900)
-        w.bank.advance_to(date(2026, 2, 5))
+        w.bank.revise_product_terms(w.cur, Date(2026, 2, 1), monthly_fee=900)
+        w.bank.advance_to(Date(2026, 2, 5))
         self.assertEqual(w.acct.terms.get("monthly_fee"), 500)
         w.bank.migrate_terms(w.acct, w.rm)
         self.assertEqual(w.acct.terms.get("monthly_fee"), 900)
-        self.assertEqual(w.acct.terms_on(date(2026, 2, 1)).get("monthly_fee"), 500)
+        self.assertEqual(w.acct.terms_on(Date(2026, 2, 1)).get("monthly_fee"), 500)
         with self.assertRaises(InvalidStateError):
             w.bank.migrate_terms(w.acct, w.rm)           # already on the latest version
 
@@ -4442,22 +5412,22 @@ class ProductTests(unittest.TestCase):
         self.assertEqual(s.status.trail().count(">"), 1)               # ACTIVE > CLOSED, record kept
 
 
-class FinancingTests(unittest.TestCase):
+class FinancingTests(TestCase):
     def test_disbursement_waits_for_conditions(self):
         w = _World()
         app = w.bank.submit_financing_application(w.co, w.fin, 1_200_000, 12, "wc", w.a)
         w.bank.decide_application(app, w.credit, True, 1_200_000, "0.12", ["guarantee"])
         with self.assertRaises(BankingError):
-            w.bank.disburse_financing(app, w.acct, date(2026, 2, 1), w.credit)
+            w.bank.disburse_financing(app, w.acct, Date(2026, 2, 1), w.credit)
 
     def test_restructure_supersedes_schedule_and_keeps_paid(self):
         w = _World()
         fin = w.disbursed()
-        w.bank.advance_to(date(2026, 2, 1))
+        w.bank.advance_to(Date(2026, 2, 1))
         w.bank.repay_financing(fin, fin.current_schedule.installments[0].outstanding, w.acct)
-        w.bank.advance_to(date(2026, 3, 5))                 # March installment missed
+        w.bank.advance_to(Date(2026, 3, 5))                 # March installment missed
         self.assertEqual(fin.status.current, "IN_ARREARS")
-        w.bank.restructure_financing(fin, 18, "0.10", date(2026, 4, 1), "cash flow", w.credit)
+        w.bank.restructure_financing(fin, 18, "0.10", Date(2026, 4, 1), "cash flow", w.credit)
         old, new = fin.schedules
         self.assertEqual(old.status.current, "SUPERSEDED")
         self.assertEqual(old.installments[0].status_on(w.bank.today), "PAID")
@@ -4467,13 +5437,13 @@ class FinancingTests(unittest.TestCase):
     def test_early_settlement_clears_principal(self):
         w = _World()
         fin = w.disbursed()
-        w.bank.advance_to(date(2026, 1, 20))
+        w.bank.advance_to(Date(2026, 1, 20))
         w.bank.settle_financing(fin, w.acct, w.credit)
         self.assertEqual(fin.outstanding_principal(), 0)
         self.assertEqual(fin.status.current, "SETTLED")
         self.assertEqual(w.bank.gl["1100"].ledger_balance(), 0)
         with self.assertRaises(InvalidStateError):
-            w.bank.restructure_financing(fin, 6, "0.1", date(2026, 3, 1), "late", w.credit)
+            w.bank.restructure_financing(fin, 6, "0.1", Date(2026, 3, 1), "late", w.credit)
 
     def test_overpayment_is_refused_without_touching_installments(self):
         w = _World()
@@ -4491,15 +5461,15 @@ class FinancingTests(unittest.TestCase):
         app = w.bank.submit_financing_application(w.co, w.fin, 100_000, 6, "wc", w.a)
         w.bank.decide_application(app, w.credit, True, 100_000, "0.12")
         with self.assertRaises(BankingError):
-            w.bank.disburse_financing(app, own, date(2026, 2, 1), w.credit)
+            w.bank.disburse_financing(app, own, Date(2026, 2, 1), w.credit)
 
 
-class HistoryTests(unittest.TestCase):
+class HistoryTests(TestCase):
     def test_correction_keeps_past_value(self):
         w = _World()
-        w.bank.advance_to(date(2026, 1, 10))
+        w.bank.advance_to(Date(2026, 1, 10))
         w.bank.correct_party_detail(w.co, "registered_address", "New Address", "typo", w.rm)
-        self.assertEqual(w.co.detail_on("registered_address", date(2026, 1, 5)), "Old Address")
+        self.assertEqual(w.co.detail_on("registered_address", Date(2026, 1, 5)), "Old Address")
         self.assertEqual(w.co.detail("registered_address"), "New Address")
 
     def test_evidence_snapshot_is_not_rewritten_by_correction(self):
@@ -4521,13 +5491,13 @@ class HistoryTests(unittest.TestCase):
 
     def test_status_on_a_past_date(self):
         w = _World()
-        w.bank.advance_to(date(2026, 1, 10))
+        w.bank.advance_to(Date(2026, 1, 10))
         w.bank.report_card(w.card, "LOST", w.b)
-        self.assertEqual(w.card.status.on(date(2026, 1, 5)), "ACTIVE")
+        self.assertEqual(w.card.status.on(Date(2026, 1, 5)), "ACTIVE")
         self.assertEqual(w.card.status.current, "BLOCKED_LOST")
 
 
-class BriefCoverageTests(unittest.TestCase):
+class BriefCoverageTests(TestCase):
     """Features added after rereading the brief: segments, term deposits, bills, card
     controls, collections, audit, retention and search."""
 
@@ -4544,7 +5514,7 @@ class BriefCoverageTests(unittest.TestCase):
         w = _World()
         with self.assertRaises(KycIncomplete):
             w.bank.become_customer(w.b, w.rm, "PRIVATE")
-        sow = w.bank.add_identity_document(w.b, "SOURCE_OF_WEALTH", "SOW-1", date(2025, 12, 1), None, w.rm)
+        sow = w.bank.add_identity_document(w.b, "SOURCE_OF_WEALTH", "SOW-1", Date(2025, 12, 1), None, w.rm)
         w.bank.verify_party(w.b, sow, w.rm)
         self.assertIsNotNone(w.bank.become_customer(w.b, w.rm, "PRIVATE"))
 
@@ -4598,34 +5568,34 @@ class BriefCoverageTests(unittest.TestCase):
             w.bank.add_card_control(w.card, "INTERNATIONAL", w.a)        # not the cardholder
         self.assertEqual(w.bank.card_purchase(w.card, "Web", 1_000, channel="ONLINE").status.current, "DECLINED")
         self.assertEqual(w.bank.card_purchase(w.card, "Shop", 1_000).status.current, "POSTED")
-        w.bank.advance_to(date(2026, 1, 3))
+        w.bank.advance_to(Date(2026, 1, 3))
         w.bank.remove_card_control(online, w.b)
         self.assertEqual(w.bank.card_purchase(w.card, "Web", 1_000, channel="ONLINE").status.current, "POSTED")
-        self.assertTrue(online.blocks("ONLINE", "PK", "RETAIL", date(2026, 1, 2)))
+        self.assertTrue(online.blocks("ONLINE", "PK", "RETAIL", Date(2026, 1, 2)))
 
     def test_collections_promise_is_marked_broken(self):
         w = _World()
-        col_staff = w.bank.hire_employee(w.bank.register_person("Col", date(1990, 1, 1), "HR"),
+        col_staff = w.bank.hire_employee(w.bank.register_person("Col", Date(1990, 1, 1), "HR"),
                                          "COLLECTIONS_OFFICER", w.branch)
         fin = w.disbursed()
-        w.bank.advance_to(date(2026, 2, 3))                          # first installment missed
+        w.bank.advance_to(Date(2026, 2, 3))                          # first installment missed
         case = [c for c in w.bank.cases.values() if isinstance(c, CollectionsCase)][-1]
         with self.assertRaises(AuthorityError):
             w.bank.record_collections_contact(case, w.teller, "called")
         w.bank.assign_case(case, col_staff, "supervisor")
         promise = w.bank.record_collections_contact(case, col_staff, "will pay Friday", 110_000,
-                                                    date(2026, 2, 6))
-        w.bank.advance_to(date(2026, 2, 8))
+                                                    Date(2026, 2, 6))
+        w.bank.advance_to(Date(2026, 2, 8))
         self.assertEqual(promise.status.current, "BROKEN")
         self.assertEqual(fin.status.current, "IN_ARREARS")
 
     def test_audit_report_needs_auditor_and_shows_role_at_time(self):
         w = _World()
-        auditor = w.bank.hire_employee(w.bank.register_person("Aud", date(1980, 1, 1), "HR"), "AUDITOR", w.branch)
+        auditor = w.bank.hire_employee(w.bank.register_person("Aud", Date(1980, 1, 1), "HR"), "AUDITOR", w.branch)
         w.disbursed()
         with self.assertRaises(AuthorityError):
-            w.bank.approvals_and_authority_audit(w.teller, date(2026, 1, 1), date(2026, 12, 31))
-        report = w.bank.approvals_and_authority_audit(auditor, date(2026, 1, 1), date(2026, 12, 31))
+            w.bank.approvals_and_authority_audit(w.teller, Date(2026, 1, 1), Date(2026, 12, 31))
+        report = w.bank.approvals_and_authority_audit(auditor, Date(2026, 1, 1), Date(2026, 12, 31))
         self.assertTrue(any("acting as CREDIT_OFFICER" in line for line in report))
         self.assertTrue(any("GRANT_MANDATE" in line for line in report))
 
@@ -4637,14 +5607,14 @@ class BriefCoverageTests(unittest.TestCase):
         w.bank.close_account(s, "not needed", w.rm)
         with self.assertRaises(InvalidStateError):
             w.bank.request_deletion(s, w.rm)
-        self.assertEqual(w.bank.retention_until(s), date(2036, 1, 1))
+        self.assertEqual(w.bank.retention_until(s), Date(2036, 1, 1))
         w.bank.archive_record(s, w.rm)
         self.assertNotIn(s, w.bank.active_arrangements())
         self.assertIn(s.number, w.bank.arrangements)                     # archived, not deleted
 
     def test_only_unused_beneficiaries_can_be_deleted(self):
         w = _World()
-        spare = w.bank.add_beneficiary(w.co, "Spare", "UBL", "5555666677778888", "Spare Ltd", w.a)
+        spare = w.bank.add_beneficiary(w.co, "Spare", "UBL", "PK93UNIL5555666677778888", "Spare Ltd", w.a)
         w.bank.initiate_transfer(w.acct, w.ben, 1_000, w.a)
         with self.assertRaises(InvalidStateError):
             w.bank.delete_beneficiary(w.ben, w.rm)
@@ -4661,7 +5631,7 @@ class BriefCoverageTests(unittest.TestCase):
         self.assertEqual(w.bank.search_transactions(card=new_card, include_card_chain=False), [new])
 
 
-class ModelShapeTests(unittest.TestCase):
+class ModelShapeTests(TestCase):
     """The brief's minimum scale and inheritance requirements, checked from the code."""
 
     def test_at_least_30_classes_and_30_operations(self):
@@ -4686,15 +5656,17 @@ class ModelShapeTests(unittest.TestCase):
         self.assertIn("holds", _own_attributes(DepositAccount))
 
     def test_the_whole_demo_runs_and_balances(self):
-        import contextlib
-        import io
-        with contextlib.redirect_stdout(io.StringIO()):
-            bank = run_demo()
+        bank = run_demo(DemoLog(echo=False))
         self.assertEqual(bank.trial_balance()[1], 0)
 
+    def test_the_model_uses_no_libraries(self):
+        """Read from this file's own source: the only imports are a language directive and sys."""
+        code = [line.split("#")[0].strip() for line in SourceIndex.lines()]
+        imports = [c for c in code if c.startswith("import ") or (c.startswith("from ") and " import " in c)]
+        self.assertEqual(imports, ["from __future__ import annotations", "import sys"])
 
 
-class CardRefundAndChargebackTests(unittest.TestCase):
+class CardRefundAndChargebackTests(TestCase):
     """Research finding: a reversal, a merchant refund and a chargeback are three different things."""
 
     def test_merchant_refund_is_a_new_credit_and_limits_the_dispute(self):
@@ -4727,7 +5699,7 @@ class CardRefundAndChargebackTests(unittest.TestCase):
         self.assertEqual(w.bank.trial_balance()[1], 0)
 
 
-class AbstractionTests(unittest.TestCase):
+class AbstractionTests(TestCase):
     """Abstract base classes and polymorphism: the base of each hierarchy cannot be
     created, and behaviour that differs by class lives in the class, not in the Bank."""
 
@@ -4736,23 +5708,20 @@ class AbstractionTests(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        import contextlib
-        import io
-        with contextlib.redirect_stdout(io.StringIO()):
-            cls.bank = run_demo()
+        cls.bank = run_demo(DemoLog(echo=False))
 
     def test_hierarchy_roots_are_abstract(self):
         for base in self.ABSTRACT:
-            self.assertTrue(inspect.isabstract(base), base.__name__)
+            self.assertTrue(is_abstract(base), base.__name__)
         with self.assertRaises(TypeError):
-            BankTransaction(100, date(2026, 1, 1), "not a real kind of transaction")
+            BankTransaction(100, Date(2026, 1, 1), "not a real kind of transaction")
         with self.assertRaises(TypeError):
-            Party("Nobody in particular", date(2026, 1, 1))
+            Party("Nobody in particular", Date(2026, 1, 1))
 
     def test_every_leaf_class_is_concrete(self):
         for cls in domain_classes():
             if not cls.__subclasses__():
-                self.assertFalse(inspect.isabstract(cls), cls.__name__)
+                self.assertFalse(is_abstract(cls), cls.__name__)
 
     def test_every_transaction_names_its_counterparty(self):
         for txn in self.bank.transactions.values():
@@ -4781,7 +5750,7 @@ class AbstractionTests(unittest.TestCase):
 
     def test_story_and_case_roles_need_no_type_checks(self):
         for method in (Bank.transaction_story, Bank.assign_case):
-            self.assertNotIn("isinstance", inspect.getsource(method))
+            self.assertNotIn("isinstance", SourceIndex.method_source(Bank, method.__name__))
         transfer = next(t for t in self.bank.transactions.values() if isinstance(t, TransferPayment))
         self.assertTrue(any("beneficiary as sent" in line for line in transfer.story_lines()))
         self.assertEqual(CollectionsCase.handler_roles(None), Bank.COLLECTIONS_ROLES)
@@ -4797,15 +5766,12 @@ def lifecycle_classes():
     return out
 
 
-class LifecycleTests(unittest.TestCase):
+class LifecycleTests(TestCase):
     """Every status change in the model follows its class's declared state machine."""
 
     @classmethod
     def setUpClass(cls):
-        import contextlib
-        import io
-        with contextlib.redirect_stdout(io.StringIO()):
-            cls.bank = run_demo()
+        cls.bank = run_demo(DemoLog(echo=False))
 
     def _histories(self):
         b = self.bank
@@ -4862,13 +5828,12 @@ class LifecycleTests(unittest.TestCase):
                 self.assertFalse(lc.transitions.get(final), f"{cls.__name__}: {final} is final")
 
 
-class PersistenceTests(unittest.TestCase):
+class PersistenceTests(TestCase):
     """Saving and loading: the loaded bank is the same bank and carries on working."""
 
     @classmethod
     def setUpClass(cls):
-        with contextlib.redirect_stdout(io.StringIO()):
-            cls.bank = run_demo()
+        cls.bank = run_demo(DemoLog(echo=False))
         cls.repo = MemoryRepository()
         cls.repo.save(cls.bank)
 
@@ -4883,7 +5848,7 @@ class PersistenceTests(unittest.TestCase):
         self.assertEqual(len(loaded.transactions), len(self.bank.transactions))
         ravi = next(p for p in loaded.parties.values() if p.name.startswith("Ravi"))
         bilal = next(p for p in loaded.parties.values() if p.name == "Bilal Ahmed")
-        self.assertEqual([m.mandate_id for m in loaded.authority_on(ravi, bilal, date(2026, 4, 11))], ["MND-002"])
+        self.assertEqual([m.mandate_id for m in loaded.authority_on(ravi, bilal, Date(2026, 4, 11))], ["MND-002"])
         self.assertEqual(loaded.authority_on(ravi, bilal, loaded.today), [])
 
     def test_loaded_bank_carries_on(self):
@@ -4896,32 +5861,37 @@ class PersistenceTests(unittest.TestCase):
         with self.assertRaises(InvalidStateError):                    # lifecycles were restored too
             loaded.cards["CARD-001"].status.change("ACTIVE", loaded.today)
 
-    def test_file_repository_writes_and_reads_a_file(self):
-        with tempfile.TemporaryDirectory() as folder:
-            repo = JsonFileRepository(Path(folder) / "bank.json")
-            repo.save(self.bank)
-            self.assertEqual(repo.load().today, self.bank.today)
-            with self.assertRaises(BankingError):
-                JsonFileRepository(Path(folder) / "missing.json").load()
+    def test_json_reader_and_writer_agree(self):
+        value = {"text": 'quote " slash \\ new\nline \u00e9', "list": [1, -2, 3.5, True, False, None], "empty": {}}
+        self.assertEqual(Json.loads(Json.dumps(value, indent=1)), value)
+        self.assertEqual(Json.loads('{"a": [1, {"b": "\\u0041"}]}'), {"a": [1, {"b": "A"}]})
+        with self.assertRaises(ValueError):
+            Json.loads('{"a": 1,}')
+        with self.assertRaises(BankingError):                           # a file that is not there
+            JsonFileRepository("no-such-folder/missing-bank.json").load()
 
 # =============================================================================
 # PART 15 - Introspection, class diagram and UML diagram generators
 # The diagram is drawn from the live classes, so it can never drift from the code.
 # =============================================================================
+# Classes that stand in for Python's own machinery (abstract classes and testing):
+# not counted as part of the model.
+MACHINERY = ("Abstract", "TestCase", "TestRunner", "TestFailure")
+
+
 def domain_classes():
-    """Every domain class in this file (errors, tests and helpers excluded)."""
-    module = sys.modules[__name__]
+    """Every domain class in this file (errors, tests and language machinery excluded)."""
     out = []
-    for name, obj in vars(module).items():
-        if (isinstance(obj, type) and obj.__module__ == module.__name__ and not name.startswith("_")
-                and not issubclass(obj, (BankingError, unittest.TestCase))):
+    for name, obj in list(globals().items()):
+        if (isinstance(obj, type) and obj.__module__ == __name__ and not name.startswith("_")
+                and name not in MACHINERY and not issubclass(obj, (BankingError, TestCase, Exception))):
             out.append(obj)
     return out
 
 
 def error_classes():
     """The business-rule error hierarchy."""
-    return [c for c in vars(sys.modules[__name__]).values()
+    return [c for c in list(globals().values())
             if isinstance(c, type) and issubclass(c, BankingError)]
 
 
@@ -4931,12 +5901,12 @@ def bank_operations():
 
 
 def support_classes():
-    """Classes that are infrastructure rather than banking concepts: history building
-    blocks, the audit line, the application service and saving/loading. Counted
-    separately so the business class count is honest (the brief discounts artificial
-    classes)."""
-    return [Period, StatusChange, StatusHistory, Lifecycle, AuditEvent, Bank,
-            Repository, JsonFileRepository, MemoryRepository]
+    """Classes that are infrastructure rather than banking concepts: exact numbers and
+    dates, history building blocks, the audit line, the application service, saving and
+    loading, the demo log and the source reader. Counted separately so the business class
+    count is honest (the brief discounts artificial classes)."""
+    return [Exact, Days, Date, Period, StatusChange, StatusHistory, Lifecycle, AuditEvent, Bank,
+            Json, JsonReader, Repository, JsonFileRepository, MemoryRepository, DemoLog, SourceIndex]
 
 
 def inheritance_tree():
@@ -4947,7 +5917,7 @@ def inheritance_tree():
 
     def walk(cls, depth):
         lines.append("    " * depth + ("" if depth == 0 else "-> ") + cls.__name__
-                     + ("  (abstract)" if inspect.isabstract(cls) else ""))
+                     + ("  (abstract)" if is_abstract(cls) else ""))
         for sub in sorted((c for c in classes if c.__bases__[0] is cls), key=lambda c: c.__name__):
             walk(sub, depth + 1)
 
@@ -4966,7 +5936,6 @@ def inheritance_tree():
 
 def write_class_diagram(folder):
     """Write class_diagram.svg (inheritance forest + standalone classes) into a folder."""
-    import os
     classes = domain_classes()
     local = set(classes)
     children = {c: sorted((s for s in classes if s.__bases__[0] is c), key=lambda s: s.__name__)
@@ -5026,7 +5995,7 @@ def write_class_diagram(folder):
         is_root = c in roots
         fill = "#d8e6f3" if is_root else ("#eef3f8" if c not in standalone else "#f6f6f2")
         weight = ' font-weight="bold"' if is_root else ""
-        if inspect.isabstract(c):
+        if is_abstract(c):
             weight += ' font-style="italic"'           # UML: abstract classes in italics
         svg.append(f'<rect x="{cx:.0f}" y="{cy:.0f}" width="{box_w}" height="{box_h}" rx="6" '
                    f'fill="{fill}" stroke="#4a6076"/>')
@@ -5034,34 +6003,104 @@ def write_class_diagram(folder):
                    f'fill="#1d2b3a"{weight}>'
                    f'{c.__name__}</text>')
     svg.append("</svg>")
-    os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, "class_diagram.svg")
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(svg))
-    return path
+    return _write_file(folder, "class_diagram.svg", "\n".join(svg))
+
+
+class SourceIndex:
+    """Reads this file's own source text, so a class's methods and the attributes its
+    __init__ assigns can be listed (for the UML diagrams and one test) without the
+    inspect and ast modules."""
+
+    _lines = None
+
+    @classmethod
+    def lines(cls):
+        if cls._lines is None:
+            with open(__file__, encoding="utf-8") as f:
+                cls._lines = f.read().split("\n")
+        return cls._lines
+
+    @classmethod
+    def method_lines(cls, klass, name):
+        """The source lines of one method defined in a class (empty if not found)."""
+        lines, inside, out = cls.lines(), False, []
+        for line in lines:
+            if line.startswith(f"class {klass.__name__}(") or line.startswith(f"class {klass.__name__}:"):
+                inside = True
+                continue
+            if inside and line and not line[0].isspace():           # the next top-level statement
+                break
+            if inside and (out or line.startswith(f"    def {name}(")):
+                if out and line.strip() and _indent(line) <= 4:
+                    break
+                out.append(line)
+        return out
+
+    @classmethod
+    def method_source(cls, klass, name):
+        return "\n".join(cls.method_lines(klass, name))
+
+    @classmethod
+    def own_attributes(cls, klass):
+        """Instance attributes assigned in the class's own __init__ ('self.x = ...'),
+        statements at the top of the method first, then those inside if/for blocks."""
+        found, depth, in_body = [], 0, False
+        for number, line in enumerate(cls.method_lines(klass, "__init__")):
+            text = line.strip()
+            starts_statement = depth == 0
+            depth += sum(text.count(c) for c in "([{") - sum(text.count(c) for c in ")]}")
+            if not in_body:                                    # the 'def' line(s) of the signature
+                in_body = depth == 0 and text.endswith(":")
+                continue
+            if not starts_statement or not text.startswith("self."):
+                continue
+            for position, target in enumerate(_assignment_targets(text)):
+                found.append((_indent(line), number, position, target))
+        names = []
+        for *_, target in sorted(found):
+            if target not in names:
+                names.append(target)
+        return names
+
+
+def _indent(line):
+    return len(line) - len(line.lstrip(" "))
+
+
+def _assignment_targets(statement):
+    """The 'self.x' names a statement assigns: 'self.a, self.b = ...', 'self.a = self.b = 0',
+    'self.x: Type = v'. Comparisons (==, <=, ...) and augmented assignments (+=) are not
+    assignments of a new attribute."""
+    parts, start, depth, i = [], 0, 0, 0
+    while i < len(statement):
+        ch = statement[i]
+        if ch in "\"'":                                       # skip text in quotes
+            end = statement.find(ch, i + 1)
+            i = len(statement) if end < 0 else end + 1
+            continue
+        if ch in "([{":
+            depth += 1
+        elif ch in ")]}":
+            depth -= 1
+        elif (ch == "=" and depth == 0 and statement[i + 1:i + 2] != "="
+              and statement[i - 1:i] not in "=!<>+-*/%&|^:"):  # '=' inside brackets is a keyword argument
+            parts.append(statement[start:i])
+            start = i + 1
+        i += 1
+    targets = []
+    for part in parts:
+        for item in part.split(","):
+            name = item.split(":")[0].strip()
+            if name.startswith("self.") and name[5:].isidentifier():
+                targets.append(name[5:])
+    return targets
 
 
 def _own_attributes(cls):
     """Instance attributes first assigned in this class's own __init__ (read from the source)."""
-    import ast
-    import inspect
-    import textwrap
-    init = cls.__dict__.get("__init__")
-    if init is None:
+    if "__init__" not in cls.__dict__:
         return []
-    tree = ast.parse(textwrap.dedent(inspect.getsource(init)))
-    names = []
-    for node in ast.walk(tree):
-        targets = []
-        if isinstance(node, ast.Assign):
-            targets = node.targets
-        elif isinstance(node, ast.AnnAssign):
-            targets = [node.target]
-        for t in targets:
-            for el in (t.elts if isinstance(t, ast.Tuple) else [t]):
-                if (isinstance(el, ast.Attribute) and isinstance(el.value, ast.Name)
-                        and el.value.id == "self" and el.attr not in names):
-                    names.append(el.attr)
+    names = SourceIndex.own_attributes(cls)
     return [n for n in names if not n.startswith("_")] + [n for n in names if n.startswith("_")]
 
 
@@ -5075,11 +6114,11 @@ def _own_members(cls):
             continue
         if callable(value) or isinstance(value, property):
             parent = next((b.__dict__[name] for b in cls.__mro__[1:] if name in b.__dict__), None)
-            if getattr(value, "__isabstractmethod__", False):
+            if getattr(value, "is_abstract", False):
                 mark = "  {abstract}"
             elif parent is None:
                 mark = ""
-            elif getattr(parent, "__isabstractmethod__", False):
+            elif getattr(parent, "is_abstract", False):
                 mark = "  [implements]"
             else:
                 mark = "  [override]"
@@ -5089,6 +6128,17 @@ def _own_members(cls):
     return consts, methods
 
 
+def _write_file(folder, name, text):
+    """Write a text file into an existing folder and return its path."""
+    path = folder.rstrip("/\\") + "/" + name
+    try:
+        with open(path, "w", encoding="utf-8") as fh:
+            fh.write(text)
+    except FileNotFoundError:
+        raise BankingError(f"the folder {folder!r} does not exist; create it first") from None
+    return path
+
+
 def _svg_text(s):
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
@@ -5096,8 +6146,6 @@ def _svg_text(s):
 def write_uml_diagrams(folder):
     """Write one UML class diagram per inheritance hierarchy (attributes and methods that
     each level adds) and three association diagrams. Returns the file paths."""
-    import os
-    os.makedirs(folder, exist_ok=True)
     classes = domain_classes()
     children = {c: sorted((s for s in classes if s.__bases__[0] is c), key=lambda s: s.__name__)
                 for c in classes}
@@ -5169,7 +6217,7 @@ def write_uml_diagrams(folder):
                        f'stroke="#34495e"/>')
             svg.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{box_w}" height="22" fill="#d8e6f3" '
                        f'stroke="#34495e"/>')
-            abstract = inspect.isabstract(c)            # UML: abstract names in italics
+            abstract = is_abstract(c)                   # UML: abstract names in italics
             style = ' font-style="italic"' if abstract else ""
             label = ("«abstract» " if abstract else "") + head[0]
             svg.append(f'<text x="{x + box_w / 2:.0f}" y="{y + 15:.0f}" text-anchor="middle" '
@@ -5188,10 +6236,7 @@ def write_uml_diagrams(folder):
                 svg.append(f'<text x="{x + 6:.0f}" y="{ty:.0f}" fill="{color}"{italic}>{_svg_text(m)}</text>')
                 ty += line_h
         svg.append("</svg>")
-        path = os.path.join(folder, fname + ".svg")
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write("\n".join(svg))
-        paths.append(path)
+        paths.append(_write_file(folder, fname + ".svg", "\n".join(svg)))
     paths += _write_association_diagram(folder)
     return paths
 
@@ -5269,7 +6314,6 @@ def _write_association_diagram(folder):
 
 def _write_one_association_diagram(folder, fname, title, layout, edges):
     """Filled diamond = the owner keeps a dated history of these; arrow = reference."""
-    import os
     cell_w, cell_h, box_w, box_h = 250, 96, 190, 30
     centre = {n: (30 + c * cell_w + box_w / 2, 70 + r * cell_h + box_h / 2) for n, (c, r) in layout.items()}
     width = 30 + (max(c for c, _ in layout.values()) + 1) * cell_w
@@ -5312,10 +6356,7 @@ def _write_one_association_diagram(folder, fname, title, layout, edges):
         svg.append(f'<text x="{cx:.0f}" y="{cy + 4:.0f}" text-anchor="middle" font-weight="bold" '
                    f'fill="#1d2b3a">{name}</text>')
     svg.append("</svg>")
-    path = os.path.join(folder, fname + ".svg")
-    with open(path, "w", encoding="utf-8") as fh:
-        fh.write("\n".join(svg))
-    return path
+    return _write_file(folder, fname + ".svg", "\n".join(svg))
 
 
 # =============================================================================
@@ -5325,9 +6366,7 @@ def main(argv=None):
     """Entry point: demo by default; --test, --classes, --diagram DIR, --save FILE or --load FILE."""
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--test" in argv:
-        suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
-        result = unittest.TextTestRunner(verbosity=2).run(suite)
-        return 0 if result.wasSuccessful() else 1
+        return 0 if TestRunner(globals()).run() else 1
     if "--classes" in argv:
         print("\n".join(inheritance_tree()))
         support = support_classes()
@@ -5344,8 +6383,7 @@ def main(argv=None):
     if "--save" in argv:
         i = argv.index("--save")
         path = argv[i + 1] if i + 1 < len(argv) else "bank.json"
-        with contextlib.redirect_stdout(io.StringIO()):
-            bank = run_demo()
+        bank = run_demo(DemoLog(echo=False))
         JsonFileRepository(path).save(bank)
         print(f"Saved {bank.name} as at {bank.today} to {path}")
         return 0

@@ -12,7 +12,6 @@ Notation (UML): a hollow triangle points from a subclass to its parent; an itali
 name marked <<abstract>> cannot be created; a plain line is an association.
 """
 import html
-import inspect
 import sys
 from pathlib import Path
 
@@ -69,7 +68,7 @@ class Slide:
     def box(self, cls_or_name, x, y, w, h, level, note=None):
         """A class box; x, y is the top-left corner."""
         name = cls_or_name if isinstance(cls_or_name, str) else cls_or_name.__name__
-        abstract = not isinstance(cls_or_name, str) and inspect.isabstract(cls_or_name)
+        abstract = not isinstance(cls_or_name, str) and bs.is_abstract(cls_or_name)
         fill, stroke = FILLS[min(level, 2)], STROKES[min(level, 2)]
         self.parts.append(f'<rect x="{x:.0f}" y="{y:.0f}" width="{w:.0f}" height="{h:.0f}" rx="10" '
                           f'fill="{fill}" stroke="{stroke}" stroke-width="2.5"/>')

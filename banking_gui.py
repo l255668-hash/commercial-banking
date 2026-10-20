@@ -5,8 +5,9 @@ banking_gui.py
 Desktop front end for the Problem 4 banking model (banking_system.py).
 Prepared by: Khizar Rizwan (instructor: Bilal Nadeem, CS2012 Introduction to OOP)
 
-Pure Python: Tkinter / ttk from the standard library, nothing to install
-(on Linux the OS package "python3-tk" may be needed). Run:
+Pure Python with no libraries except Tkinter / ttk, the toolkit that draws the
+window (it comes with Python; on Linux the OS package "python3-tk" may be
+needed). Dates, money and the rest come from banking_system.py's own classes. Run:
 
     python banking_gui.py                 # opens on the sign-in screen
     python banking_gui.py --no-sign-in    # straight into the console, nobody signed in
@@ -45,15 +46,7 @@ Design rules
 """
 from __future__ import annotations
 
-import contextlib
-import gc
-import inspect
-import io
-import re
-import sys
-from datetime import date, timedelta
-from decimal import Decimal, InvalidOperation
-from pathlib import Path
+import sys          # only for the command line (sys.argv) and messages on stderr
 
 try:
     import tkinter as tk
@@ -187,21 +180,61 @@ _CODE_WORDS |= (bs.Bank.BRANCH_ROLES | bs.Bank.COMPLIANCE_ROLES | bs.Bank.CREDIT
                                                 "REJECTED", "DIGITAL", "BRANCH", "PHONE", "DEBIT", "CREDIT",
                                                 "ARCHIVED"})
 _CODE_WORDS -= _ACRONYMS
-# a code is a whole word: never part of an ID such as CARD-004, TRF-026 or CUR-CLASSIC
-_CODE_RE = re.compile(r"(?<![-\w])(?:[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+|[A-Z]{3,})(?![-\w])")
+
+
+def _in_word(ch):
+    """Letters, digits, '_' and '-' belong to one word, so an ID such as CARD-004 stays whole."""
+    return ch.isalnum() or ch in "_-"
+
+
+def _is_code(word):
+    """A code is capitals and digits joined by '_' (AWAITING_AUTHORISATION), or one word of 3+
+    capitals (ACTIVE). A word with a hyphen (TRF-026, CUR-CLASSIC) is an ID, not a code."""
+    parts = word.split("_")
+    if len(parts) > 1:
+        return "A" <= word[0] <= "Z" and all(p and all("A" <= c <= "Z" or "0" <= c <= "9" for c in p)
+                                             for p in parts)
+    return len(word) >= 3 and all("A" <= c <= "Z" for c in word)
 
 
 def nice(text):
     """'AWAITING_AUTHORISATION' -> 'Awaiting 2nd signatory', 'RELATIONSHIP_MANAGER' -> 'Relationship
     manager'. Only status, role and category codes change; IDs such as TRF-026 stay as they are."""
-    def swap(m):
-        word = m.group(0)
-        if word in NICE:
-            return NICE[word]
-        if "_" in word or word in _CODE_WORDS:
-            return word.replace("_", " ").capitalize()
-        return word
-    return _CODE_RE.sub(swap, str(text))
+    text, out, i = str(text), [], 0
+    while i < len(text):
+        j = i
+        while j < len(text) and _in_word(text[j]):
+            j += 1
+        if j == i:                                   # a space or punctuation mark
+            out.append(text[i])
+            i += 1
+            continue
+        word = text[i:j]
+        if _is_code(word) and word in NICE:
+            word = NICE[word]
+        elif _is_code(word) and ("_" in word or word in _CODE_WORDS):
+            word = word.replace("_", " ").capitalize()
+        out.append(word)
+        i = j
+    return "".join(out)
+
+
+def cleandoc(doc):
+    """A docstring without the indentation it has in the source file."""
+    lines = doc.expandtabs().split("\n")
+    margins = [len(line) - len(line.lstrip()) for line in lines[1:] if line.strip()]
+    margin = min(margins) if margins else 0
+    lines = [lines[0].strip()] + [line[margin:].rstrip() for line in lines[1:]]
+    while lines and not lines[0]:
+        lines.pop(0)
+    while lines and not lines[-1]:
+        lines.pop()
+    return "\n".join(lines)
+
+
+def file_name(path):
+    """'C:\\Users\\me\\bank.json' or '/home/me/bank.json' -> 'bank.json'."""
+    return str(path).replace("\\", "/").rsplit("/", 1)[-1]
 
 
 # How a status reads at a glance: green = in good standing, red = refused or blocked,
@@ -228,11 +261,11 @@ def terms_text(terms):
     parts = []
     for key, value in terms.items():
         try:
-            number = Decimal(str(value))
-        except InvalidOperation:
+            number = bs.Exact(value)
+        except (ValueError, TypeError):
             number = None
         if number is not None and ("rate" in key or "penalty" in key):
-            shown = f"{float(number):.2%}"
+            shown = f"{number:.2%}"
         elif number is not None and any(w in key for w in ("fee", "limit", "amount", "overdraft")):
             shown = bs.fmt(number)
         else:
@@ -431,10 +464,9 @@ class BankController:
     # ------------------------------------------------------------------ lifecycle
     def reset(self):
         """Rebuild the seeded bank by running the demonstration (its output is kept)."""
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            self.bank = bs.run_demo()
-        self.scenario_log = buffer.getvalue()
+        log = bs.DemoLog(echo=False)
+        self.bank = bs.run_demo(log)
+        self.scenario_log = log.text()
 
     def run(self, label, action):
         """Run one Bank operation and translate the result for the screen."""
@@ -457,7 +489,7 @@ class BankController:
         return Outcome("ok", f"{label}: done", label_of(result) if not isinstance(result, str) else result)
 
     def advance(self, days):
-        self.bank.advance_to(self.bank.today + timedelta(days=days))
+        self.bank.advance_to(self.bank.today + bs.Days(days))
 
     # ------------------------------------------------------------------ look-ups
     @property
@@ -579,19 +611,21 @@ class BankController:
         return rows
 
     def instance_counts(self):
-        """Live objects per domain class, counted in memory (for the class model screen)."""
-        counts = {}
-        classes = tuple(bs.domain_classes())
-        for obj in gc.get_objects():
-            if isinstance(obj, classes):
-                counts[type(obj)] = counts.get(type(obj), 0) + 1
+        """Objects per domain class in this bank (for the class model screen): every object
+        reachable from the bank, found by the same walk that saves it to a file."""
+        counts, classes = {}, {c.__name__: c for c in bs.domain_classes()}
+        for slot in bs.MemoryRepository().encode(self.bank)["objects"]:
+            cls = classes.get(slot["class"])
+            if cls:
+                counts[cls] = counts.get(cls, 0) + 1
         return counts
 
 
 def class_path(cls):
     """Root-to-leaf inheritance chain of a domain class, e.g. Party > Organization > Company
-    (Python's own ABC and object are left out)."""
-    return " > ".join(k.__name__ for k in reversed(cls.__mro__) if k.__module__ == bs.__name__)
+    (the Abstract helper and object are left out)."""
+    return " > ".join(k.__name__ for k in reversed(cls.__mro__)
+                      if k.__module__ == bs.__name__ and k is not bs.Abstract)
 
 
 def label_of(obj):
@@ -1102,12 +1136,12 @@ class TimelineCanvas(tk.Canvas):
             self.create_text(10, 20, text="No dated roles", anchor="w", fill=theme.MUTED, font=theme.f_body)
             return
         start = min(i[2] for i in items)
-        end = max([today] + [i[3] for i in items if i[3]]) + timedelta(days=15)
+        end = max([today] + [i[3] for i in items if i[3]]) + bs.Days(15)
         span = max(1, (end - start).days)
         x_of = lambda d: left + (d - start).days / span * (width - left - 20)
         # month ticks
         small = tkfont.Font(font=theme.f_small)
-        d, free_from = date(start.year, start.month, 1), left
+        d, free_from = bs.Date(start.year, start.month, 1), left
         while d <= end:
             if d >= start:
                 x = x_of(d)
@@ -1330,7 +1364,7 @@ class DashboardPage(Page):
         self.charts[0].set_data(sorted(holders.items(), key=lambda kv: -kv[1])[:5])
         payments = [x for x in bank.transactions.values() if isinstance(x, bs.CustomerPayment)]
         months = []
-        d = date(ctl.today.year, ctl.today.month, 1)
+        d = bs.Date(ctl.today.year, ctl.today.month, 1)
         for _ in range(12):
             months.insert(0, d)
             d = bs.add_months(d, -1)
@@ -1475,7 +1509,7 @@ class CustomersPage(MasterDetailPage):
             for line in bank.relationship_history(p):
                 d.bullet(line.strip())
         try:
-            as_at = date.fromisoformat(self.as_at.get().strip())
+            as_at = bs.Date.fromisoformat(self.as_at.get().strip())
         except ValueError:
             as_at = None
         if as_at:
@@ -1803,7 +1837,7 @@ class ClassModelPage(MasterDetailPage):
         out = []
 
         def walk(c, depth):
-            name = c.__name__ + ("  «abstract»" if inspect.isabstract(c) else "")
+            name = c.__name__ + ("  «abstract»" if bs.is_abstract(c) else "")
             out.append((c, [("     " * (depth - 1)) + ("\u2514\u2500 " if depth else "") + name, depth + 1,
                             counts.get(c, 0)], None if depth else "ok"))
             for s in children[c]:
@@ -1820,10 +1854,10 @@ class ClassModelPage(MasterDetailPage):
         d = self.detail
         chain = class_path(c)
         d.h1(c.__name__, f"inheritance: {chain}")
-        d.line(inspect.cleandoc(c.__doc__ or ""), raw=True)
-        if inspect.isabstract(c):
+        d.line(cleandoc(c.__doc__ or ""), raw=True)
+        if bs.is_abstract(c):
             d.kv("Abstract", "cannot be created; subclasses must implement "
-                 + ", ".join(sorted(m + "()" for m in c.__abstractmethods__)), "warn", raw=True)
+                 + ", ".join(m + "()" for m in c.abstract_methods()), "warn", raw=True)
         consts, methods = bs._own_members(c)
         attrs = bs._own_attributes(c)
         d.h2("Added at this level")
@@ -1882,7 +1916,7 @@ def _date(text, required=True):
     text = text.strip()
     if not text and not required:
         return None
-    return date.fromisoformat(text)
+    return bs.Date.fromisoformat(text)
 
 
 def _optional_money(text):
@@ -1891,7 +1925,7 @@ def _optional_money(text):
 
 def _terms(text):
     """Parse 'monthly_fee=500, annual_rate=0.05' into keyword arguments (numbers stay text
-    so the model's Decimal handling applies)."""
+    so the model's exact-number handling applies)."""
     out = {}
     for part in filter(None, (p.strip() for p in text.split(","))):
         if "=" not in part:
@@ -2019,9 +2053,11 @@ class OperationsPage(Page):
                           "Only on request: old customers keep their pinned terms otherwise."),
             OperationSpec("Payments", "Add a beneficiary",
                           [("Owner (customer)", "customer"), ("Nickname", "text"), ("Bank", "text"),
-                           ("Account number", "text"), ("Account title", "text"), ("Added by", "person")],
-                          lambda v: b.add_beneficiary(v[0], v[1] or "New payee", v[2] or "HBL", v[3] or "0000000000",
-                                                      v[4] or v[1] or "New payee", v[5])),
+                           ("IBAN (PK + 22)", "text"), ("Account title", "text"), ("Added by", "person")],
+                          lambda v: b.add_beneficiary(v[0], v[1] or "New payee", v[2] or "HBL",
+                                                      v[3] or "PK23 HABB 0000 0000 0000 0000",
+                                                      v[4] or v[1] or "New payee", v[5]),
+                          "The IBAN's check digits are verified, and its bank code must match the bank."),
             OperationSpec("Payments", "Transfer to a beneficiary",
                           [("From account", "account"), ("Beneficiary", "beneficiary"), ("Amount", "amount"),
                            ("Instructed by", "person")],
@@ -2052,9 +2088,10 @@ class OperationsPage(Page):
                           [("Payment", "held"), ("Compliance employee", compliance), ("Reason", "text")],
                           lambda v: b.reject_held_transaction(v[0], v[1], v[2] or "rejected after review")),
             OperationSpec("Payments", "Amend a beneficiary",
-                          [("Beneficiary", "all_beneficiary"), ("New bank", "text"), ("New account number", "text"),
+                          [("Beneficiary", "all_beneficiary"), ("New bank", "text"), ("New IBAN", "text"),
                            ("New account title", "text"), ("Changed by", "person")],
-                          lambda v: b.amend_beneficiary(v[0], v[1] or "HBL", v[2] or "1111222233", v[3] or v[0].nickname, v[4]),
+                          lambda v: b.amend_beneficiary(v[0], v[1] or "HBL", v[2] or "PK86 HABB 0000 0011 1122 2233",
+                                                        v[3] or v[0].nickname, v[4]),
                           "A new version; transfers already sent keep the version they used."),
             OperationSpec("Payments", "Deactivate a beneficiary",
                           [("Beneficiary", "beneficiary"), ("Reason", "text"), ("By", "person")],
@@ -2646,7 +2683,7 @@ class BooksPage(Page):
         if not self.as_at.get():
             self.as_at.insert(0, str(bank.today))
         try:
-            on = date.fromisoformat(self.as_at.get().strip())
+            on = bs.Date.fromisoformat(self.as_at.get().strip())
         except ValueError:
             on = bank.today
         rows, total = bank.trial_balance(on)
@@ -3316,7 +3353,7 @@ class HomeView(CustomerView):
         if self.selected is None:
             return
         end = self.ctl.today
-        st = self.ctl.bank.generate_statement(self.selected, end - timedelta(days=30), end)
+        st = self.ctl.bank.generate_statement(self.selected, end - bs.Days(30), end)
         t = self.theme
         win = tk.Toplevel(self)
         win.title(f"Statement {st.statement_id}")
@@ -3389,7 +3426,7 @@ class PayView(CustomerView):
         self.n_owner = self.labelled(f, "Payee for", ttk.Combobox(f, state="readonly", width=50), 0)
         self.n_nick = self.labelled(f, "Nickname", ttk.Entry(f, width=30), 1)
         self.n_bank = self.labelled(f, "Bank", ttk.Entry(f, width=30), 2)
-        self.n_acct = self.labelled(f, "Account number", ttk.Entry(f, width=30), 3)
+        self.n_acct = self.labelled(f, "IBAN (PK + 22)", ttk.Entry(f, width=30), 3)
         self.n_title = self.labelled(f, "Account title", ttk.Entry(f, width=30), 4)
         ttk.Button(f, text="Save payee", style="Accent.TButton", command=self._new).grid(row=5, column=1, sticky="w",
                                                                                          pady=14)
@@ -3469,7 +3506,8 @@ class PayView(CustomerView):
         owner = self._pick("n_owner", self.n_owner)
         if owner:
             self.act("Add payee", lambda: self.ctl.bank.add_beneficiary(
-                owner, self.n_nick.get() or "New payee", self.n_bank.get() or "HBL", self.n_acct.get() or "0000000000",
+                owner, self.n_nick.get() or "New payee", self.n_bank.get() or "HBL",
+                self.n_acct.get() or "PK23 HABB 0000 0000 0000 0000",
                 self.n_title.get() or self.n_nick.get() or "New payee", self.person))
             self.refresh()
 
@@ -3996,7 +4034,7 @@ class BankingApp(tk.Tk):
         if not path:
             return
         bs.JsonFileRepository(path).save(self.ctl.bank)
-        self.show_outcome(Outcome("ok", f"Saved to {Path(path).name}",
+        self.show_outcome(Outcome("ok", f"Saved to {file_name(path)}",
                                   f"Every record and its history, as at {self.ctl.today:%d %b %Y}."))
 
     def open_bank(self, path=None):
@@ -4012,7 +4050,7 @@ class BankingApp(tk.Tk):
         self.ctl.bank = bank
         self._relocate_user()
         self._update_user_chip()
-        self.show_outcome(Outcome("ok", f"Opened {Path(path).name}",
+        self.show_outcome(Outcome("ok", f"Opened {file_name(path)}",
                                   f"Business date {bank.today:%d %b %Y}; {len(bank.transactions)} transactions; "
                                   f"the books {'balance' if bank.trial_balance()[1] == 0 else 'do NOT balance'}."))
 
@@ -4042,8 +4080,10 @@ def main():
         try:
             app.state("zoomed")
         except tk.TclError:
-            with contextlib.suppress(tk.TclError):
+            try:
                 app.attributes("-zoomed", True)
+            except tk.TclError:
+                pass
     app.mainloop()
     return 0
 
