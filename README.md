@@ -46,7 +46,8 @@ docs/
   Viva_Preparation.md          likely questions and model answers
   AI_Use_Declaration.md        draft declaration of AI assistance (complete it if your course requires one)
   Viva_Study_Guide.md          explain-it-yourself guide: each hierarchy level and 5 key methods, line by line
-  Viva_Presentation.pptx       16-slide viva deck with speaker notes
+  Viva_Presentation.pptx       21-slide final presentation (30 minutes) with speaker notes
+  Final_Presentation_Script.md/.docx   its time plan, talking points (Roman Urdu), live-demo path and backup plan
   Progress_Presentation_1.pptx 9-slide, 5-minute progress checkpoint (Project Presentation 1)
   Progress_Presentation_1_Speech.md/.docx   its timed speech in Urdu and Roman Urdu, marks map, likely questions
   Submission_Checklist.md      what to check and fill in before handing in

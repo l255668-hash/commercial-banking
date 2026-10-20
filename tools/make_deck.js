@@ -1,4 +1,4 @@
-// Viva deck for the Problem 4 banking OOP project.
+// Final presentation and viva deck (30 minutes) for the Problem 4 banking OOP project.
 const pptxgen = require("pptxgenjs");
 const fs = require("fs");
 const path = require("path");
@@ -40,12 +40,57 @@ function card(slide, x, y, w, h, fill = MIST) {
 // 1. Title -----------------------------------------------------------------
 let s = pres.addSlide();
 s.background = { color: TEAL };
-s.addText("Problem 4", { x: 0.6, y: 0.9, w: 8.8, h: 0.5, fontFace: BODY, fontSize: 18, color: "CFE3DF", margin: 0, isTextBox: true });
+s.addText("Final presentation  \u2022  Problem 4", { x: 0.6, y: 0.9, w: 8.8, h: 0.5, fontFace: BODY, fontSize: 18, color: "CFE3DF", margin: 0, isTextBox: true });
 s.addText("Commercial Banking, Lending, Payments and Compliance", { x: 0.6, y: 1.35, w: 8.8, h: 1.3, fontFace: HEAD, fontSize: 36, bold: true, color: WHITE, margin: 0, isTextBox: true });
 s.addText("An object model where nothing is deleted and every past state can be rebuilt", { x: 0.6, y: 2.75, w: 8.8, h: 0.5, fontFace: BODY, fontSize: 16, italic: true, color: "E9D3A6", margin: 0, isTextBox: true });
 s.addText([{ text: "Prepared by: Khizar Rizwan", options: { breakLine: true } }, { text: "Roll number: 25L-5668", options: { breakLine: true } }, { text: "CS2012 Introduction to OOP - Instructor: Bilal Nadeem" }],
   { x: 0.6, y: 3.7, w: 5, h: 1.2, fontFace: BODY, fontSize: 13, color: WHITE, margin: 0, isTextBox: true });
 s.addNotes("Introduce the project: a teaching model of a commercial bank. The assessed concepts are classes and inheritance. The central idea is that history is never overwritten.");
+
+// 1b. Agenda ------------------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "What I will show, in order", "About 18 minutes of slides, 8 minutes of live demonstration, then questions");
+const agenda = [["Research", "What I studied and how it changed the design"], ["Scale and core rule", "What the brief asks for, and \"nothing is deleted\""],
+  ["Class model", "The four hierarchies, level by level"], ["Design decisions", "Rejected inheritances; why not an account-centric model"],
+  ["Behaviour", "16 scenarios, flowcharts and lifecycles"], ["Live demonstration", "Staff console, digital banking, assistant"],
+  ["Limits", "What would change at a larger bank"]];
+agenda.forEach(([h, t], i) => {
+  const y = 1.35 + i * 0.55;
+  badge(s, i + 1, 0.6, y);
+  s.addText([{ text: h + "   ", options: { bold: true, color: TEAL } }, { text: t, options: { color: INK } }],
+    { x: 1.2, y, w: 8.3, h: 0.42, fontFace: BODY, fontSize: 14, valign: "middle", margin: 0, isTextBox: true });
+});
+s.addNotes("The order follows the brief's required submission: research first, then the model, the decisions, the demonstration and the limitations.");
+
+// 1c. Research sources --------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Domain research: eight sources", "Chosen to cover every research area the brief lists");
+const src = [["FATF Recommendations", "Customer due diligence; beneficial owners"], ["State Bank of Pakistan", "AML/CFT regulations: local KYC practice"],
+  ["Basel Committee", "Managing money-laundering risk"], ["ISO 20022", "Payment statuses: pending, held, posted, rejected"],
+  ["Visa & Mastercard", "Disputes, reason codes, chargebacks"], ["IFRS 9", "Loan modification and restructuring"],
+  ["BIAN", "Product catalogue vs customer agreement"], ["Fowler, Analysis Patterns", "Party roles, time-dated records"]];
+src.forEach(([h, t], i) => {
+  const x = 0.5 + (i % 4) * 2.28, y = 1.4 + Math.floor(i / 4) * 1.85;
+  card(s, x, y, 2.12, 1.65);
+  badge(s, i + 1, x + 0.15, y + 0.15);
+  s.addText(h, { x: x + 0.15, y: y + 0.65, w: 1.85, h: 0.42, fontFace: HEAD, fontSize: 13, bold: true, color: TEAL, margin: 0, valign: "top", isTextBox: true });
+  s.addText(t, { x: x + 0.15, y: y + 1.07, w: 1.85, h: 0.55, fontFace: BODY, fontSize: 11, color: INK, margin: 0, valign: "top", isTextBox: true });
+});
+s.addText("Full references and a 27-term glossary: design report section 1", { x: 0.5, y: 5.1, w: 9, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, margin: 0, isTextBox: true });
+s.addNotes("Name each source and the one thing it taught. Only claim sources you have actually read.");
+
+// 1d. What the research changed ------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "How the research changed my design", "First idea, what the research showed, design adopted");
+const chg = [["Customer, Director, Signatory as subclasses of Person", "KYC rules: these are roles of one person", "One Person; dated role objects (Mandate, OfficerRole)"],
+  ["A payment either happened or not", "ISO 20022: payments move through statuses", "Declared lifecycles; refused payments kept"],
+  ["A disputed payment gets a 'refunded' flag", "Card schemes: reversal, refund, chargeback differ", "Reversal, Chargeback(Reversal), MerchantRefund"],
+  ["Restructuring edits the instalments", "IFRS 9: a modification keeps the original", "New schedule version; paid stay PAID"]];
+s.addTable([["First idea", "What the research showed", "Design adopted"]].concat(chg).map((row, r) => row.map(cell => ({ text: cell, options: {
+  bold: r === 0, color: r === 0 ? WHITE : INK, fill: { color: r === 0 ? TEAL : (r % 2 ? "F4F8F7" : WHITE) },
+  fontFace: BODY, fontSize: 11.5, valign: "middle" } }))),
+  { x: 0.5, y: 1.35, w: 9, colW: [3.0, 3.0, 3.0], rowH: 0.62, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
+s.addNotes("Eight first ideas changed (report section 1, last table). These four are the clearest to explain.");
 
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -57,7 +102,7 @@ stats.forEach(([n, label], i) => {
   s.addText(n, { x, y: y + 0.15, w: 2.85, h: 0.85, fontFace: HEAD, fontSize: 40, bold: true, color: TEAL, align: "center", margin: 0, isTextBox: true });
   s.addText(label, { x: x + 0.1, y: y + 1.0, w: 2.65, h: 0.5, fontFace: BODY, fontSize: 13, color: GREY, align: "center", margin: 0, isTextBox: true });
 });
-s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 71 business classes and the 80 state-changing commands we are more than double. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
+s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 48 classes with behaviour of their own and the 80 state-changing commands, the model is above the minimum. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
 
 // 3. Core rule ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -75,36 +120,34 @@ tech.forEach(([h, t], i) => {
 });
 s.addNotes("This is the answer to the brief's question about deletion. Closing an account, ending a relationship or revoking a mandate are status changes or closed periods. Bank.party_snapshot rebuilds what the bank knew about a customer on any past date.");
 
-// 4-7. Hierarchies -------------------------------------------------------------
+// 4-7. Class model and hierarchies ------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "The class model at a glance", "Inheritance only for a true \"is-a\"; everything else is association");
+fitImage(s, "slide_overview.png", 0.4, 1.3, 9.2, 3.95);
+s.addNotes("Four hierarchies: parties, arrangements, transactions, cases. Standalone classes such as Mandate, ProductDefinition, IssuedCard and Employee connect them by association, because they are related but are not kinds of each other.");
+
 const hier = [
-  ["Party -> Organization -> Company / Charity", "uml_parties.png",
-    ["Party: identity, documents, checks, corrections, restrictions", "Organization adds officers, owners, mandates and a stricter KYC rule (connected persons must be verified too)", "Company needs a director; Charity needs two trustees: structural_gaps() overridden", "Customer, director, signatory are ROLES, not subclasses"],
-    "Three levels because each level has a rule that is genuinely true there and not above it. Ayesha is one Person record with five capacities."],
-  ["Arrangement -> DepositAccount -> Current / Savings", "uml_arrangements.png",
-    ["Arrangement: product, pinned terms, holders, branch history, status, restrictions", "DepositAccount adds what only accounts holding money have: ledger, holds, available balance", "Current overrides overdraft_limit(); Savings and FixedTermDeposit extend check_debit()", "FinancingAgreement sits beside DepositAccount: it holds no customer money"],
+  ["Parties", "slide_parties.png",
+    ["Party: identity, documents, checks, KYC", "Organization adds officers, owners, mandates", "Company: a director; Charity: 2 trustees", "kyc_gaps() is a template method", "Customer, director, signatory are roles"],
+    "Three levels because each level has a rule that is true there and not above it. Ayesha is one Person with five capacities."],
+  ["Arrangements", "slide_arrangements.png",
+    ["Arrangement: product, pinned terms, holders", "DepositAccount adds ledger, holds, balances", "Each subclass changes one rule: overdraft, monthly limit, maturity", "FinancingAgreement holds no customer money: a sibling"],
     "The middle level exists because holding customer money is a real behavioural difference. A loan inheriting a ledger balance would be meaningless."],
+  ["Transactions", "slide_transactions.png",
+    ["BankTransaction: amount, status, ledger entries", "CustomerPayment adds mandate and 2nd signatory", "Reversal -> Chargeback: new records, never edits", "MerchantRefund is NOT a Reversal"],
+    "Only customer payments can be disputed, which is why that level exists. A chargeback has everything a reversal has plus a dispute, a merchant and a reason code; a refund leaves the purchase posted, so it is not a reversal."],
+  ["Cases", "slide_cases.png",
+    ["Case: subject, status, notes, evidence", "CustomerCase: channel and contact person", "RiskCase: restrictions; cannot close while one is live", "CollectionsCase: overdue loan, promises"],
+    "Scenario 5 shows the override: closing the investigation is refused until the debit block is lifted."],
 ];
 hier.forEach(([t, img, pts, note]) => {
   s = pres.addSlide(); s.background = { color: WHITE };
-  title(s, t);
-  bullets(s, pts, 0.5, 1.2, 4.1, 3.9, 13);
-  card(s, 4.85, 1.1, 4.65, 4.15, "F4F8F7");
-  fitImage(s, img, 4.95, 1.2, 4.45, 3.95);
+  title(s, t + ": " + pts[0].split(":")[0].trim() + " hierarchy");
+  card(s, 0.4, 1.15, 6.3, 3.75, "F4F8F7");
+  fitImage(s, img, 0.45, 1.2, 6.2, 3.65);
+  bullets(s, pts, 6.9, 1.2, 2.7, 4.0, 12);
   s.addNotes(note);
 });
-
-s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "BankTransaction -> CustomerPayment / LoanTransaction / Reversal", "Every movement is double-entry; post() refuses legs that do not sum to zero");
-fitImage(s, "uml_transactions.png", 0.4, 1.35, 9.2, 2.6);
-bullets(s, ["CustomerPayment adds initiator, channel, mandate used, 2nd signatory, disputes; Transfer, Card, Bill, OwnAccount add their own facts", "LoanTransaction groups disbursement, repayment and interest capitalisation",
-  "Reversal -> Chargeback: a card reversal claimed from the merchant with a scheme reason code; a MerchantRefund is NOT a reversal"], 0.5, 4.05, 9, 1.3, 12.5);
-s.addNotes("Only customer payments can be disputed, which is why that level exists. A reversal is a transaction of its own, pointing at the original. Research on card schemes showed three different things: the bank's reversal, the merchant's refund and the chargeback. A chargeback has everything a reversal has plus a dispute, a merchant and a reason code, so it is a subclass; a refund is started by the merchant with no bank approval and leaves the purchase posted, so it is not.");
-
-s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Case -> CustomerCase / RiskCase", "Separate, linked records: the branch complaint and the compliance investigation");
-fitImage(s, "uml_cases.png", 0.4, 1.35, 9.2, 2.6);
-bullets(s, ["CustomerCase: arrives through a channel from a contact person (dispute, complaint, service request)", "RiskCase: bank-initiated; overrides close() so it cannot close while its restrictions are live", "CollectionsCase: opened by the arrears batch"], 0.5, 4.05, 9, 1.3, 12.5);
-s.addNotes("Scenario 5 shows the override: closing the investigation is refused until the debit block is lifted.");
 
 // 7b. Abstraction and state machines --------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -120,7 +163,7 @@ s.addNotes("Colours on the state diagram show which class introduced each status
 
 // 8. Rejected ------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Tempting inheritances we rejected", "Fourteen in the report; four of the strongest");
+title(s, "Tempting inheritances I rejected", "Fourteen in the report; four of the strongest");
 const rej = [["Customer(Person)", "One human is customer, director and signatory at once; roles start and end on different dates."],
   ["IssuedCard(DepositAccount)", "A card holds no money and many cards share one account: it is a credential."],
   ["FinancingAgreement(DepositAccount)", "A loan has no ledger of customer funds, holds or available balance."],
@@ -148,7 +191,7 @@ s.addTable(alt.map((row, r) => row.map(cell => ({ text: cell, options: {
   fontFace: BODY, fontSize: 11, valign: "middle" } }))),
   { x: 0.5, y: 1.35, w: 9, colW: [2.5, 3.15, 3.35], rowH: 0.5, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
 s.addText("The alternative fails all ten critical cases (report section 7.1).", { x: 0.5, y: 4.95, w: 9, h: 0.4, fontFace: BODY, fontSize: 12, italic: true, color: GREY, margin: 0, isTextBox: true });
-s.addNotes("The brief asks us to defend the design against at least one plausible alternative. The account-centric model is simpler and would pass the class count, but it answers every historical question with the current value only.");
+s.addNotes("The brief asks for a defence of the design against at least one plausible alternative. The account-centric model is simpler and would pass the class count, but it answers every historical question with the current value only.");
 
 // 9. Scenarios -----------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -199,13 +242,26 @@ s.addText(charts.map((t, k) => ({ text: `${k + 1}. ${t}`, options: { breakLine: 
 s.addText("Report section 4.1 (flowcharts) and 4.2 (state machines)", { x: 4.3, y: 4.45, w: 5.2, h: 0.5, fontFace: BODY, fontSize: 11, italic: true, color: GREY, margin: 0, isTextBox: true });
 s.addNotes("The class diagrams show structure; the flowcharts show behaviour. Walk through the transfer: beneficiary, authority (mandate within limit), funds, dual control, then the PKR 1,000,000 compliance hold. Every red terminator is a refusal that is still kept on record.");
 
+// 9b3. Saving and the assistant ---------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Beyond the brief: saving and an assistant", "Both are small class hierarchies, built like the model");
+const extra = [["Save and load the whole bank (JSON)", ["Repository (abstract): the JSON format, save() / load()", "JsonFileRepository and MemoryRepository only decide where", "Links saved as references; an exact round trip of 1,366 objects"]],
+  ["AI assistant (optional)", ["Assistant -> OfflineAssistant -> ClaudeAssistant", "Answers from the records; prepares a form, never runs it", "Works offline; Claude only sees the facts it needs"]]];
+extra.forEach(([h, pts], i) => {
+  const x = 0.5 + i * 4.6;
+  card(s, x, 1.35, 4.4, 3.8);
+  s.addText(h, { x: x + 0.2, y: 1.5, w: 4.0, h: 0.5, fontFace: HEAD, fontSize: 16, bold: true, color: TEAL, margin: 0, isTextBox: true });
+  bullets(s, pts, x + 0.15, 2.1, 4.1, 2.9, 13);
+});
+s.addNotes("These are not marked by the brief; they show the same OOP thinking. The repository is a template method: the format lives once in the parent. The assistant can only read and pre-fill; a person presses Run, so every rule still applies.");
+
 // 9c. GUI ----------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Live demo: staff console and digital banking", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
 card(s, 0.5, 1.3, 6.1, 3.95, "F4F8F7");
 s.addImage({ path: DOCS + "screenshots/gui_02_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
 bullets(s, ["Sign in as staff or as a customer; the model checks that person's authority", "Staff: forms list what your role may do and record you automatically", "Digital banking: own accounts plus companies under a mandate; approvals, cards, disputes", "80 forms and 14 guided checks cover every workflow in the brief", "GUI classes inherit too: Page -> MasterDetailPage, CustomerView, Chart"], 6.85, 1.35, 2.7, 3.9, 12);
-s.addNotes("Sign in as Kamran (compliance) and show the Overview and a guided check. Then switch user to digital banking: Noor is refused (view only), Hamza starts a PKR 1.2m payment that waits for a 2nd signatory, Ayesha approves it. The GUI contains no business rules: refusals come from the model and name its rule.");
+s.addNotes("Follow the demo path in docs/Final_Presentation_Script.md. Sign in as Kamran (compliance) and show the Overview and a guided check. Then switch user to digital banking: Noor is refused (view only), Hamza starts a PKR 1.2m payment that waits for a 2nd signatory, Ayesha approves it. The GUI contains no business rules: refusals come from the model and name its rule.");
 
 // 10. Code review ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
