@@ -70,7 +70,7 @@ The rule behind every decision: **inheritance only where the child truly *is a* 
 |---|---|
 | `Case` (abstract) | `case_id`, subject, summary, status, assignments, notes, evidence, links, outcome; abstract `handler_roles()` (who may work on it) |
 | `CustomerCase` | channel and contact person; handled by branch staff |
-| `RiskCase` | risk level and **restrictions**; handled by compliance; overrides `close()` to lift its restrictions |
+| `RiskCase` | risk level and **restrictions**; handled by compliance; overrides `close()` so the case cannot close while one of its restrictions is still in force |
 | `CollectionsCase` | the overdue agreement and promises to pay; handled by collections |
 
 *Roman Urdu: har case ka record aur history ek jaisi hai; farq sirf yeh hai ke kaun us par kaam karta hai aur close hone par kya hota hai.*
@@ -137,4 +137,6 @@ Fixed order: own verification against a document valid **on that date**, then `s
 14. Give one weakness of your design. (Section 10: single currency, in-memory storage, two-signatory dual control only.)
 15. What design would be the plausible alternative, and why is yours better? (An account-centric model; report section 7.1.)
 
-When you can answer all 15 without notes, you are ready.
+16. Are all 71 classes meaningful? (48 have their own behaviour, already above the 30 required; 20 are record classes that keep history; only 3 are small subclasses, each with a reason. Report section 5.1.)
+
+When you can answer all 16 without notes, you are ready.

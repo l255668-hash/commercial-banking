@@ -402,6 +402,24 @@ Two conventions worth defending: payments that break a rule return a transaction
 
 ---
 
+### 5.1 How the class count holds up under a strict reading
+
+The brief says artificial classes added only to meet a count do not qualify. So every one of the 71 business classes was sorted by what it actually contains (the six supporting classes are already counted separately):
+
+| Group | Count | What qualifies a class | Examples |
+|---|---|---|---|
+| Classes with their own behaviour | 48 | At least one method, override or rule of its own | `Party`, `Organization`, `SavingsAccount` (monthly limit), `FixedTermDeposit` (no withdrawal before maturity), `Mandate` (limits, dual control), `CustomerPayment`, `Reversal`, `RiskCase` (cannot close while a restriction is in force) |
+| Record classes that keep history | 20 | Several fields, each a fact the brief requires to be kept after things change | `VerificationCheck`, `Correction`, `OfficerRole`, `BeneficiaryVersion`, `PaymentAuthorisation`, `Approval` (role at the time), `CaseEvidence` (snapshot), `PromiseToPay` |
+| Type-only subclasses | 3 | Little or no data of their own; kept for a stated reason | see below |
+
+**The three small subclasses, and why they stay:**
+
+- **`LoanTransaction`** (adds only `agreement`): the abstract parent that groups disbursement, repayment and interest capitalisation, so "every movement on this loan" is one query and the agreement link is declared once.
+- **`Complaint`** (adds `category`): a complaint is a different customer case from a dispute or a service request, with its own reference series (`CMP-`), and it is counted and reported separately.
+- **`ComplianceInvestigation`** (no own fields): a risk case opened by compliance staff rather than by a monitoring rule. Unlike `FraudAlert`, it has no triggering rule or transaction, which is exactly why it is a sibling and not a subclass. It keeps its own reference series (`CMPL-`).
+
+**The strict count:** even counting only the 48 classes with their own behaviour, the model is well above the brief's minimum of 30. The record classes are what keep history meaningful (the brief's common rule on historical records), so they are counted as meaningful too, but they are not needed to pass the threshold.
+
 ## 6. Inheritance relationships explained
 
 **Party -> Person / Organization -> Company / Charity (multi-level).** Every party has an identity, documents, verification checks, corrections, restrictions and possibly a customer relationship, so these live in `Party`. `Party.kyc_gaps` is a template method: the party's own verification, then two abstract hooks, `structural_gaps` (rules about its make-up) and `connected_persons` (people whose verification it depends on). `Person` implements both as "nothing": a person has no governance structure and answers only for itself. `Organization` adds what only legal entities have (registration number, officers, beneficial owners, mandates) and implements `connected_persons` as its active officers and owners at or above 25%, which gives the stricter KYC rule for free. It is still abstract, because `Company` and `Charity` differ in real governance: a company needs an active director and a charity at least two trustees. Each implements `structural_gaps` with the rule true at that level. That is why the hierarchy has three levels rather than two.
