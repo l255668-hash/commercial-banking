@@ -14,6 +14,7 @@ Claude (Anthropic), used through Claude Code.
 
 - Restructuring my original multi-file project into the single file `banking_system.py`, and finding and fixing defects in it (see `docs/Code_Review.md`).
 - Writing and extending code: the domain classes, the seeded demonstration, the automated tests, the optional GUI (`banking_gui.py`) and the optional assistant (`banking_assistant.py`).
+- Rewriting the program without libraries: the classes that replace `decimal`, `datetime`, `abc`, `json` and `unittest` (`Exact`, `Money`, `Date`, `Abstract`, `Json`, `JsonReader`, `TestCase`, `TestRunner`), and the IBAN and card-number checks (`Iban`, `CardNumber`).
 - Drafting documentation: the design report, diagrams, flowcharts, slides and viva notes.
 - Suggesting research sources and banking terminology.
 

@@ -119,7 +119,47 @@ Fixed order: own verification against a document valid **on that date**, then `s
 
 ---
 
-## Part C. Questions to practise (answer aloud)
+## Part C. Written without libraries: the building blocks and the number checks
+
+The program imports only `sys`. Everything a library would normally do is a small class in `banking_system.py` (PART 1, PART 12A and PART 14). You must be able to explain each one in two or three sentences.
+
+### C1. `Exact` and `Money`: why never a float
+
+A float cannot hold 0.1 exactly (0.1 + 0.2 gives 0.30000000000000004), so a bank never uses floats for money. `Exact` keeps a number as a fraction of two whole numbers: 0.18 is 18/100, reduced to 9/50 with Euclid's greatest common divisor (`_gcd`). Adding two fractions is `a/b + c/d = (ad + cb) / bd`, so nothing is ever lost.
+
+`Money` is a **subclass** of `Exact`. It inherits all the arithmetic and adds one rule: when a `Money` is created it is rounded **half up to the paisa** (`_divide_rounded`). Money + money gives money; money × a rate gives an `Exact`, which is rounded only when it becomes money again (for example interest).
+
+*Roman Urdu: Exact ek fraction hai, is liye hisaab bilkul theek rehta hai; Money us ka subclass hai jo sirf paisa tak round karne ka rule add karta hai.*
+
+### C2. `Date` and `Days`
+
+A date is turned into a **day number** (1 January of year 1 is day 1). Then "date + 30 days" or "days between two dates" is ordinary whole-number arithmetic, and `from_ordinal` turns the number back into a date. Leap year rule: divisible by 4, except century years, unless divisible by 400 (2000 was a leap year, 1900 was not).
+
+### C3. `Abstract` and `@abstract`
+
+`@abstract` puts a mark (`is_abstract = True`) on a method. `Abstract.__new__` runs before every object is created: it lists the methods that still carry the mark (`abstract_methods()`), and if any are left it raises `TypeError`. A subclass removes the mark simply by defining the method. So `Party()` is refused, but `Person(...)` works because `Person` implements both hooks.
+
+### C4. `Json` and `JsonReader`
+
+The writer turns dicts, lists, text and numbers into JSON text. The reader is a **recursive-descent parser**: one method per grammar rule (`value`, `object`, `array`, `string`, `number`). `value()` looks at the next character and calls the right method; `object()` and `array()` call `value()` again for what they contain, which is the "recursive" part. Bad text such as `{"a": 1,}` is refused with the position of the mistake.
+
+### C5. `TestCase` and `TestRunner`
+
+Every test class inherits its assertions (`assertEqual`, `assertRaises`...) from `TestCase`. A failed assertion raises `TestFailure`. `TestRunner` finds every subclass of `TestCase`, runs `setUpClass` once, then for each `test_` method makes a fresh object, runs `setUp` and the test, and counts it as ok, FAIL or ERROR. It prints "Ran 81 tests" and OK or FAILED.
+
+### C6. `Iban`: payee account numbers that check themselves
+
+A Pakistani IBAN: `PK` + 2 check digits + 4-letter bank code + 16-digit account = 24 characters, e.g. `PK36 SCBL 0000 0011 2345 6702`. The check: move the first four characters to the end, replace each letter by two digits (A = 10 ... Z = 35), divide the big number by 97; the remainder must be **1**. `Iban.remainder` divides one digit at a time (`rem = (rem * 10 + digit) % 97`), exactly like long division on paper. A mistyped digit changes the remainder, so the payee is refused **before** any money moves. The bank code must also match the bank named (`HABB` is HBL, `UNIL` is UBL...).
+
+### C7. `CardNumber`: the Luhn digit and truncation
+
+A card number is 16 digits: issuer prefix (BIN, 6 digits), account digits, and a **Luhn check digit**. Luhn: from the right, double every second digit (if the result is more than 9, subtract 9) and add everything; the total must end in 0. `check_digit()` picks the last digit that makes this true. PCI DSS says a stored card number must be unreadable, so `CardNumber` keeps **only the first six and last four digits**. That is why the screen shows `4213 **** **** 9193` and the saved file has nothing more.
+
+*Roman Urdu: IBAN aur card number dono apne aap ko check karte hain; ghalat type kiya hua number pehle hi ruk jata hai, aur bank card ke sirf 6 aur 4 digits rakhta hai.*
+
+---
+
+## Part D. Questions to practise (answer aloud)
 
 1. Why is `Customer` not a subclass of `Person`?
 2. Name all your multi-level hierarchies.
@@ -137,7 +177,12 @@ Fixed order: own verification against a document valid **on that date**, then `s
 14. Give one weakness of your design. (Section 10: single currency, saving only as one whole JSON file with no database, two-signatory dual control only.)
 15. What design would be the plausible alternative, and why is yours better? (An account-centric model; report section 7.1.)
 
-16. Are all 71 classes meaningful? (48 have their own behaviour, already above the 30 required; 20 are record classes that keep history; only 3 are small subclasses, each with a reason. Report section 5.1.)
+16. Are all 74 business classes meaningful? (51 have their own behaviour, already above the 30 required; 20 are record classes that keep history; only 3 are small subclasses, each with a reason. Report section 5.1.)
 17. How does saving work, and where is the inheritance? (`Repository` holds the JSON format; `JsonFileRepository` and `MemoryRepository` only decide where the text is kept. Links are saved as references, so shared objects stay shared. Report section 5.2.)
 
-When you can answer all 17 without notes, you are ready.
+18. Why did you write your own classes instead of using libraries, and how do you prove there are none? (Every line that runs can be explained; a test reads the file's source and allows only `sys`. Report section 5.3.)
+19. Why is `Money` a subclass of `Exact`, and why not use a float? (Part C1.)
+20. How does the program know an IBAN was mistyped? Do the mod 97 check on the example. (Part C6.)
+21. What is the Luhn check digit, and why does the bank keep only part of a card number? (Part C7.)
+
+When you can answer all 21 without notes, you are ready.

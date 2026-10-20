@@ -1637,8 +1637,8 @@ class Iban:
     """An International Bank Account Number (ISO 13616), the account number a payee gives.
 
     A Pakistani IBAN has 24 characters: 'PK', two check digits, a four-letter bank code
-    and a 16-digit account number, e.g. PK36 SCBL 0000 0011 2345 6702 (State Bank of
-    Pakistan). The check digits make the number leave remainder 1 when divided by 97
+    and a 16-digit account number, e.g. PK36 SCBL 0000 0011 2345 6702 (the example in
+    the IBAN Registry). The check digits make the number leave remainder 1 when divided by 97
     (ISO 7064 MOD 97-10), so a mistyped or swapped digit is refused before money is sent.
     """
 
@@ -5239,7 +5239,7 @@ class PaymentTests(TestCase):
 
 class PayeeIbanTests(TestCase):
     def test_iban_check_digits_catch_mistakes(self):
-        sbp = Iban("PK36 SCBL 0000 0011 2345 6702")                      # State Bank of Pakistan's example
+        sbp = Iban("PK36 SCBL 0000 0011 2345 6702")                      # the IBAN Registry's example for Pakistan
         self.assertEqual((sbp.bank_name, sbp.last_four), ("Standard Chartered", "6702"))
         self.assertEqual(Iban.build("SCBL", "1123456702"), sbp)
         for wrong in ("PK37SCBL0000001123456702", "PK36SCBL000000112345670", "GB36SCBL0000001123456702"):

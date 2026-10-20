@@ -77,8 +77,9 @@ Each change has a test in `BriefCoverageTests` (11 tests).
 
 | Check | Result |
 |---|---|
-| `python banking_system.py --test` | 77 tests, all passing |
+| `python banking_system.py --test` | 81 tests, all passing (run by the file's own `TestRunner`) |
 | Python versions | 3.10, 3.11, 3.12 and 3.13 run the tests green; the file parses as Python 3.9 |
 | `pyflakes banking_system.py` | no warnings |
 | `python banking_system.py` | all 16 scenarios run; 27 refusals, each naming its rule; trial balance total 0.00 |
-| Brief minimums (checked by tests from the code) | 71 business classes plus 9 supporting classes (at least 30), 98 operations of which 80 are commands (at least 30), four multi-level hierarchies |
+| Brief minimums (checked by tests from the code) | 74 business classes plus 16 supporting classes (at least 30), 98 operations of which 80 are commands (at least 30), four multi-level hierarchies |
+| Libraries | none: the only import is `sys` (checked by `test_the_model_uses_no_libraries`) |

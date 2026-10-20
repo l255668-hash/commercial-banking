@@ -8,15 +8,15 @@
 
 An object-oriented model of a commercial bank (the fictional Indus Commercial Bank, Lahore), written for the OOP project brief, Problem 4. The assessed concepts are **classes and inheritance**. The model keeps a complete history: nothing is deleted, and any past state can be reconstructed.
 
-The model, demo and tests are in **one Python file**, `banking_system.py`, using the standard library only (Python 3.9 or later). There is nothing to install.
+The model, demo and tests are in **one Python file**, `banking_system.py` (Python 3.9 or later). It uses **no libraries**: exact money, dates, abstract classes, JSON and the test framework are written as classes in the file itself, and the only import is `sys`, for the command line. There is nothing to install.
 
-An optional desktop GUI, `banking_gui.py`, is a separate file that uses the model without changing it. It is pure Python (Tkinter, part of the standard library). Its sidebar keeps the bank's own screens apart from two teaching and simulation aids (Class model, Scenario log).
+An optional desktop GUI, `banking_gui.py`, is a separate file that uses the model without changing it. Its only library is Tkinter, which draws the window and comes with Python; dates, money and the rest come from the model's own classes. Its sidebar keeps the bank's own screens apart from two teaching and simulation aids (Class model, Scenario log).
 
 ## Quick start
 
 ```
 python banking_system.py              # run the seeded demonstration (16 scenarios)
-python banking_system.py --test       # run the 77 automated tests
+python banking_system.py --test       # run the 81 automated tests
 python banking_system.py --save bank.json   # save the whole bank as JSON (--load bank.json opens it)
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
@@ -46,7 +46,7 @@ docs/
   Viva_Preparation.md          likely questions and model answers
   AI_Use_Declaration.md        draft declaration of AI assistance (complete it if your course requires one)
   Viva_Study_Guide.md          explain-it-yourself guide: each hierarchy level and 5 key methods, line by line
-  Viva_Presentation.pptx       21-slide final presentation (30 minutes) with speaker notes
+  Viva_Presentation.pptx       22-slide final presentation (30 minutes) with speaker notes
   Final_Presentation_Script.md/.docx   its time plan, talking points (Roman Urdu), live-demo path and backup plan
   Progress_Presentation_1.pptx 9-slide, 5-minute progress checkpoint (Project Presentation 1)
   Progress_Presentation_1_Speech.md/.docx   its timed speech in Urdu and Roman Urdu, marks map, likely questions
@@ -58,11 +58,31 @@ tools/                         scripts that rebuild the flowcharts, state diagra
                                (not needed to run the project; see tools/README.md)
 ```
 
+## Written without libraries
+
+Everything a library would normally provide is a small class in `banking_system.py`, so every line that runs can be read and explained. A test (`test_the_model_uses_no_libraries`) reads the file's own source and fails if any other import appears.
+
+| Own class | In place of | The idea |
+|---|---|---|
+| `Exact` -> `Money` | `decimal` | An exact fraction of two whole numbers; `Money` rounds half up to the paisa, as banks do (Fowler's Money pattern). A float is never used for money |
+| `Date`, `Days` | `datetime` | Gregorian calendar: leap years, month lengths, day numbers for date arithmetic, `strftime`-style formatting |
+| `Abstract`, `@abstract` | `abc` | A class with an unimplemented `@abstract` method refuses to be created, with the same message Python gives |
+| `Json`, `JsonReader` | `json` | A JSON writer and a recursive-descent reader that follows the JSON grammar (RFC 8259), used by Save and Open |
+| `TestCase`, `TestRunner` | `unittest` | An xUnit-style framework (Kent Beck's design): assertions, `assertRaises`, set-up, a runner and a summary |
+| `DemoLog`, `SourceIndex` | `io`, `inspect`, `ast` | Collect the demonstration's output; read the file's own source for the UML diagrams |
+
+The research added two checks that real banks run before money moves:
+
+- **`Iban`** (ISO 13616, MOD 97-10): a payee's IBAN is checked with the bank's own long division by 97, so a mistyped digit is refused, and its four-letter bank code must match the bank named (`PK36 SCBL 0000 0011 2345 6702` is the IBAN Registry's example for Pakistan).
+- **`CardNumber`** (ISO/IEC 7812, Luhn): every issued card number ends in a Luhn check digit, and the bank keeps only the first six and last four digits, as PCI DSS allows, so no screen, log or saved file can reveal a full card number.
+
+The GUI uses Tkinter (to draw the window) and `sys`; the assistant uses `sys`, reads requests word by word without `re`, and imports Anthropic's client only when Claude is switched on (a worker thread keeps the window responsive while Claude answers).
+
 ## Abstract classes, polymorphism and lifecycles
 
 The brief assesses classes and inheritance only; it says abstraction and polymorphism are not assessed. They are used here only to make the inheritance decisions enforceable, not as extra features.
 
-- **Abstract base classes.** `Party`, `Organization`, `Arrangement`, `DepositAccount`, `BankTransaction`, `CustomerPayment`, `LoanTransaction` and `Case` use Python's `abc` and cannot be instantiated. Each concrete subclass implements the abstract methods whose answer differs by class: `structural_gaps` / `connected_persons` (KYC), `position` (money held or owed), `overdraft_limit`, `counterparty` and `handler_roles`. `python banking_system.py --classes` marks them "(abstract)"; the UML diagrams show them in italics.
+- **Abstract base classes.** `Party`, `Organization`, `Arrangement`, `DepositAccount`, `BankTransaction`, `CustomerPayment`, `LoanTransaction` and `Case` inherit from the file's own `Abstract` class and cannot be instantiated. Each concrete subclass implements the abstract methods whose answer differs by class: `structural_gaps` / `connected_persons` (KYC), `position` (money held or owed), `overdraft_limit`, `counterparty` and `handler_roles`. `python banking_system.py --classes` marks them "(abstract)"; the UML diagrams show them in italics.
 - **Polymorphism instead of type checks.** `Bank.transaction_story` and `Bank.assign_case` used `isinstance` chains; now each class answers for itself (`story_lines()` template method, `handler_roles()`).
 - **Declared state machines.** Every record with a status declares its `LIFECYCLE` once (initial status, allowed moves with the operation that causes each, final statuses). `StatusHistory` refuses anything else, and subclasses extend their parent's lifecycle: `BankTransaction` -> `CustomerPayment` (dual control) -> `TransferPayment` (compliance hold). The four state diagrams in `docs/state_*.png` are drawn from these declarations.
 
@@ -87,19 +107,20 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 
 | Part | Contents |
 |---|---|
-| 1-2 | Helpers, business-rule errors, `Period`, `StatusHistory`, audit events |
+| 1-2 | Own building blocks (`Abstract`, `Exact -> Money`, `Date`, `Days`), business-rule errors, `Period`, `StatusHistory`, audit events |
 | 3 | Parties and KYC: `Party -> Person`, `Party -> Organization -> Company / Charity`, documents, checks, officers, owners, mandates |
 | 4 | Branches, employees, role assignments, `Approval` (freezes the role held at the time) |
 | 5 | Products with versioned terms; `Arrangement -> DepositAccount -> CurrentAccount / SavingsAccount`; ledger, holds, restrictions |
 | 6 | Financing: `FinancingAgreement`, versioned repayment schedules, installments, applications and conditions |
-| 7 | Beneficiaries (versioned) and standing orders |
+| 7 | `Iban` (check digits), beneficiaries (versioned) and standing orders |
 | 8 | Transactions, double-entry: `BankTransaction -> CustomerPayment -> TransferPayment / CardPayment`, `LoanTransaction -> ...`, reversals |
-| 9 | Issued cards with a replacement chain |
+| 9 | `CardNumber` (Luhn check digit, kept truncated); issued cards with a replacement chain |
 | 10 | Cases: `Case -> CustomerCase -> Dispute / Complaint / ServiceRequest`, `Case -> RiskCase -> FraudAlert / ComplianceInvestigation` |
 | 11 | Statements and notices |
 | 12 | `Bank`: 98 operations (80 state-changing commands), each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
-| 14 | 77 automated tests (including abstraction, lifecycle, refund, chargeback and save/load tests) |
+| 12A | Saving and loading: `Repository -> JsonFileRepository / MemoryRepository`, with the own `Json` writer and `JsonReader` |
+| 14 | 81 automated tests run by the own `TestRunner` (including abstraction, lifecycle, refund, chargeback, save/load, IBAN, card-number and no-libraries tests) |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## The desktop GUI (`banking_gui.py`)
@@ -176,10 +197,10 @@ Keep the key on your own computer: never put it in the code, a screenshot or the
 | Required item | Where |
 |---|---|
 | Domain research summary | Report section 1 |
-| Assumptions | Report section 2 (A1 to A36) |
+| Assumptions | Report section 2 (A1 to A38) |
 | Requirements interpretation | Report section 3 |
 | Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams |
-| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 80 classes (71 business + 9 supporting), 98 operations; report section 5 |
+| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 90 classes (74 business + 16 supporting), 98 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | At least three rejected inheritances | Report section 7 (fourteen given) and 7.1 (comparison with a plausible alternative design) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |

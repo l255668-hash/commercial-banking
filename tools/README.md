@@ -1,6 +1,6 @@
 # Build tools
 
-These scripts regenerate the files in `docs/`. **None of them is needed to run or mark the project**: `banking_system.py` and `banking_gui.py` use the Python standard library only. Run every command from the repository root.
+These scripts regenerate the files in `docs/`. **None of them is needed to run or mark the project**: `banking_system.py` uses no libraries (only `sys`), and `banking_gui.py` adds only Tkinter. These build tools are not part of the program, so they may use other packages. Run every command from the repository root.
 
 | Script | What it does | Needs |
 |---|---|---|
@@ -10,7 +10,7 @@ These scripts regenerate the files in `docs/`. **None of them is needed to run o
 | `render_diagrams.py` | Turns `docs/*.svg` (flowcharts, class and UML diagrams) into same-size PNGs | Chromium, Pillow |
 | `build_report_pdf.py` | Builds `docs/Design_Report.pdf` from `docs/Design_Report.md` | Chromium, `markdown` |
 | `md2docx.js` | Builds `docs/Design_Report.docx` from `docs/Design_Report.md` | Node.js, `docx` |
-| `make_deck.js` | Builds `docs/Viva_Presentation.pptx` (the 21-slide final presentation, speaker notes) | Node.js, `pptxgenjs` |
+| `make_deck.js` | Builds `docs/Viva_Presentation.pptx` (the 22-slide final presentation, speaker notes) | Node.js, `pptxgenjs` |
 | `make_progress_deck.js` | Builds `docs/Progress_Presentation_1.pptx` (9 slides, 5-minute progress checkpoint; the notes are the Roman Urdu speech, read from the speech file) | Node.js, `pptxgenjs` |
 | `gui_smoke_test.py` | Drives every guided check, every operation form and an onboarding story in the GUI; exits 1 on a crash or unbalanced books | Tkinter, a display (or `xvfb-run`) |
 | `gui_screenshots.py` | Captures the GUI screenshots used in the report | Linux/X11: `xwd`, netpbm |
@@ -43,4 +43,4 @@ If Chromium is not found automatically, set `CHROME=/path/to/chrome`. On Debian/
 
 ## Continuous integration
 
-`.github/workflows/tests.yml` runs on every push: the unit tests, the assistant's tests, the demonstration (it must end with a zero trial balance) and a lint check on Python 3.9, 3.11 and 3.13; the GUI smoke test under a virtual display; and a check that regenerating every SVG from the code gives exactly the committed files, so the diagrams can never drift from the code.
+`.github/workflows/tests.yml` runs on every push: the unit tests, the assistant's tests, the demonstration (it must end with a zero trial balance), saving the bank to a file and loading it back, and a lint check on Python 3.9, 3.11 and 3.13; the GUI smoke test under a virtual display; and a check that regenerating every SVG from the code gives exactly the committed files, so the diagrams can never drift from the code.

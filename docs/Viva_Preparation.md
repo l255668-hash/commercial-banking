@@ -26,7 +26,7 @@ Companies and charities both have officers, owners and mandates, and both are on
 For behaviour many unrelated classes need: `StatusHistory` and `Period`. Accounts, cards, cases, branches and employees all have lifecycles, but they are not the same kind of thing, so each has a `StatusHistory` rather than inheriting from a common base.
 
 **How many classes and operations, and how do you know?**
-Run `python banking_system.py --classes`: 77 classes, 7 error classes, 98 `Bank` operations (80 of them state-changing commands), counted from the code. Six of the classes are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, `Bank`), so the honest business count is 71; the printout says so. A test (`ModelShapeTests`) fails if the business class count or the operation count drops below 30.
+Run `python banking_system.py --classes`: 90 classes, 7 error classes, 98 `Bank` operations (80 of them state-changing commands), counted from the code. Sixteen of the classes are supporting infrastructure (the history building blocks, `Bank`, saving and loading, and the classes written instead of libraries such as `Exact` and `Date`), so the honest business count is 74; the printout says so. A test (`ModelShapeTests`) fails if the business class count or the operation count drops below 30.
 
 **Which of your classes are abstract, and why?**
 The root of each hierarchy: `Party`, `Arrangement`, `BankTransaction`, `Case`, plus the middle levels `Organization`, `DepositAccount`, `CustomerPayment` and `LoanTransaction`. The bank never holds something that is only "a transaction" or only "a party", so creating one raises `TypeError`. Each has at least one abstract method whose answer genuinely differs by class, e.g. `DepositAccount.overdraft_limit()` (current accounts read it from the terms, savings and term deposits are zero) and `BankTransaction.counterparty()`. `CustomerCase` and `RiskCase` are concrete because each fully answers `handler_roles()`.
@@ -145,6 +145,23 @@ Store the data in a database with effective-dated tables (the `Period` class map
 
 **What is deliberately simplified?**
 Single currency, simple interest calculations, two-signatory dual control only, two credit authority levels, and saving only as one whole JSON file (no database). These are listed in report section 10.
+
+## Written without libraries
+
+**Why does your program not use any libraries?**
+So that every line that runs is code I can explain, and so that even the infrastructure shows classes and inheritance. The model imports only `sys` (command-line options and the exit code). A test, `test_the_model_uses_no_libraries`, reads the file's own source and fails if any other import appears. Report section 5.3.
+
+**Then how do you handle money without `Decimal`?**
+`Exact` holds a number as a fraction of two whole numbers, so 0.1 + 0.2 is exactly 0.3. `Money` is a subclass of `Exact`: it inherits all the arithmetic and adds one rule, rounding half up to the paisa when it is created. A float is never used for money.
+
+**How do your tests run without `unittest`?**
+`TestCase` gives the assertions and `TestRunner` finds every subclass of `TestCase`, runs each `test_` method on a fresh object and reports ok, FAIL or ERROR. The test classes inherit from `TestCase`, the same xUnit design `unittest` uses.
+
+**What does the IBAN check do?**
+It catches a mistyped account number before money is sent. The first four characters move to the end, letters become two digits each, and the number divided by 97 must leave 1. `Iban.remainder` does the long division one digit at a time. The bank code must also belong to the bank named. Report section 5.4.
+
+**Why does the screen show only the last four digits of a card?**
+PCI DSS says a stored card number must be unreadable. `CardNumber` keeps only the first six and last four digits (truncation), so no screen, log or saved file can reveal a full number. The full number's last digit is a Luhn check digit, which catches a single mistyped digit.
 
 ## Before the viva
 

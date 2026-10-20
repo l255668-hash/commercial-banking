@@ -49,7 +49,7 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 
 // 1b. Agenda ------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "What I will show, in order", "About 18 minutes of slides, 8 minutes of live demonstration, then questions");
+title(s, "What I will show, in order", "About 19 minutes of slides, 7\u00bd minutes of live demonstration, then questions");
 const agenda = [["Research", "What I studied and how it changed the design"], ["Scale and core rule", "What the brief asks for, and \"nothing is deleted\""],
   ["Class model", "The four hierarchies, level by level"], ["Design decisions", "Rejected inheritances; why not an account-centric model"],
   ["Behaviour", "16 scenarios, flowcharts and lifecycles"], ["Live demonstration", "Staff console, digital banking, assistant"],
@@ -64,7 +64,7 @@ s.addNotes("The order follows the brief's required submission: research first, t
 
 // 1c. Research sources --------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Domain research: eight sources", "Chosen to cover every research area the brief lists");
+title(s, "Domain research: eight banking sources", "Chosen to cover every research area the brief lists");
 const src = [["FATF Recommendations", "Customer due diligence; beneficial owners"], ["State Bank of Pakistan", "AML/CFT regulations: local KYC practice"],
   ["Basel Committee", "Managing money-laundering risk"], ["ISO 20022", "Payment statuses: pending, held, posted, rejected"],
   ["Visa & Mastercard", "Disputes, reason codes, chargebacks"], ["IFRS 9", "Loan modification and restructuring"],
@@ -76,8 +76,8 @@ src.forEach(([h, t], i) => {
   s.addText(h, { x: x + 0.15, y: y + 0.65, w: 1.85, h: 0.42, fontFace: HEAD, fontSize: 13, bold: true, color: TEAL, margin: 0, valign: "top", isTextBox: true });
   s.addText(t, { x: x + 0.15, y: y + 1.07, w: 1.85, h: 0.55, fontFace: BODY, fontSize: 11, color: INK, margin: 0, valign: "top", isTextBox: true });
 });
-s.addText("Full references and a 27-term glossary: design report section 1", { x: 0.5, y: 5.1, w: 9, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, margin: 0, isTextBox: true });
-s.addNotes("Name each source and the one thing it taught. Only claim sources you have actually read.");
+s.addText("Plus four behind the code: the IBAN standard, card numbering (ISO/IEC 7812), PCI DSS, and Money / JSON / xUnit. All twelve and a 31-term glossary: report section 1", { x: 0.5, y: 4.98, w: 9, h: 0.5, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, margin: 0, isTextBox: true });
+s.addNotes("Name each source and the one thing it taught. The four standards behind the code (IBAN, card numbers, PCI DSS, and the references for the building blocks) come later, on the no-libraries slide. Only claim sources you have actually read.");
 
 // 1d. What the research changed ------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -85,24 +85,25 @@ title(s, "How the research changed my design", "First idea, what the research sh
 const chg = [["Customer, Director, Signatory as subclasses of Person", "KYC rules: these are roles of one person", "One Person; dated role objects (Mandate, OfficerRole)"],
   ["A payment either happened or not", "ISO 20022: payments move through statuses", "Declared lifecycles; refused payments kept"],
   ["A disputed payment gets a 'refunded' flag", "Card schemes: reversal, refund, chargeback differ", "Reversal, Chargeback(Reversal), MerchantRefund"],
-  ["Restructuring edits the instalments", "IFRS 9: a modification keeps the original", "New schedule version; paid stay PAID"]];
+  ["Restructuring edits the instalments", "IFRS 9: a modification keeps the original", "New schedule version; paid stay PAID"],
+  ["A payee's account number is free text", "IBAN standard: check digits catch typing mistakes", "Iban class; a mistyped IBAN is refused"]];
 s.addTable([["First idea", "What the research showed", "Design adopted"]].concat(chg).map((row, r) => row.map(cell => ({ text: cell, options: {
   bold: r === 0, color: r === 0 ? WHITE : INK, fill: { color: r === 0 ? TEAL : (r % 2 ? "F4F8F7" : WHITE) },
   fontFace: BODY, fontSize: 11.5, valign: "middle" } }))),
   { x: 0.5, y: 1.35, w: 9, colW: [3.0, 3.0, 3.0], rowH: 0.62, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
-s.addNotes("Eight first ideas changed (report section 1, last table). These four are the clearest to explain.");
+s.addNotes("Ten first ideas changed (report section 1, last table). These five are the clearest to explain.");
 
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "The project at a glance", "One Python file, standard library only - banking_system.py");
-const stats = [["71", "business classes (+9 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["77", "automated tests"], ["0.00", "trial balance total"]];
+title(s, "The project at a glance", "One Python file, no libraries - banking_system.py");
+const stats = [["74", "business classes (+16 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["81", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
   s.addText(n, { x, y: y + 0.15, w: 2.85, h: 0.85, fontFace: HEAD, fontSize: 40, bold: true, color: TEAL, align: "center", margin: 0, isTextBox: true });
   s.addText(label, { x: x + 0.1, y: y + 1.0, w: 2.65, h: 0.5, fontFace: BODY, fontSize: 13, color: GREY, align: "center", margin: 0, isTextBox: true });
 });
-s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 48 classes with behaviour of their own and the 80 state-changing commands, the model is above the minimum. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
+s.addNotes("The brief asks for at least 30 classes and 30 meaningful operations. Even counting only the 51 classes with behaviour of their own and the 80 state-changing commands, the model is above the minimum. The trial balance is zero at the end of the demo, so no scenario created or lost money.");
 
 // 3. Core rule ---------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -245,7 +246,7 @@ s.addNotes("The class diagrams show structure; the flowcharts show behaviour. Wa
 // 9b3. Saving and the assistant ---------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Beyond the brief: saving and an assistant", "Both are small class hierarchies, built like the model");
-const extra = [["Save and load the whole bank (JSON)", ["Repository (abstract): the JSON format, save() / load()", "JsonFileRepository and MemoryRepository only decide where", "Links saved as references; an exact round trip of 1,366 objects"]],
+const extra = [["Save and load the whole bank (JSON)", ["Repository (abstract): the JSON format, save() / load()", "JsonFileRepository and MemoryRepository only decide where", "Links saved as references; an exact round trip of 1,375 objects", "JSON written and read by the model's own Json and JsonReader"]],
   ["AI assistant (optional)", ["Assistant -> OfflineAssistant -> ClaudeAssistant", "Answers from the records; prepares a form, never runs it", "Works offline; Claude only sees the facts it needs"]]];
 extra.forEach(([h, pts], i) => {
   const x = 0.5 + i * 4.6;
@@ -255,9 +256,26 @@ extra.forEach(([h, pts], i) => {
 });
 s.addNotes("These are not marked by the brief; they show the same OOP thinking. The repository is a template method: the format lives once in the parent. The assistant can only read and pre-fill; a person presses Run, so every rule still applies.");
 
+// 9b4. No libraries ---------------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "No libraries: the building blocks are classes too", "banking_system.py imports only sys; a test reads the file's own source to prove it");
+const own = [["Exact \u2192 Money", "decimal"], ["Date, Days", "datetime"], ["Abstract, @abstract", "abc"], ["Json, JsonReader", "json"], ["TestCase, TestRunner", "unittest"], ["DemoLog, SourceIndex", "io, inspect"]];
+s.addTable([["Own class", "Instead of"]].concat(own).map((row, r) => row.map(cell => ({ text: cell, options: {
+  bold: r === 0, color: r === 0 ? WHITE : INK, fill: { color: r === 0 ? TEAL : (r % 2 ? "F4F8F7" : WHITE) },
+  fontFace: r > 0 && cell === row[1] ? "Courier New" : BODY, fontSize: 12, valign: "middle" } }))),
+  { x: 0.5, y: 1.4, w: 4.3, colW: [2.6, 1.7], rowH: 0.46, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
+s.addText("Money inherits all of Exact's arithmetic and adds one rule: round half up to the paisa.", { x: 0.5, y: 4.75, w: 4.3, h: 0.5, fontFace: BODY, fontSize: 11, italic: true, color: GREY, margin: 0, isTextBox: true });
+card(s, 5.1, 1.4, 4.4, 3.85);
+s.addText("Numbers that check themselves", { x: 5.3, y: 1.52, w: 4.0, h: 0.45, fontFace: HEAD, fontSize: 16, bold: true, color: TEAL, margin: 0, isTextBox: true });
+bullets(s, ["Iban (ISO 13616): PK, 2 check digits, bank code, 16 digits; rearranged and divided by 97, it leaves 1",
+  "A mistyped IBAN, or a UBL IBAN entered as HBL, is refused before any payment",
+  "CardNumber (ISO/IEC 7812): the last digit is a Luhn check digit",
+  "Only the first 6 and last 4 digits are kept (PCI DSS), so no screen or file shows a full card number"], 5.25, 2.05, 4.1, 3.1, 12.5);
+s.addNotes("Every piece a library would normally give me is a small class I can explain: an exact fraction for money, the Gregorian calendar for dates, my own abstract-class check, a JSON reader with one method per grammar rule, and an xUnit-style test runner. Money is a subclass of Exact: it inherits the arithmetic and only adds paisa rounding. The research added two checks banks run before money moves: IBAN check digits (mod 97) and the Luhn digit on card numbers, and the bank keeps only six plus four card digits.");
+
 // 9c. GUI ----------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "Live demo: staff console and digital banking", "banking_gui.py - pure Python (Tkinter); every button calls one Bank operation");
+title(s, "Live demo: staff console and digital banking", "banking_gui.py - Python and Tkinter only; every button calls one Bank operation");
 card(s, 0.5, 1.3, 6.1, 3.95, "F4F8F7");
 s.addImage({ path: DOCS + "screenshots/gui_02_overview.png", x: 0.6, y: 1.4, w: 5.9, h: 3.6 });
 bullets(s, ["Sign in as staff or as a customer; the model checks that person's authority", "Staff: forms list what your role may do and record you automatically", "Digital banking: own accounts plus companies under a mandate; approvals, cards, disputes", "80 forms and 14 guided checks cover every workflow in the brief", "GUI classes inherit too: Page -> MasterDetailPage, CustomerView, Chart"], 6.85, 1.35, 2.7, 3.9, 12);

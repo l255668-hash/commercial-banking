@@ -8,11 +8,11 @@
 | Roll number | 25L-5668 |
 | Course and instructor | CS2012 Introduction to Object-Oriented Programming, FAST-NUCES Lahore; Bilal Nadeem |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+, standard library only). It contains the domain model, a seeded demonstration of 16 scenarios, 73 automated tests and generators for the class and UML diagrams.
+The whole implementation is one file, `banking_system.py` (Python 3.9+). It uses no libraries: exact money, dates, abstract classes, JSON and the test framework are classes written in the file (section 5.3). It contains the domain model, a seeded demonstration of 16 scenarios, 81 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 77 automated tests
+python banking_system.py --test       # run the 81 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -20,10 +20,10 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | Required submission item (brief, Problem 4) | Where |
 |---|---|
 | 1. Domain research summary, sources and terminology | Section 1 |
-| 2. Assumptions | Section 2 (A1 to A36) |
+| 2. Assumptions | Section 2 (A1 to A38) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
 | 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
-| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (71 business classes plus 9 supporting, 98 operations, 80 of them state-changing commands) |
+| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (74 business classes plus 16 supporting, 98 operations, 80 of them state-changing commands); 5.3 the building blocks written instead of libraries; 5.4 IBAN and card-number checks |
 | 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | 7. At least three tempting inheritances rejected | Section 7 (fourteen given); 7.1 compares the design with a plausible alternative |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
@@ -35,11 +35,11 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 
 The essentials of each required item, for a quick read. Each section below gives the detail.
 
-1. **Research.** Eight sources (FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa and Mastercard dispute rules, IFRS 9, BIAN, Fowler's *Analysis Patterns*) and a 27-term glossary. The research changed eight first ideas; for example, customer, director and signatory are *roles* of one person, not subclasses.
-2. **Assumptions.** 36 numbered decisions where the brief is silent, for example: a sole trader is a `Person`; a charity needs two trustees; owners of 25% or more must be verified; payments above a mandate's threshold need a second signatory.
+1. **Research.** Twelve sources (FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa and Mastercard dispute rules, IFRS 9, BIAN, Fowler's *Analysis Patterns*, the IBAN standard, the card-numbering standard, PCI DSS, and the references behind the building blocks) and a 31-term glossary. The research changed ten first ideas; for example, customer, director and signatory are *roles* of one person, not subclasses.
+2. **Assumptions.** 38 numbered decisions where the brief is silent, for example: a sole trader is a `Person`; a charity needs two trustees; owners of 25% or more must be verified; payments above a mandate's threshold need a second signatory.
 3. **Requirements.** The model must keep history when anything changes: documents expire, people lose authority, products close, cards are replaced, loans are restructured, branches close. Nothing is overwritten or deleted; changes are new records with dates.
 4. **Class model.** Four hierarchies (`Party`, `Arrangement`, `BankTransaction`, `Case`) plus standalone classes linked by association (cards, mandates, branches, employees, products). Diagrams: class overview, UML per hierarchy, associations, six flowcharts, four state machines.
-5. **Implementation.** One file, standard library only: 71 business classes (plus 9 supporting), 98 operations (80 change state), 77 automated tests, a double-entry ledger whose trial balance is always zero.
+5. **Implementation.** One file with no libraries (its own classes replace `decimal`, `datetime`, `abc`, `json` and `unittest`): 74 business classes (plus 16 supporting), 98 operations (80 change state), 81 automated tests, a double-entry ledger whose trial balance is always zero. Payee IBANs and card numbers carry check digits that the model verifies.
 6. **Inheritance.** Four multi-level hierarchies, for example `Party › Organization › Company` and `BankTransaction › Reversal › Chargeback`. Shared data sits at the highest level every subclass needs, and each subclass changes one behaviour (for example, `SavingsAccount.check_debit` adds a monthly withdrawal limit).
 7. **Rejected inheritance.** Fourteen rejected, for example `Customer(Person)` (a role, not a kind), `Card(Account)` (holds no money), `SoleTrader(Organization)` (legally the person) and `MerchantRefund(Reversal)` (the purchase stays valid). The design is compared with an account-centric alternative on ten critical cases.
 8. **Seeded demonstration.** One bank, 3 branches, 10 staff, 20 people, a company, a charity, accounts, cards and financing, run on a simulated calendar from January 2026 to August 2027.
@@ -60,6 +60,10 @@ The essentials of each required item, for a quick read. Each section below gives
 6. IFRS 9 guidance on modification of financial assets, for how a restructured loan relates to the original agreement.
 7. BIAN (Banking Industry Architecture Network) service landscape, for the separation between a product directory and a customer's product agreement.
 8. Martin Fowler, *Analysis Patterns* and his "Temporal Patterns" essays, for the Party/role separation and effective-dated records.
+9. SWIFT, *IBAN Registry* (ISO 13616) and ISO 7064 (MOD 97-10 check digits), for Pakistan's 24-character IBAN and how its check digits are calculated.
+10. ISO/IEC 7812, *Identification cards: identification of issuers*, for the structure of a card number (issuer prefix, account digits, Luhn check digit).
+11. PCI Security Standards Council, *PCI DSS v4.0*, requirements 3.4 and 3.5, for how much of a card number may be shown and how it may be stored.
+12. For the building blocks written instead of libraries (section 5.3): Martin Fowler, *Patterns of Enterprise Application Architecture* (the Money pattern); IETF RFC 8259 (the JSON grammar); Kent Beck, *Test-Driven Development: By Example* (the xUnit test design).
 
 ### Key terminology learned
 
@@ -93,6 +97,9 @@ The essentials of each required item, for a quick read. Each section below gives
 | Biller / bill payment | An organisation the bank collects payments for (utility, telecom, tax). `Biller`, `BillPayment` with the customer's consumer reference. |
 | Promise to pay | A collections outcome: the customer commits to pay an amount by a date; later marked kept or broken. `PromiseToPay`. |
 | Record retention | Financial records must be kept for years after the relationship or product ends; "deletion" becomes archiving. `archive_record`, `retention_until`. |
+| IBAN | International Bank Account Number: a country code, two check digits and the domestic account number (in Pakistan a four-letter bank code and 16 digits). The check digits catch typing mistakes before a payment is sent. `Iban`. |
+| PAN, BIN and Luhn digit | A card's primary account number: the issuer's prefix (BIN), the account digits and a final check digit calculated by the Luhn formula. `CardNumber`. |
+| Masking and truncation | Showing or keeping only part of a card number (at most the first six and last four digits), so a leaked screen or file cannot be used to pay. `CardNumber` keeps only those digits. |
 
 ### What the research changed in the design
 
@@ -108,6 +115,8 @@ The research was done before the class model was fixed, and several first ideas 
 | A product and a customer's account are one class | The BIAN landscape (source 7) separates the product directory from the customer's product agreement | `ProductDefinition` with versioned terms vs `Arrangement` that pins its version (A10) |
 | Store the current value and overwrite on change | Temporal patterns (source 8): effective dating, audit logs and "as at" queries | `Period`, `StatusHistory`, versions and `Correction`; `party_snapshot(party, date)` |
 | A card is a kind of account | Card issuing practice: a card is a credential linked to an account; replacements get new numbers and old transactions keep the old card | `IssuedCard` linked to a `DepositAccount`, with a replacement chain (rejected inheritance 2) |
+| A payee's account number is free text | IBANs (source 9) carry check digits so a mistyped account is caught before money leaves | `Iban` checked when a payee is added or amended; its bank code must match the bank named (A37) |
+| Store the card number and hide it on screen | PCI DSS (source 11) requires a stored card number to be unreadable; keeping only the first six and last four digits is one accepted way, and the last digit is a Luhn check digit (source 10) | `CardNumber` with a Luhn-valid number, keeping only six plus four digits (A38) |
 
 ---
 
@@ -131,7 +140,7 @@ The research was done before the class model was fixed, and several first ideas 
 | A14 | Repayment allocation | Oldest installment first, interest before principal. A repayment larger than the total outstanding is refused (kept as `FAILED`) and changes nothing. |
 | A15 | Deletion | Nothing with business history is deleted. "Delete" means a status change (closed, inactive, cancelled, superseded), a closed validity period, or archiving (A31, A32). |
 | A16 | Branch closure | Customers, open accounts, staff and the branch's vault cash move to the receiving branch. `opened_at_branch` never changes; the servicing branch has a history. A closed branch cannot hire staff. |
-| A17 | Single currency | All amounts are PKR, held as `Decimal` rounded to paisa. |
+| A17 | Single currency | All amounts are PKR, held as `Money`: an exact fraction rounded half up to the paisa. |
 | A18 | Dual control | Set per mandate. Above the threshold a payment waits in `AWAITING_AUTHORISATION` until a different person with a valid payments mandate approves it; funds are checked again then. Only the initiator or another signatory may cancel it. |
 | A19 | Savings interest | Credited at month-end on the lowest balance in the month, at the product's annual rate / 12. Current accounts earn no interest. |
 | A20 | Sign convention | Credit positive, debit negative. Customer deposits show positive balances; bank assets (vault cash, loans receivable) negative. |
@@ -151,6 +160,8 @@ The research was done before the class model was fixed, and several first ideas 
 | A34 | Bill payments | Same authority, restriction and dual-control rules as transfers; they settle to a biller-settlement ledger. Large-transfer review does not apply to registered billers. |
 | A35 | Collections | Collections cases are worked only by collections officers. A promise to pay is marked KEPT if the agreement has no overdue installment after the promised date, otherwise BROKEN, and a notice is sent. |
 | A36 | Audit access | Only auditors and branch managers may run the approvals and authority audit, and each run is itself logged. |
+| A37 | Payee account numbers | Payees are domestic, so a payee's account is a Pakistani IBAN with valid check digits; when its bank code is one the bank knows, it must match the bank named. The model cannot confirm that the account exists or that the title matches (a real bank asks the other bank). |
+| A38 | Card numbers | The issuer prefix 421337 is illustrative. The full number is printed on the card; the bank keeps only the first six and last four digits, so the model never needs or shows the rest. |
 
 ---
 
@@ -218,7 +229,7 @@ The research was done before the class model was fixed, and several first ideas 
 
 ## 4. Class model
 
-77 classes plus 7 business-rule error classes. 71 of the 77 are business classes; the other 6 are supporting infrastructure (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`, and the `Bank` application service). The brief discounts artificial classes, so the business count is the one to judge, and `python banking_system.py --classes` prints both.
+90 classes plus 7 business-rule error classes. 74 of the 90 are business classes; the other 16 are supporting infrastructure: the history building blocks (`Period`, `StatusChange`, `StatusHistory`, `Lifecycle`, `AuditEvent`), the `Bank` application service, saving and loading (`Repository`, `JsonFileRepository`, `MemoryRepository`, `Json`, `JsonReader`) and the building blocks written instead of libraries (`Exact`, `Date`, `Days`, `DemoLog`, `SourceIndex`). `Money`, `Iban` and `CardNumber` count as business classes, because each is a banking concept with a rule of its own (rounding to the paisa, IBAN check digits, the card check digit and truncation). The test framework (`TestCase`, `TestRunner`) and the `Abstract` helper are not counted at all. The brief discounts artificial classes, so the business count is the one to judge, and `python banking_system.py --classes` prints both.
 
 All diagrams are generated from the live classes by `python banking_system.py --diagram docs`: the attributes and methods are read from the source code itself, so the diagrams cannot drift from the implementation.
 
@@ -402,17 +413,17 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 77 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
+**Automated tests.** 81 independent tests (`python banking_system.py --test`), run by the file's own `TestRunner` (section 5.3). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), five tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, that the whole demonstration runs with a zero trial balance, and that the file imports nothing but `sys`), three tests for the IBAN and card-number checks (section 5.4), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
 ### 5.1 How the class count holds up under a strict reading
 
-The brief says artificial classes added only to meet a count do not qualify. So every one of the 71 business classes was sorted by what it actually contains (the six supporting classes are already counted separately):
+The brief says artificial classes added only to meet a count do not qualify. So every one of the 74 business classes was sorted by what it actually contains (the 16 supporting classes are already counted separately):
 
 | Group | Count | What qualifies a class | Examples |
 |---|---|---|---|
-| Classes with their own behaviour | 48 | At least one method, override or rule of its own | `Party`, `Organization`, `SavingsAccount` (monthly limit), `FixedTermDeposit` (no withdrawal before maturity), `Mandate` (limits, dual control), `CustomerPayment`, `Reversal`, `RiskCase` (cannot close while a restriction is in force) |
+| Classes with their own behaviour | 51 | At least one method, override or rule of its own | `Money` (paisa rounding), `Iban` (check digits), `CardNumber` (Luhn), `Party`, `Organization`, `SavingsAccount` (monthly limit), `FixedTermDeposit` (no withdrawal before maturity), `Mandate` (limits, dual control), `CustomerPayment`, `Reversal`, `RiskCase` (cannot close while a restriction is in force) |
 | Record classes that keep history | 20 | Several fields, each a fact the brief requires to be kept after things change | `VerificationCheck`, `Correction`, `OfficerRole`, `BeneficiaryVersion`, `PaymentAuthorisation`, `Approval` (role at the time), `CaseEvidence` (snapshot), `PromiseToPay` |
 | Type-only subclasses | 3 | Little or no data of their own; kept for a stated reason | see below |
 
@@ -422,7 +433,7 @@ The brief says artificial classes added only to meet a count do not qualify. So 
 - **`Complaint`** (adds `category`): a complaint is a different customer case from a dispute or a service request, with its own reference series (`CMP-`), and it is counted and reported separately.
 - **`ComplianceInvestigation`** (no own fields): a risk case opened by compliance staff rather than by a monitoring rule. Unlike `FraudAlert`, it has no triggering rule or transaction, which is exactly why it is a sibling and not a subclass. It keeps its own reference series (`CMPL-`).
 
-**The strict count:** even counting only the 48 classes with their own behaviour, the model is well above the brief's minimum of 30. The record classes are what keep history meaningful (the brief's common rule on historical records), so they are counted as meaningful too, but they are not needed to pass the threshold.
+**The strict count:** even counting only the 51 classes with their own behaviour, the model is well above the brief's minimum of 30. The record classes are what keep history meaningful (the brief's common rule on historical records), so they are counted as meaningful too, but they are not needed to pass the threshold.
 
 ### 5.2 Saving and loading the whole bank (files and JSON)
 
@@ -434,11 +445,44 @@ The brief says artificial classes added only to meet a count do not qualify. So 
 | `JsonFileRepository` | `Repository` | Keeps the text in a file on disk |
 | `MemoryRepository` | `Repository` | Keeps the text in memory, so the tests need no files |
 
-**How the format works.** Each object is saved once, as its class name and its fields. A link to another object is saved as `{"$ref": n}`, so an object shared by several records (an employee who approved many payments, for example) is still one object after loading, and links in both directions are no problem. Dates and Decimal amounts keep their types (`{"$date": ...}`, `{"$dec": ...}`). A lifecycle is saved by its name (for example `TransferPayment.LIFECYCLE`), because it is part of the class, not data. Encoding is iterative, not recursive, so long chains of linked records cannot exceed Python's recursion limit.
+**How the format works.** Each object is saved once, as its class name and its fields. A link to another object is saved as `{"$ref": n}`, so an object shared by several records (an employee who approved many payments, for example) is still one object after loading, and links in both directions are no problem. Dates, money and exact numbers keep their types (`{"$date": ...}`, `{"$money": ...}`, `{"$exact": ...}`), and the JSON text itself is written and read by the model's own `Json` and `JsonReader` classes (section 5.3). A lifecycle is saved by its name (for example `TransferPayment.LIFECYCLE`), because it is part of the class, not data. Encoding is iterative, not recursive, so long chains of linked records cannot exceed Python's recursion limit.
 
 **Why a hierarchy.** What changes between repositories is only *where* the text is kept; the format must be identical, or a bank saved by one could not be read by another. So the format lives once in the parent, and each subclass implements two small methods (`_write`, `_read`). A database repository would be a third subclass.
 
-**Proof.** Four tests: saving a loaded bank gives byte-for-byte the same JSON (all 1,366 objects of the demo bank); the loaded bank keeps its balances and answers history questions (Bilal's mandate on 11 April 2026); it carries on (a new deposit posts under a new reference, and a destroyed card still cannot become active); and the file repository reads what it wrote and refuses a missing file. From the command line: `python banking_system.py --save bank.json` and `--load bank.json`. In the GUI: Save and Open in the top bar.
+**Proof.** Four tests: saving a loaded bank gives byte-for-byte the same JSON (all 1,375 objects of the demo bank); the loaded bank keeps its balances and answers history questions (Bilal's mandate on 11 April 2026); it carries on (a new deposit posts under a new reference, and a destroyed card still cannot become active); and the model's JSON reader and writer agree with each other, refuse malformed text and refuse a missing file. From the command line: `python banking_system.py --save bank.json` and `--load bank.json`. In the GUI: Save and Open in the top bar.
+
+### 5.3 Building blocks written in Python instead of libraries
+
+The project is about classes, so the program uses its own classes even for the pieces that Python's libraries usually provide. Each one is small, has a docstring that explains the idea, and is covered by the tests. The only imports are `sys` (for the command-line options and the exit code) and `from __future__ import annotations` (a language directive that lets Python 3.9 read type hints such as `Organization | None`). A test reads the file's own source and fails if any other import appears.
+
+| Own class | In place of | How it works |
+|---|---|---|
+| `Exact` | `decimal` | A number held as a fraction of two whole numbers, reduced with Euclid's greatest common divisor, so 0.1 + 0.2 is exactly 0.3. It rounds only when asked (half up, or half to even), and supports arithmetic, comparison and formats such as `{:,.2f}` and `{:.2%}` |
+| `Money` (subclass of `Exact`) | `Decimal.quantize` | An amount in rupees, rounded half up to the paisa when it is created (Fowler's Money pattern). Money plus money is money; money times a rate is an exact number, rounded again only when it becomes money |
+| `Date`, `Days` | `datetime` | The Gregorian calendar: a year is a leap year if divisible by 4, except century years not divisible by 400. A date converts to a day number, so adding days or measuring the gap between two dates is whole-number arithmetic; `add_months` keeps the day within the month |
+| `Abstract`, `@abstract` | `abc` | `@abstract` marks a method; `Abstract.__new__` refuses to create an object while a marked method has not been overridden, with the same `TypeError` message Python gives |
+| `Json`, `JsonReader` | `json` | The writer escapes text and indents nested objects. The reader is a recursive-descent parser: one method for each rule of the JSON grammar (RFC 8259: value, object, array, string, number), so malformed text is refused with the position of the mistake |
+| `TestCase`, `TestRunner` | `unittest` | Kent Beck's xUnit design: each test method runs on a fresh object after `setUp`; assertions raise `TestFailure`; `assertRaises` works in a `with` block; the runner finds every `TestCase` subclass, reports failures and errors separately, and returns the exit code CI checks |
+| `DemoLog` | `io`, `contextlib` | Collects the demonstration's lines, printed or silent, so the GUI and the tests can run the demonstration without capturing the screen |
+| `SourceIndex` | `inspect`, `ast` | Reads the file's own source to find a method and the attributes `__init__` assigns, for the UML diagrams |
+
+**Why this suits an OOP project.** Each library replaced is a small design problem with a class-shaped answer, and the answers use the assessed concepts. `Money` inherits from `Exact` because money *is* an exact number with one extra rule: it inherits all the arithmetic and changes only how a value is created. `Abstract` is the base class of every abstract root in the model (`Party`, `Arrangement`, `BankTransaction`, `Case`, `Repository`). Every test class inherits its assertions from `TestCase`.
+
+**The GUI and the assistant.** `banking_gui.py` uses Tkinter, which draws the window and comes with Python, and nothing else: dates, money and saving come from the model's classes, and its text formatting reads words character by character instead of using regular expressions. `banking_assistant.py` reads a request word by word, uses the model's `Json` and `TestRunner`, and imports Anthropic's client only when Claude is switched on; while Claude answers, the GUI waits on a worker thread so the window stays responsive. Neither file is needed to run or mark the model.
+
+### 5.4 Account and card numbers that check themselves
+
+Two checks that banks run before money moves were added from the research (sources 9 to 11). Both are value classes: created from text, they refuse anything invalid and never change afterwards.
+
+**`Iban`.** A Pakistani IBAN has 24 characters: `PK`, two check digits, a four-letter bank code and a 16-digit account number, for example `PK36 SCBL 0000 0011 2345 6702` (the IBAN Registry's example). The check digits are chosen so that, after moving the first four characters to the end and replacing each letter by two digits (A = 10 ... Z = 35), the whole number leaves a remainder of 1 when divided by 97 (ISO 7064 MOD 97-10). `Iban.remainder` does this long division one digit at a time, as on paper, and `Iban.build` works out the check digits for a domestic account number. A mistyped digit changes the remainder, so `add_beneficiary` and `amend_beneficiary` refuse it before any payment can use it; the bank code must also match the bank named (a UBL IBAN entered as HBL is refused). Every payee in the demonstration and the tests has a valid IBAN, and the last four digits shown on payments are unchanged.
+
+**`CardNumber`.** A card number (ISO/IEC 7812) is a six-digit issuer prefix (BIN), the account digits and a final Luhn check digit: from the right, every second digit is doubled (9 is subtracted when that gives two digits), and the total must end in 0. This catches every single mistyped digit and most swapped neighbours. `IssuedCard` now issues a Luhn-valid number. PCI DSS requires a stored card number to be unreadable, and truncation is one accepted method, so `CardNumber` keeps only the first six and last four digits; screens, the audit log and saved files show `4213 **** **** 9193`. A test checks that the object holds no other digits.
+
+| Test | What it proves |
+|---|---|
+| `test_iban_check_digits_catch_mistakes` | The registry's example is valid and `build` reproduces it; a changed check digit, a missing digit and a foreign country code are refused |
+| `test_payee_iban_must_match_its_bank` | A payee whose IBAN belongs to another bank is refused, and nothing is saved |
+| `test_card_number_has_a_luhn_check_digit_and_is_kept_truncated` | The standard Luhn examples; one mistyped digit is refused; an issued card keeps only the first six and last four digits |
 
 ## 6. Inheritance relationships explained
 
@@ -462,7 +506,7 @@ The brief says artificial classes added only to meet a count do not qualify. So 
 
 The brief states that abstraction, abstract base classes and polymorphism are not assessed. They are used here only where they make an inheritance decision enforceable rather than merely described: the level of the hierarchy that is abstract is exactly the level this report argues is "not a real thing on its own".
 
-A real bank never holds "a party", "an arrangement", "a transaction" or "a case" that is not some specific kind, so the root of each hierarchy is an abstract base class (Python `abc`). Trying to create one raises `TypeError`, and a new subclass that forgets a required method cannot be instantiated at all. Each abstract method is one whose answer genuinely differs by class:
+A real bank never holds "a party", "an arrangement", "a transaction" or "a case" that is not some specific kind, so the root of each hierarchy is an abstract base class (it inherits from the model's own `Abstract` class, section 5.3). Trying to create one raises `TypeError`, and a new subclass that forgets a required method cannot be instantiated at all. Each abstract method is one whose answer genuinely differs by class:
 
 | Abstract class | Abstract method | Implemented by | Replaces |
 |---|---|---|---|
@@ -556,17 +600,17 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 
 ## 10. Limitations and scaling
 
-**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. The bank is saved and loaded as one whole JSON file (`Repository`, section 5.2): there is no database, so no partial updates, no concurrent users, and reference numbers come from a module-level counter that the file restores. No rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no authentication: the GUI's sign-in chooses a person without a password, each operation is told who is acting, and the model then checks that person's authority.
+**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. Only Pakistani IBANs are accepted, and an IBAN's check digits prove only that it was typed correctly, not that the account exists or belongs to the payee named. A small chart of accounts. The bank is saved and loaded as one whole JSON file (`Repository`, section 5.2): there is no database, so no partial updates, no concurrent users, and reference numbers come from a module-level counter that the file restores. No rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no authentication: the GUI's sign-in chooses a person without a password, each operation is told who is acting, and the model then checks that person's authority.
 
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 
-**If the business model changed.** Islamic banking products (for example Murabaha or Ijarah) would be new `Arrangement` subclasses, because their obligations differ structurally from interest-bearing loans; this is where the `Arrangement` level pays off. Investment or wealth products would also become new arrangement types with their own position records. Multi-currency would need a `Money` value class and FX transaction types.
+**If the business model changed.** Islamic banking products (for example Murabaha or Ijarah) would be new `Arrangement` subclasses, because their obligations differ structurally from interest-bearing loans; this is where the `Arrangement` level pays off. Investment or wealth products would also become new arrangement types with their own position records. Multi-currency would add a currency to `Money` (today every amount is PKR) and FX transaction types.
 
 ---
 
 ## 11. Desktop front end (optional GUI)
 
-The brief assesses classes and inheritance, so the front end exists to make the model usable, visible and testable, never to hold business rules. `banking_gui.py` is pure Python (Tkinter and ttk from the standard library). It imports `banking_system.py` and does not change it: every button calls exactly one `Bank` operation, so every rule, refusal and audit entry is the model's own. A refusal names the rule that stopped it, and a refused payment is shown as "refused, kept on record" because the model keeps it as failed or declined.
+The brief assesses classes and inheritance, so the front end exists to make the model usable, visible and testable, never to hold business rules. `banking_gui.py` uses no library except Tkinter and ttk, which draw the window and come with Python. It imports `banking_system.py` and does not change it: every button calls exactly one `Bank` operation, so every rule, refusal and audit entry is the model's own. A refusal names the rule that stopped it, and a refused payment is shown as "refused, kept on record" because the model keeps it as failed or declined.
 
 **Two ways in, as in a real bank.** The program opens on a sign-in screen (Figure 9). There are no passwords, because this is a simulation, but who you are matters, because the model checks that person's authority on every action.
 
@@ -688,6 +732,8 @@ The brief assesses classes and inheritance, so the front end exists to make the 
 - **Validated suggestions.** A suggestion from Claude that names another operation or field is discarded, never run.
 - **Minimum data.** Claude sees only the facts retrieved for the question, not the whole bank.
 - **No secrets in the code.** The API key is read from the environment on the user's computer.
+
+**No libraries here either.** A request is read word by word ("deposit", an amount such as "5k" or "2.5 lakh", "into", an account reference) instead of with regular expressions, Claude's suggested form is read with the model's own `Json` reader, and the tests run on the model's own `TestRunner`.
 
 **Tested without the internet.** Nine unit tests (`python banking_assistant.py --test`, run on GitHub for every push) cover the refusal explanation, form preparation that posts nothing, the rejected suggestion, the fallback when Claude is unreachable, and the kept conversation. In them Claude is replaced by a stand-in object. The GUI smoke test asks the assistant for a deposit, opens the prepared form, runs it and checks that exactly one PKR 5,000 deposit was posted.
 
