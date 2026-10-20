@@ -39,6 +39,7 @@ docs/
                                and three association diagrams
   flowchart_*.png/.svg         six flowcharts of the main workflows, standard symbols
   state_*.png/.svg             four UML state machine diagrams, drawn from each class's LIFECYCLE
+  slide_*.png/.svg             large 16:9 diagrams for presenting: overview plus one per hierarchy
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers

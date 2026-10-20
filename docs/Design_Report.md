@@ -306,6 +306,10 @@ Complete class list by area:
 | Rule violations | `BankingError`, `KycIncomplete`, `AuthorityError`, `RestrictionViolation`, `ProductNotAvailable`, `InsufficientFunds`, `InvalidStateError` |
 
 
+**For presenting.** The diagrams above carry every attribute and method, which makes them too dense for a projector. `tools/make_slide_diagrams.py` draws large 16:9 versions from the same classes: an overview of the four hierarchies and the standalone classes that connect them, and one diagram per hierarchy with a single line saying what each level adds (`docs/slide_*.png`). GitHub regenerates them on every push and fails if they no longer match the code.
+
+![Overview for presenting](slide_overview.png)
+
 ### 4.1 Behaviour: the main workflows as flowcharts
 
 The class diagrams above show the structure. These six flowcharts show the behaviour: the order in which the code checks each rule and where a refusal ends the flow. Each one was traced from the method it describes, so the order of the decisions is the order of the checks in `banking_system.py` / `banking_gui.py`. They are drawn from code by `tools/make_flowcharts.py` using the standard flowchart symbols (ISO 5807):

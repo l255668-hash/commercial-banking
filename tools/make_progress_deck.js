@@ -133,8 +133,8 @@ s.addNotes(NOTES[3]);
 // 5. Class diagram -------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 header(s, "Class model after research", "Four hierarchies (inheritance) plus standalone classes linked by association", 2);
-fitImage(s, "class_diagram.png", 0.4, 1.3, 9.2, 3.75);
-s.addText("Inheritance only for a true “is-a”; everything else is association", { x: 0.5, y: 5.1, w: 9, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, margin: 0, isTextBox: true });
+fitImage(s, "slide_overview.png", 0.4, 1.3, 9.2, 3.75);
+s.addText("Inheritance only for a true “is-a”; everything else is association. Full UML in the design report", { x: 0.5, y: 5.1, w: 9, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, margin: 0, isTextBox: true });
 s.addNotes(NOTES[4]);
 
 // 6. Inheritance -----------------------------------------------------------------------

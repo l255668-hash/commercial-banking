@@ -56,4 +56,5 @@ jobs:
           python banking_system.py --diagram docs
           python tools/make_flowcharts.py
           python tools/make_state_diagrams.py
+          python tools/make_slide_diagrams.py
           git diff --exit-code -- 'docs/*.svg'
