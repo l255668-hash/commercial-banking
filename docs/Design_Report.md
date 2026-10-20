@@ -29,7 +29,22 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
 | 10. Limitations and scaling | Section 10 |
-| (Optional) user interface | Section 11: desktop GUI in `banking_gui.py` (staff console and digital banking) |
+| (Optional) user interface | Section 11: desktop GUI in `banking_gui.py` (staff console and digital banking); 11.1 optional AI assistant |
+
+## Summary at a glance
+
+The essentials of each required item, for a quick read. Each section below gives the detail.
+
+1. **Research.** Eight sources (FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa and Mastercard dispute rules, IFRS 9, BIAN, Fowler's *Analysis Patterns*) and a 27-term glossary. The research changed eight first ideas; for example, customer, director and signatory are *roles* of one person, not subclasses.
+2. **Assumptions.** 36 numbered decisions where the brief is silent, for example: a sole trader is a `Person`; a charity needs two trustees; owners of 25% or more must be verified; payments above a mandate's threshold need a second signatory.
+3. **Requirements.** The model must keep history when anything changes: documents expire, people lose authority, products close, cards are replaced, loans are restructured, branches close. Nothing is overwritten or deleted; changes are new records with dates.
+4. **Class model.** Four hierarchies (`Party`, `Arrangement`, `BankTransaction`, `Case`) plus standalone classes linked by association (cards, mandates, branches, employees, products). Diagrams: class overview, UML per hierarchy, associations, six flowcharts, four state machines.
+5. **Implementation.** One file, standard library only: 71 business classes (plus 6 supporting), 98 operations (80 change state), 73 automated tests, a double-entry ledger whose trial balance is always zero.
+6. **Inheritance.** Four multi-level hierarchies, for example `Party › Organization › Company` and `BankTransaction › Reversal › Chargeback`. Shared data sits at the highest level every subclass needs, and each subclass changes one behaviour (for example, `SavingsAccount.check_debit` adds a monthly withdrawal limit).
+7. **Rejected inheritance.** Fourteen rejected, for example `Customer(Person)` (a role, not a kind), `Card(Account)` (holds no money), `SoleTrader(Organization)` (legally the person) and `MerchantRefund(Reversal)` (the purchase stays valid). The design is compared with an account-centric alternative on ten critical cases.
+8. **Seeded demonstration.** One bank, 3 branches, 10 staff, 20 people, a company, a charity, accounts, cards and financing, run on a simulated calendar from January 2026 to August 2027.
+9. **Complex scenarios.** Sixteen, covering every critical case in the brief, for example: onboarding blocked by an expiring document; a transfer held, then released; a card stolen and replaced twice; a loan restructured after paid instalments; a branch closed and its customers moved.
+10. **Limitations.** A single currency, in-memory storage, simplified interest, two-signatory dual control only. Growing larger would need a database, concurrency control, multiple currencies and configurable approval rules; section 10 maps each change to the classes it affects.
 
 ---
 
