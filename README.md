@@ -42,6 +42,7 @@ docs/
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
+  Viva_Study_Guide.md          explain-it-yourself guide: each hierarchy level and 5 key methods, line by line
   Viva_Presentation.pptx       16-slide viva deck with speaker notes
   Progress_Presentation_1.pptx 9-slide, 5-minute progress checkpoint (Project Presentation 1)
   Progress_Presentation_1_Speech.md/.docx   its timed speech in Urdu and Roman Urdu, marks map, likely questions
