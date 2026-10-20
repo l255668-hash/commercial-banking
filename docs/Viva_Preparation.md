@@ -146,6 +146,20 @@ Store the data in a database with effective-dated tables (the `Period` class map
 **What is deliberately simplified?**
 Single currency, simple interest calculations, two-signatory dual control only, two credit authority levels, and saving only as one whole JSON file (no database). These are listed in report section 10.
 
+## Design principles and patterns
+
+**Does your design follow SOLID?**
+Mostly, and I checked it on purpose. Small classes each have one job; new kinds are added as subclasses without editing `Bank`; every subclass keeps its parent's promises (`SubstitutionTests` check every object in the demonstration); abstract classes ask for only one or two methods; saving is written against the `Repository` abstraction. The weak point is single responsibility for `Bank`: it is large because it coordinates every operation, although the rules themselves live in the domain classes. At a real bank it would be split into services. Report section 6.4.
+
+**Did the review find anything?**
+Two places chose behaviour by checking an object's type. `open_deposit_account` tested `account_class is FixedTermDeposit`, so a subclass of `FixedTermDeposit` would have skipped the payout-account rule: a real bug. It is now a class constant every term deposit inherits, and a test proves an `IslamicTermDeposit` subclass works with no change to `Bank`. `resolve_dispute` now asks the payment (`dispute_refund()`) instead of testing for `CardPayment`.
+
+**Show me a design pattern in your code.**
+Template method: `Party.kyc_gaps` fixes the steps (own verification, then `structural_gaps()`, then each connected person), and each subclass fills in the hooks. Others: factory method (`open_deposit_account` takes the class to create), facade (`Bank`), value object (`Money`, `Iban`), repository (`Repository`).
+
+**What does your sequence diagram show?**
+One real payment (TRF-002) over three days: which objects send which messages, in time order. Hamza starts it, Ayesha approves it, Kamran releases it, and the mandate and funds are checked again at each step. The script that draws it fills every label from the demonstration and stops if the status changes it shows differ from the payment's recorded status trail.
+
 ## Written without libraries
 
 **Why does your program not use any libraries?**

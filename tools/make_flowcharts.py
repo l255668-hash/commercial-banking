@@ -197,7 +197,7 @@ def program_overview():
     c.node("s", "start", 0, 0, "Start: python banking_system.py [option]")
     c.node("opt", "io", 0, 1, "Read the command-line option")
     c.node("dt", "decision", 0, 2, "--test ?")
-    c.node("pt", "predefined", 1, 2, "Run the 81 tests (own TestRunner; a fresh small bank per test)")
+    c.node("pt", "predefined", 1, 2, "Run the 84 tests (own TestRunner; a fresh small bank per test)")
     c.node("ot", "io", 2, 2, "Print test results (OK / FAILED)")
     c.node("dc", "decision", 0, 3, "--classes ?")
     c.node("pc", "process", 1, 3, "Walk the domain classes: inheritance tree, class and operation counts")

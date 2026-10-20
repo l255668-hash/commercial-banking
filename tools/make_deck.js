@@ -49,10 +49,10 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 
 // 1b. Agenda ------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
-title(s, "What I will show, in order", "About 19 minutes of slides, 7\u00bd minutes of live demonstration, then questions");
+title(s, "What I will show, in order", "About 20 minutes of slides, 7 minutes of live demonstration, then questions");
 const agenda = [["Research", "What I studied and how it changed the design"], ["Scale and core rule", "What the brief asks for, and \"nothing is deleted\""],
-  ["Class model", "The four hierarchies, level by level"], ["Design decisions", "Rejected inheritances; why not an account-centric model"],
-  ["Behaviour", "16 scenarios, flowcharts and lifecycles"], ["Live demonstration", "Staff console, digital banking, assistant"],
+  ["Class model", "The four hierarchies, level by level"], ["Design decisions", "Rejected inheritances; the alternative; SOLID and patterns"],
+  ["Behaviour", "16 scenarios, flowcharts, a sequence diagram"], ["Live demonstration", "Staff console, digital banking, assistant"],
   ["Limits", "What would change at a larger bank"]];
 agenda.forEach(([h, t], i) => {
   const y = 1.35 + i * 0.55;
@@ -96,7 +96,7 @@ s.addNotes("Ten first ideas changed (report section 1, last table). These five a
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "The project at a glance", "One Python file, no libraries - banking_system.py");
-const stats = [["74", "business classes (+16 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["81", "automated tests"], ["0.00", "trial balance total"]];
+const stats = [["74", "business classes (+16 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["84", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
@@ -153,7 +153,7 @@ hier.forEach(([t, img, pts, note]) => {
 // 7b. Abstraction and state machines --------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "Abstract classes and inherited state machines");
-bullets(s, ["Hierarchy roots are abstract (abc): no \"plain\" transaction or party can exist",
+bullets(s, ["Hierarchy roots are abstract (my own Abstract class): no \"plain\" transaction or party can exist",
   "Abstract methods differ by class: counterparty(), overdraft_limit(), position(), handler_roles()",
   "Type checks replaced by polymorphism: transaction_story is txn.story_lines()",
   "Each class declares its LIFECYCLE; StatusHistory refuses any other move",
@@ -193,6 +193,26 @@ s.addTable(alt.map((row, r) => row.map(cell => ({ text: cell, options: {
   { x: 0.5, y: 1.35, w: 9, colW: [2.5, 3.15, 3.35], rowH: 0.5, border: { type: "solid", pt: 0.5, color: "D5E0DD" } });
 s.addText("The alternative fails all ten critical cases (report section 7.1).", { x: 0.5, y: 4.95, w: 9, h: 0.4, fontFace: BODY, fontSize: 12, italic: true, color: GREY, margin: 0, isTextBox: true });
 s.addNotes("The brief asks for a defence of the design against at least one plausible alternative. The account-centric model is simpler and would pass the class count, but it answers every historical question with the current value only.");
+
+// 8c. SOLID and patterns -----------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Checked against SOLID and design patterns", "The course's principles used as a checklist on the finished code: two problems found and fixed");
+const solid = [["S", "One job per class (Period, StatusHistory, Iban). Bank coordinates; honest limit: it is large"],
+  ["O", "A new kind is a new subclass, Bank unchanged: a test adds an IslamicTermDeposit"],
+  ["L", "Every subclass keeps its parent's promises; SubstitutionTests check every demo object"],
+  ["I", "Abstract classes ask for little: DepositAccount needs only overdraft_limit()"],
+  ["D", "Depend on abstractions: Repository, the injected Claude client, bank_source"]];
+solid.forEach(([k, t], i) => {
+  const y = 1.35 + i * 0.66;
+  badge(s, k, 0.5, y);
+  s.addText(t, { x: 1.05, y: y - 0.05, w: 4.35, h: 0.56, fontFace: BODY, fontSize: 12, color: INK, valign: "middle", margin: 0, isTextBox: true });
+});
+card(s, 5.65, 1.3, 3.85, 3.25);
+s.addText("Found and fixed", { x: 5.85, y: 1.42, w: 3.5, h: 0.4, fontFace: HEAD, fontSize: 15, bold: true, color: TEAL, margin: 0, isTextBox: true });
+bullets(s, ["open_deposit_account tested \"is FixedTermDeposit\": a subclass skipped the payout rule. Now a class constant every term deposit inherits",
+  "resolve_dispute tested for CardPayment. Now the payment answers dispute_refund(): Reversal, or Chargeback"], 5.8, 1.9, 3.55, 2.6, 12);
+s.addText("Patterns in the code: template method, factory method, facade, value object, repository, state machine as data", { x: 0.5, y: 4.75, w: 9, h: 0.45, fontFace: BODY, fontSize: 11.5, italic: true, color: GREY, margin: 0, isTextBox: true });
+s.addNotes("SOLID was used as a checklist, not as decoration. Single responsibility: small classes each do one job; Bank is the exception, an application service that coordinates while the rules live in the domain classes. Open/closed: two type checks were found and replaced; a test defines a new IslamicTermDeposit subclass and the bank handles it unchanged. Liskov: SavingsAccount refuses more debits than its parent, but only with the same kind of BankingError, so every caller still works. Report section 6.4.");
 
 // 9. Scenarios -----------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -242,6 +262,18 @@ s.addText(charts.map((t, k) => ({ text: `${k + 1}. ${t}`, options: { breakLine: 
   { x: 7.35, y: 1.35, w: 2.15, h: 2.8, fontFace: BODY, fontSize: 12, color: INK, paraSpaceAfter: 6, valign: "top", margin: 0, isTextBox: true });
 s.addText("Report section 4.1 (flowcharts) and 4.2 (state machines)", { x: 4.3, y: 4.45, w: 5.2, h: 0.5, fontFace: BODY, fontSize: 11, italic: true, color: GREY, margin: 0, isTextBox: true });
 s.addNotes("The class diagrams show structure; the flowcharts show behaviour. Walk through the transfer: beneficiary, authority (mandate within limit), funds, dual control, then the PKR 1,000,000 compliance hold. Every red terminator is a refusal that is still kept on record.");
+
+// 9b2b. Sequence diagram --------------------------------------------------------------
+s = pres.addSlide(); s.background = { color: WHITE };
+title(s, "Objects working together: one large transfer", "UML sequence diagram of scenario 2 (TRF-002), labelled from the demonstration's own records");
+card(s, 0.5, 1.3, 3.75, 3.95, "F4F8F7");
+fitImage(s, "sequence_1_large_transfer.png", 0.6, 1.35, 3.55, 3.85);
+bullets(s, ["Hamza starts TRF-002: the Bank asks Ravi Textiles for his mandate and CUR-002 for the funds",
+  "Above PKR 1,000,000 the mandate needs a second signatory: the payment waits",
+  "Ayesha approves: mandate and funds are checked again; above the review threshold it is held and a FraudAlert is created",
+  "Kamran (compliance) releases it: the hold ends and post() writes two legs that sum to zero",
+  "The script that draws it stops if the diagram differs from the payment's recorded status trail"], 4.55, 1.35, 4.95, 3.9, 12.5);
+s.addNotes("The class diagrams show what each class is, the flowcharts the order of the checks. The sequence diagram shows which objects talk to each other over three days for one real payment. Point at the three moments: Hamza starts it, Ayesha approves it, Kamran releases it. Notice that the mandate and the funds are asked again at each step, because they can change in between. Report section 4.3.");
 
 // 9b3. Saving and the assistant ---------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };

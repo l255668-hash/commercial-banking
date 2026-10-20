@@ -73,11 +73,20 @@ After the defect fixes, the model was checked against every sentence of Problem 
 
 Each change has a test in `BriefCoverageTests` (11 tests).
 
+## 4a. Review against SOLID (third pass)
+
+The finished code was checked against the SOLID principles (report section 6.4). Two places chose behaviour by testing an object's type; both now ask the class instead.
+
+| # | Where | Problem | Fix | Test |
+|---|---|---|---|---|
+| S1 | `Bank.open_deposit_account` | Tested `account_class is FixedTermDeposit`. A subclass of `FixedTermDeposit` would have been opened without a payout account, and its money would have had nowhere to go at maturity | `DepositAccount.NEEDS_PAYOUT_ACCOUNT` (False), set to True in `FixedTermDeposit` and inherited by any subclass | `test_a_new_kind_of_term_deposit_needs_no_change_to_the_bank` |
+| S2 | `Bank.resolve_dispute` | Tested `isinstance(txn, CardPayment)` to choose between a chargeback and a reversal, so a new disputable payment type meant editing `Bank` | `CustomerPayment.dispute_refund()` returns `Reversal`; `CardPayment` overrides it to return `Chargeback` | `test_story_and_case_roles_need_no_type_checks` (now also checks `resolve_dispute`) and the existing chargeback tests |
+
 ## 5. Verification
 
 | Check | Result |
 |---|---|
-| `python banking_system.py --test` | 81 tests, all passing (run by the file's own `TestRunner`) |
+| `python banking_system.py --test` | 84 tests, all passing (run by the file's own `TestRunner`) |
 | Python versions | 3.10, 3.11, 3.12 and 3.13 run the tests green; the file parses as Python 3.9 |
 | `pyflakes banking_system.py` | no warnings |
 | `python banking_system.py` | all 16 scenarios run; 27 refusals, each naming its rule; trial balance total 0.00 |

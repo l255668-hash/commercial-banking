@@ -7,10 +7,11 @@ These scripts regenerate the files in `docs/`. **None of them is needed to run o
 | `make_flowcharts.py` | Draws the six flowcharts as `docs/flowchart_*.svg` using the standard symbols | Python only |
 | `make_state_diagrams.py` | Draws the four UML state machine diagrams (`docs/state_*.svg`) from each class's `LIFECYCLE` | Python only |
 | `make_slide_diagrams.py` | Draws large 16:9 diagrams for presenting (`docs/slide_*.svg`): one per hierarchy plus an overview, read from the code | Python only |
+| `make_sequence_diagram.py` | Draws the UML sequence diagram of one large transfer (`docs/sequence_1_large_transfer.svg`); runs the demonstration, labels every message from its records and stops if the diagram's status changes differ from the payment's recorded trail | Python only |
 | `render_diagrams.py` | Turns `docs/*.svg` (flowcharts, class and UML diagrams) into same-size PNGs | Chromium, Pillow |
 | `build_report_pdf.py` | Builds `docs/Design_Report.pdf` from `docs/Design_Report.md` | Chromium, `markdown` |
 | `md2docx.js` | Builds `docs/Design_Report.docx` from `docs/Design_Report.md` | Node.js, `docx` |
-| `make_deck.js` | Builds `docs/Viva_Presentation.pptx` (the 22-slide final presentation, speaker notes) | Node.js, `pptxgenjs` |
+| `make_deck.js` | Builds `docs/Viva_Presentation.pptx` (the 24-slide final presentation, speaker notes) | Node.js, `pptxgenjs` |
 | `make_progress_deck.js` | Builds `docs/Progress_Presentation_1.pptx` (9 slides, 5-minute progress checkpoint; the notes are the Roman Urdu speech, read from the speech file) | Node.js, `pptxgenjs` |
 | `gui_smoke_test.py` | Drives every guided check, every operation form and an onboarding story in the GUI; exits 1 on a crash or unbalanced books | Tkinter, a display (or `xvfb-run`) |
 | `gui_screenshots.py` | Captures the GUI screenshots used in the report | Linux/X11: `xwd`, netpbm |
@@ -22,6 +23,7 @@ python banking_system.py --diagram docs     # class and UML diagrams (SVG)
 python tools/make_flowcharts.py             # flowcharts (SVG)
 python tools/make_state_diagrams.py         # state machine diagrams (SVG)
 python tools/make_slide_diagrams.py         # large presentation diagrams (SVG)
+python tools/make_sequence_diagram.py       # sequence diagram (SVG)
 python tools/render_diagrams.py             # every SVG -> PNG
 python tools/build_report_pdf.py            # report PDF
 

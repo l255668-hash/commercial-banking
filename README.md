@@ -16,7 +16,7 @@ An optional desktop GUI, `banking_gui.py`, is a separate file that uses the mode
 
 ```
 python banking_system.py              # run the seeded demonstration (16 scenarios)
-python banking_system.py --test       # run the 81 automated tests
+python banking_system.py --test       # run the 84 automated tests
 python banking_system.py --save bank.json   # save the whole bank as JSON (--load bank.json opens it)
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
@@ -40,13 +40,14 @@ docs/
                                and three association diagrams
   flowchart_*.png/.svg         six flowcharts of the main workflows, standard symbols
   state_*.png/.svg             four UML state machine diagrams, drawn from each class's LIFECYCLE
+  sequence_1_large_transfer.png/.svg   UML sequence diagram of one large transfer, labelled from the demo's records
   slide_*.png/.svg             large 16:9 diagrams for presenting: overview plus one per hierarchy
   demo_output.txt              captured output of the demonstration
   Code_Review.md               analysis of the supplied code, defects found and how each was fixed
   Viva_Preparation.md          likely questions and model answers
   AI_Use_Declaration.md        draft declaration of AI assistance (complete it if your course requires one)
   Viva_Study_Guide.md          explain-it-yourself guide: each hierarchy level and 5 key methods, line by line
-  Viva_Presentation.pptx       22-slide final presentation (30 minutes) with speaker notes
+  Viva_Presentation.pptx       24-slide final presentation (30 minutes) with speaker notes
   Final_Presentation_Script.md/.docx   its time plan, talking points (Roman Urdu), live-demo path and backup plan
   Progress_Presentation_1.pptx 9-slide, 5-minute progress checkpoint (Project Presentation 1)
   Progress_Presentation_1_Speech.md/.docx   its timed speech in Urdu and Roman Urdu, marks map, likely questions
@@ -103,6 +104,14 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 
 ![Flowchart 3 - Transfer payment](docs/flowchart_3_transfer.png)
 
+## Sequence diagram
+
+`docs/sequence_1_large_transfer.png` follows one real payment from scenario 2 (TRF-002) through three operations on two dates. It shows which objects send which messages, in time order: Hamza starts it, the mandate's threshold makes it wait for Ayesha, her approval sends it into a compliance hold with a fraud alert, and Kamran releases it. `tools/make_sequence_diagram.py` fills in every label from the demonstration's records and refuses to draw if the status changes it shows differ from the payment's recorded status trail.
+
+## SOLID and design patterns
+
+Report section 6.4 checks the finished code against the SOLID principles and lists the design patterns it uses (template method, factory method, facade, value object, repository, state machine as data). The review found two places that chose behaviour by testing an object's type, and both now ask the class instead. One was a real bug: a subclass of `FixedTermDeposit` would have skipped the payout-account rule. `SubstitutionTests` check that every object in the demonstration works through its parent class's interface (Liskov substitution).
+
 ## Inside `banking_system.py`
 
 | Part | Contents |
@@ -120,7 +129,7 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | 12 | `Bank`: 98 operations (80 state-changing commands), each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
 | 12A | Saving and loading: `Repository -> JsonFileRepository / MemoryRepository`, with the own `Json` writer and `JsonReader` |
-| 14 | 81 automated tests run by the own `TestRunner` (including abstraction, lifecycle, refund, chargeback, save/load, IBAN, card-number and no-libraries tests) |
+| 14 | 84 automated tests run by the own `TestRunner` (including abstraction, substitution, lifecycle, refund, chargeback, save/load, IBAN, card-number and no-libraries tests) |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## The desktop GUI (`banking_gui.py`)
@@ -199,9 +208,9 @@ Keep the key on your own computer: never put it in the code, a screenshot or the
 | Domain research summary | Report section 1 |
 | Assumptions | Report section 2 (A1 to A38) |
 | Requirements interpretation | Report section 3 |
-| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams |
+| Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams; 4.3: a sequence diagram |
 | Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 90 classes (74 business + 16 supporting), 98 operations; report section 5 |
-| Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
+| Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines; 6.3 what each level adds; 6.4 SOLID and design patterns |
 | At least three rejected inheritances | Report section 7 (fourteen given) and 7.1 (comparison with a plausible alternative design) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |
 | At least five complex scenarios | 16 scenarios, report section 9 |

@@ -22,7 +22,7 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 81 tests ... OK
+python banking_system.py --test       # expect: Ran 84 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
 python banking_system.py --classes    # expect: 90 domain classes (74 business + 16 supporting: ...), 7 error classes, 98 Bank operations
 python banking_gui.py                 # the sign-in screen opens (Linux: sudo apt install python3-tk)
@@ -57,7 +57,7 @@ python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed"
 | `docs/demo_output.txt` | Captured output of the 16 scenarios |
 | `docs/Code_Review.md` | Defects found in the supplied code and how each was fixed |
 | `docs/Viva_Preparation.md` | Likely questions and model answers |
-| `docs/Viva_Presentation.pptx` | 22-slide final presentation (30 minutes), with speaker notes |
+| `docs/Viva_Presentation.pptx` | 24-slide final presentation (30 minutes), with speaker notes |
 | `docs/Final_Presentation_Script.md` / `.docx` | Time plan, talking points, live-demo path and backup plan |
 | `docs/Progress_Presentation_1.pptx` | 9-slide deck for Project Presentation 1 (5-minute progress checkpoint) |
 | `docs/Progress_Presentation_1_Speech.docx` | Its timed speech (Urdu and Roman Urdu), how it earns each mark, and likely questions |

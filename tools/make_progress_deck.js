@@ -77,7 +77,7 @@ phases.forEach(([name, st], i) => {
   s.addText(name, { x: x - 0.55, y: yLine + 0.3, w: 1.5, h: 0.55, fontFace: BODY, fontSize: 11, bold: true, color: INK, align: "center", valign: "top", margin: 0, isTextBox: true });
   s.addText(label[st], { x: x - 0.55, y: yLine + 0.85, w: 1.5, h: 0.25, fontFace: BODY, fontSize: 10.5, color: colour[st], align: "center", margin: 0, isTextBox: true });
 });
-const stats = [["8", "sources studied"], ["74", "business classes"], ["98", "operations"], ["16", "exception scenarios"], ["81", "automated tests"]];
+const stats = [["8", "sources studied"], ["74", "business classes"], ["98", "operations"], ["16", "exception scenarios"], ["84", "automated tests"]];
 stats.forEach(([n, l], i) => {
   const x = 0.5 + i * 1.84;
   card(s, x, 3.45, 1.7, 1.45);
@@ -173,7 +173,7 @@ s = pres.addSlide(); s.background = { color: WHITE };
 header(s, "Implementation and GUI: built and tested", "Python with no libraries; GUI in Tkinter", 3);
 fitImage(s, "screenshots/gui_02_overview.png", 0.4, 1.35, 5.0, 3.2);
 s.addText("GUI prototype: staff overview screen", { x: 0.4, y: 4.6, w: 5.0, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, align: "center", margin: 0, isTextBox: true });
-const work = [["Built", GREEN, ["Four hierarchies; double-entry ledger that always balances", "16 exception scenarios, 81 automated tests",
+const work = [["Built", GREEN, ["Four hierarchies; double-entry ledger that always balances", "16 exception scenarios, 84 automated tests",
     "GUI for staff and customers; AI assistant", "Save and load the whole bank (JSON file)"]],
   ["Now refining", AMBER, ["Design review against SOLID and design patterns", "The final 30-minute presentation"]]];
 let y = 1.35;

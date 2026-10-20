@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1494" height="1654" font-family="Helvetica, Arial, sans-serif">
+<rect width="100%" height="100%" fill="#FFFFFF"/>
+<defs><marker id="call" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#34495E"/></marker><marker id="open" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="9" markerHeight="9" orient="auto"><path d="M0,0 L10,5 L0,10" fill="none" stroke="#34495E" stroke-width="1.5"/></marker></defs>
+<text x="20" y="36" font-size="20" font-weight="bold" fill="#0B4F4A">Sequence diagram 1 - A large transfer (TRF-002, scenario 2)</text>
+<text x="20" y="60" font-size="12.5" fill="#5B6B69">Dual control, then a compliance hold, then release: the objects involved and the messages between them, in time order</text>
+<line x1="110" y1="172" x2="110" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<circle cx="110" cy="104" r="7" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><line x1="110" y1="111" x2="110" y2="126" stroke="#1D2B2A" stroke-width="1.6"/><line x1="99" y1="116" x2="121" y2="116" stroke="#1D2B2A" stroke-width="1.6"/><line x1="110" y1="126" x2="101" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><line x1="110" y1="126" x2="119" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><text x="110" y="153" text-anchor="middle" font-size="13" font-weight="bold" fill="#1D2B2A">Hamza Sheikh</text><text x="110" y="168" text-anchor="middle" font-size="11.5" fill="#5B6B69">signatory</text>
+<line x1="292" y1="172" x2="292" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<circle cx="292" cy="104" r="7" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><line x1="292" y1="111" x2="292" y2="126" stroke="#1D2B2A" stroke-width="1.6"/><line x1="281" y1="116" x2="303" y2="116" stroke="#1D2B2A" stroke-width="1.6"/><line x1="292" y1="126" x2="283" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><line x1="292" y1="126" x2="301" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><text x="292" y="153" text-anchor="middle" font-size="13" font-weight="bold" fill="#1D2B2A">Ayesha Khan</text><text x="292" y="168" text-anchor="middle" font-size="11.5" fill="#5B6B69">2nd signatory</text>
+<line x1="474" y1="172" x2="474" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<circle cx="474" cy="104" r="7" fill="#FFFFFF" stroke="#1D2B2A" stroke-width="1.6"/><line x1="474" y1="111" x2="474" y2="126" stroke="#1D2B2A" stroke-width="1.6"/><line x1="463" y1="116" x2="485" y2="116" stroke="#1D2B2A" stroke-width="1.6"/><line x1="474" y1="126" x2="465" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><line x1="474" y1="126" x2="483" y2="137" stroke="#1D2B2A" stroke-width="1.6"/><text x="474" y="153" text-anchor="middle" font-size="13" font-weight="bold" fill="#1D2B2A">Kamran Javed</text><text x="474" y="168" text-anchor="middle" font-size="11.5" fill="#5B6B69">compliance</text>
+<line x1="656" y1="142" x2="656" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="568" y="96" width="176" height="46" rx="4" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.6"/><text x="656" y="124" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1D2B2A" text-decoration="underline">:Bank</text>
+<line x1="838" y1="142" x2="838" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="750" y="96" width="176" height="46" rx="4" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.6"/><text x="838" y="124" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1D2B2A" text-decoration="underline">Ravi Textiles :Company</text>
+<line x1="1020" y1="142" x2="1020" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="932" y="96" width="176" height="46" rx="4" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.6"/><text x="1020" y="124" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1D2B2A" text-decoration="underline">CUR-002 :CurrentAccount</text>
+<line x1="1202" y1="293" x2="1202" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<line x1="1384" y1="1055" x2="1384" y2="1524" stroke="#9AA9A6" stroke-width="1.2" stroke-dasharray="5 5"/>
+<rect x="651" y="232" width="10" height="355" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.2"/>
+<rect x="651" y="661" width="10" height="423" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.2"/>
+<rect x="651" y="1158" width="10" height="326" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.2"/>
+<line x1="20" y1="198" x2="1474" y2="198" stroke="#B8862F" stroke-width="1" stroke-dasharray="6 5"/>
+<rect x="20" y="185" width="480" height="24" rx="4" fill="#FBEFD9" stroke="#B8862F"/>
+<text x="29" y="202" font-size="12.5" font-weight="bold" fill="#8A5A00">02 Mar 2026  Hamza Sheikh starts the payment: initiate_transfer()</text>
+<line x1="110" y1="236" x2="651" y2="236" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="120" y="230" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">initiate_transfer(CUR-002, Lahore Yarn Traders, 1,500,000)</text>
+<rect x="1114" y="247.0" width="176" height="46" rx="4" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.6"/><text x="1202" y="275.0" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1D2B2A" text-decoration="underline">TRF-002 :TransferPayment</text>
+<line x1="661" y1="270" x2="1114" y2="270" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="264" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">«create»  status INITIATED</text>
+<polyline points="662,312 696,312 696,328 664,328" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="704" y="321" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">payee active and saved by this customer?</text>
+<line x1="661" y1="373" x2="838" y2="373" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="352" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">find_mandate(Hamza Sheikh,</text>
+<text x="671" y="367" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">PAYMENTS, 1,500,000)</text>
+<line x1="838" y1="407" x2="661" y2="407" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="401" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">MND-003 (limit 2,000,000)</text>
+<line x1="661" y1="441" x2="1020" y2="441" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="435" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">check_debit(1,500,000)</text>
+<line x1="1020" y1="475" x2="661" y2="475" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="469" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">ok: enough available</text>
+<polyline points="662,503 696,503 696,519 664,519" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="704" y="512" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">MND-003.needs_second_signatory(): above 1,000,000</text>
+<line x1="661" y1="549" x2="1202" y2="549" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="543" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">status → AWAITING_AUTHORISATION</text>
+<line x1="651" y1="583" x2="110" y2="583" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="120" y="577" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">TRF-002 [AWAITING_AUTHORISATION]</text>
+<line x1="20" y1="627" x2="1474" y2="627" stroke="#B8862F" stroke-width="1" stroke-dasharray="6 5"/>
+<rect x="20" y="614" width="543" height="24" rx="4" fill="#FBEFD9" stroke="#B8862F"/>
+<text x="29" y="631" font-size="12.5" font-weight="bold" fill="#8A5A00">02 Mar 2026  Ayesha Khan approves as second signatory: authorise_payment()</text>
+<line x1="292" y1="665" x2="651" y2="665" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="302" y="659" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">authorise_payment(TRF-002, Ayesha Khan)</text>
+<polyline points="662,693 696,693 696,709 664,709" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="704" y="702" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">not the person who started it?</text>
+<line x1="661" y1="754" x2="838" y2="754" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="733" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">find_mandate(Ayesha Khan,</text>
+<text x="671" y="748" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">PAYMENTS, 1,500,000)</text>
+<line x1="838" y1="788" x2="661" y2="788" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="782" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">MND-001</text>
+<line x1="661" y1="822" x2="1202" y2="822" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="816" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">add PaymentAuthorisation;  status → AUTHORISED</text>
+<line x1="661" y1="856" x2="1020" y2="856" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="850" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">check_debit(1,500,000)  (funds checked again)</text>
+<line x1="1020" y1="890" x2="661" y2="890" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="884" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">ok</text>
+<polyline points="662,918 696,918 696,934 664,934" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="704" y="927" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">_complete_transfer(): 1,500,000 ≥ review threshold 1,000,000</text>
+<line x1="661" y1="964" x2="1020" y2="964" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="958" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">holds.append(AccountHold 1,500,000)</text>
+<line x1="661" y1="998" x2="1202" y2="998" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="992" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">status → HELD_FOR_REVIEW</text>
+<rect x="1296" y="1009.0" width="176" height="46" rx="4" fill="#E8F0EE" stroke="#0B4F4A" stroke-width="1.6"/><text x="1384" y="1037.0" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#1D2B2A" text-decoration="underline">ALERT-001 :FraudAlert</text>
+<line x1="661" y1="1032" x2="1296" y2="1032" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="1026" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">«create»  raise_fraud_alert(LARGE_FIRST_TIME_TRANSFER)</text>
+<line x1="651" y1="1080" x2="292" y2="1080" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="302" y="1074" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">TRF-002 [HELD_FOR_REVIEW]</text>
+<line x1="20" y1="1124" x2="1474" y2="1124" stroke="#B8862F" stroke-width="1" stroke-dasharray="6 5"/>
+<rect x="20" y="1111" width="536" height="24" rx="4" fill="#FBEFD9" stroke="#B8862F"/>
+<text x="29" y="1128" font-size="12.5" font-weight="bold" fill="#8A5A00">05 Mar 2026  Kamran Javed (compliance) releases it: release_transaction()</text>
+<line x1="474" y1="1162" x2="651" y2="1162" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="484" y="1156" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">release_transaction(TRF-002, &quot;Invoices verified&quot;)</text>
+<polyline points="662,1190 696,1190 696,1206 664,1206" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="704" y="1199" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">_require_role(): compliance may release</text>
+<line x1="661" y1="1236" x2="1020" y2="1236" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="1230" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">hold.release(05 Mar)</text>
+<line x1="661" y1="1270" x2="1020" y2="1270" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="1264" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">check_debit(1,500,000)</text>
+<line x1="1020" y1="1304" x2="661" y2="1304" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="671" y="1298" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">ok</text>
+<line x1="661" y1="1338" x2="1202" y2="1338" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="1332" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">status → RELEASED</text>
+<line x1="661" y1="1372" x2="1202" y2="1372" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="671" y="1366" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">post([(CUR-002, -1,500,000), (GL 2100, +1,500,000)])</text>
+<line x1="1202" y1="1406" x2="1020" y2="1406" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="1030" y="1400" text-anchor="start" font-size="12.5" fill="#1D2B2A" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">LedgerEntry -1,500,000</text>
+<polyline points="1202,1434 1236,1434 1236,1450 1204,1450" fill="none" stroke="#34495E" stroke-width="1.4" marker-end="url(#call)"/>
+<text x="1244" y="1443" text-anchor="start" font-size="12.5" fill="#5B6B69" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">status → POSTED</text>
+<line x1="651" y1="1480" x2="474" y2="1480" stroke="#34495E" stroke-width="1.4" stroke-dasharray="7 5" marker-end="url(#open)"/>
+<text x="484" y="1474" text-anchor="start" font-size="12.5" fill="#1D2B2A" font-style="italic" stroke="#FFFFFF" stroke-width="4" paint-order="stroke">TRF-002 [POSTED]</text>
+<path d="M20,1542 h1434 l20,20 v62 h-1454 z" fill="#FFFBEF" stroke="#B8862F"/><path d="M1454,1542 v20 h20" fill="none" stroke="#B8862F"/>
+<text x="34" y="1566" font-size="12.5" fill="#1D2B2A">Ledger: post() writes two entries, -1,500,000 on CUR-002 and +1,500,000 on the bank&#x27;s clearing account GL 2100; it refuses any legs that do not sum to zero.</text>
+<text x="34" y="1586" font-size="12.5" fill="#1D2B2A">Not drawn: the AuditEvent every operation writes (Bank._log), and the refusal path: if any check fails, Bank._fail() marks the payment FAILED with the reason, and it is kept.</text>
+<text x="34" y="1608" font-size="12" fill="#5B6B69">Solid arrow: call. Dashed arrow: return, or «create» a new object. Bar on :Bank: one operation in progress. Every value is read from the demonstration’s records.</text>
+</svg>

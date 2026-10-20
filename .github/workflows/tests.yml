@@ -59,4 +59,5 @@ jobs:
           python tools/make_flowcharts.py
           python tools/make_state_diagrams.py
           python tools/make_slide_diagrams.py
+          python tools/make_sequence_diagram.py
           git diff --exit-code -- 'docs/*.svg'

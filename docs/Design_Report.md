@@ -8,11 +8,11 @@
 | Roll number | 25L-5668 |
 | Course and instructor | CS2012 Introduction to Object-Oriented Programming, FAST-NUCES Lahore; Bilal Nadeem |
 
-The whole implementation is one file, `banking_system.py` (Python 3.9+). It uses no libraries: exact money, dates, abstract classes, JSON and the test framework are classes written in the file (section 5.3). It contains the domain model, a seeded demonstration of 16 scenarios, 81 automated tests and generators for the class and UML diagrams.
+The whole implementation is one file, `banking_system.py` (Python 3.9+). It uses no libraries: exact money, dates, abstract classes, JSON and the test framework are classes written in the file (section 5.3). It contains the domain model, a seeded demonstration of 16 scenarios, 84 automated tests and generators for the class and UML diagrams.
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 81 automated tests
+python banking_system.py --test       # run the 84 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -22,9 +22,9 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 1. Domain research summary, sources and terminology | Section 1 |
 | 2. Assumptions | Section 2 (A1 to A38) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
-| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
+| 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams; 4.3 a UML sequence diagram |
 | 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (74 business classes plus 16 supporting, 98 operations, 80 of them state-changing commands); 5.3 the building blocks written instead of libraries; 5.4 IBAN and card-number checks |
-| 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
+| 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines; 6.3 what each level adds, as tables; 6.4 the design checked against SOLID and design patterns |
 | 7. At least three tempting inheritances rejected | Section 7 (fourteen given); 7.1 compares the design with a plausible alternative |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
 | 9. At least five complex scenarios | Section 9 (sixteen given) |
@@ -38,8 +38,8 @@ The essentials of each required item, for a quick read. Each section below gives
 1. **Research.** Twelve sources (FATF, State Bank of Pakistan, Basel Committee, ISO 20022, Visa and Mastercard dispute rules, IFRS 9, BIAN, Fowler's *Analysis Patterns*, the IBAN standard, the card-numbering standard, PCI DSS, and the references behind the building blocks) and a 31-term glossary. The research changed ten first ideas; for example, customer, director and signatory are *roles* of one person, not subclasses.
 2. **Assumptions.** 38 numbered decisions where the brief is silent, for example: a sole trader is a `Person`; a charity needs two trustees; owners of 25% or more must be verified; payments above a mandate's threshold need a second signatory.
 3. **Requirements.** The model must keep history when anything changes: documents expire, people lose authority, products close, cards are replaced, loans are restructured, branches close. Nothing is overwritten or deleted; changes are new records with dates.
-4. **Class model.** Four hierarchies (`Party`, `Arrangement`, `BankTransaction`, `Case`) plus standalone classes linked by association (cards, mandates, branches, employees, products). Diagrams: class overview, UML per hierarchy, associations, six flowcharts, four state machines.
-5. **Implementation.** One file with no libraries (its own classes replace `decimal`, `datetime`, `abc`, `json` and `unittest`): 74 business classes (plus 16 supporting), 98 operations (80 change state), 81 automated tests, a double-entry ledger whose trial balance is always zero. Payee IBANs and card numbers carry check digits that the model verifies.
+4. **Class model.** Four hierarchies (`Party`, `Arrangement`, `BankTransaction`, `Case`) plus standalone classes linked by association (cards, mandates, branches, employees, products). Diagrams: class overview, UML per hierarchy, associations, six flowcharts, four state machines and a sequence diagram.
+5. **Implementation.** One file with no libraries (its own classes replace `decimal`, `datetime`, `abc`, `json` and `unittest`): 74 business classes (plus 16 supporting), 98 operations (80 change state), 84 automated tests, a double-entry ledger whose trial balance is always zero. Payee IBANs and card numbers carry check digits that the model verifies.
 6. **Inheritance.** Four multi-level hierarchies, for example `Party › Organization › Company` and `BankTransaction › Reversal › Chargeback`. Shared data sits at the highest level every subclass needs, and each subclass changes one behaviour (for example, `SavingsAccount.check_debit` adds a monthly withdrawal limit).
 7. **Rejected inheritance.** Fourteen rejected, for example `Customer(Person)` (a role, not a kind), `Card(Account)` (holds no money), `SoleTrader(Organization)` (legally the person) and `MerchantRefund(Reversal)` (the purchase stays valid). The design is compared with an account-centric alternative on ten critical cases.
 8. **Seeded demonstration.** One bank, 3 branches, 10 staff, 20 people, a company, a charity, accounts, cards and financing, run on a simulated calendar from January 2026 to August 2027.
@@ -380,6 +380,18 @@ The flowcharts show what an operation checks. These diagrams show what can happe
 
 ![State machine 4 - Other records](state_4_other_records.png)
 
+### 4.3 Objects working together: a UML sequence diagram
+
+The class diagrams show what each class is, the flowcharts the order of the checks, and the state diagrams a record's whole life. A sequence diagram shows the remaining view: which *objects* send which messages to each other, in time order, during one real case. It follows scenario 2 (TRF-002, a PKR 1,500,000 company payment) through three operations on two dates: Hamza starts it, the mandate's dual-control threshold makes it wait for Ayesha, her approval sends it into a compliance hold with a fraud alert, and Kamran releases it three days later.
+
+Notation (UML 2): a stick figure is an actor (a person using the system); a box with an underlined name is one object (`TRF-002 :TransferPayment`); the dashed line below it is its lifeline; a solid arrow with a filled head is a call; a dashed arrow with an open head is a return; a dashed arrow marked «create» creates an object, whose box starts at that point; the narrow bar on `:Bank` shows one operation in progress.
+
+The diagram is drawn by `tools/make_sequence_diagram.py`, which runs the demonstration and fills in every label from the records (account, mandates, amounts, alert, dates). It refuses to draw if the status changes it shows differ from the status trail recorded on TRF-002, and CI regenerates it on every push, so it cannot drift from the code.
+
+**Sequence diagram 1. A large transfer:** the same three objects (`:Company` for the mandate, `:CurrentAccount` for the funds, `:TransferPayment` for the status) are asked again at each step, because authority and funds can change between the request and the approval.
+
+![Sequence diagram 1 - Large transfer](sequence_1_large_transfer.png)
+
 ---
 
 ## 5. Implementation and operations
@@ -413,7 +425,7 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 81 independent tests (`python banking_system.py --test`), run by the file's own `TestRunner` (section 5.3). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), five tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, that the whole demonstration runs with a zero trial balance, and that the file imports nothing but `sys`), three tests for the IBAN and card-number checks (section 5.4), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
+**Automated tests.** 84 independent tests (`python banking_system.py --test`), run by the file's own `TestRunner` (section 5.3). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), five tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, that the whole demonstration runs with a zero trial balance, and that the file imports nothing but `sys`), three tests for the IBAN and card-number checks (section 5.4), three substitution tests (`SubstitutionTests`, section 6.4), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
@@ -496,7 +508,7 @@ Two checks that banks run before money moves were added from the research (sourc
 
 **BankTransaction -> CashTransaction / FeeCharge / InterestCredit / Reversal / MerchantRefund / InternalTransfer.** These are transactions (they post and have statuses) but share nothing further with each other. A reversal is a transaction in its own right, not a flag on the original. A merchant refund is money the merchant sends back through the card scheme; it points to the purchase and its merchant. `InternalTransfer` is a bank-initiated movement no customer instructed (vault cash on branch closure, term-deposit payout).
 
-**BankTransaction -> Reversal -> Chargeback (multi-level).** Everything a reversal has, a chargeback has too: an original transaction, counter-entries that mirror it, a staff approval, the rule that it cannot itself be reversed, and the effect of marking the original (partially) reversed. So `Chargeback` inherits all of it, and `Bank._counter_post` is shared by both. What a chargeback adds is only true at that level: it exists only for a *card* payment, only because a `Dispute` was upheld, it is claimed from a specific `Merchant` through the card scheme, and it carries the scheme reason code. `resolve_dispute` therefore posts a `Chargeback` for a card payment and a plain `Reversal` for any other customer payment. The level was found by research (source 5), not by looking for shared fields.
+**BankTransaction -> Reversal -> Chargeback (multi-level).** Everything a reversal has, a chargeback has too: an original transaction, counter-entries that mirror it, a staff approval, the rule that it cannot itself be reversed, and the effect of marking the original (partially) reversed. So `Chargeback` inherits all of it, and `Bank._counter_post` is shared by both. What a chargeback adds is only true at that level: it exists only for a *card* payment, only because a `Dispute` was upheld, it is claimed from a specific `Merchant` through the card scheme, and it carries the scheme reason code. `resolve_dispute` therefore asks the payment how it is refunded (`dispute_refund()`): `CardPayment` answers with a `Chargeback`, and every other customer payment with a plain `Reversal`. The level was found by research (source 5), not by looking for shared fields.
 
 **Case -> CustomerCase -> ServiceRequest / Dispute / Complaint; Case -> RiskCase -> FraudAlert / ComplianceInvestigation (multi-level); Case -> CollectionsCase.** All cases have a subject, status history, assignments, notes, evidence and links. Customer cases arrive through a service channel from a contact person. Risk cases are bank-initiated, carry a risk level and the restrictions they imposed, and override `close()` so they cannot close while those restrictions are in force. This split lets the scenario keep the branch complaint and the compliance investigation as separate, linked records.
 
@@ -524,6 +536,91 @@ A real bank never holds "a party", "an arrangement", "a transaction" or "a case"
 Each class with a status declares its lifecycle once, as a `LIFECYCLE` class constant: the initial status, every allowed move labelled with the operation that causes it, and the final statuses. `StatusHistory` enforces it on every change, so an illegal move (a destroyed card becoming active again, a posted payment going back to pending) is refused wherever it is attempted, even by code that bypasses the `Bank`. Lifecycles are inherited like any other class attribute: `CashTransaction` uses `BankTransaction`'s unchanged, `CustomerPayment` extends it with dual control (`AWAITING_AUTHORISATION`, `AUTHORISED`, `CANCELLED`), `TransferPayment` extends that with the compliance hold and `CardPayment` with `DECLINED`. `FinancingAgreement` instead replaces `Arrangement`'s lifecycle, because a loan is never "closed" like an account; it is settled. The state diagrams in section 4.2 are drawn from these declarations.
 
 ---
+
+### 6.3 What each level adds, and why it sits there
+
+The same four hierarchies as tables, one row per level. The data and behaviour columns are taken from the code (they match the UML diagrams in section 4, which are generated from the classes); the last column is the reason the member sits at that level and not higher or lower.
+
+**Parties**
+
+| Level | Data it adds | Behaviour it adds or changes | Why at this level |
+|---|---|---|---|
+| `Party` (abstract) | `party_id`, documents, checks, corrections, restrictions, `relationship`, dated details | `kyc_gaps()` (template method), `is_verified()`, `detail_on()`, `correct_detail()`; abstract `structural_gaps()`, `connected_persons()` | Every person and organisation is identified, verified, corrected and restricted the same way |
+| `Person` | `date_of_birth` | implements both hooks: nothing further to check | A person has no board and no owners |
+| `Organization` (abstract) | `registration_no`, `officers`, `owners`, `mandates`; `OWNERSHIP_THRESHOLD` (25%) | implements `connected_persons()` (officers, owners of 25% or more); `find_mandate()` | Only legal entities have officers, owners and people acting for them; still abstract because the governance rule differs |
+| `Company` | `incorporated_on` | `structural_gaps()`: an active director | Company law |
+| `Charity` | `MIN_TRUSTEES` (2) | `structural_gaps()`: at least two trustees | Trust governance (A4) |
+
+**Arrangements**
+
+| Level | Data it adds | Behaviour it adds or changes | Why at this level |
+|---|---|---|---|
+| `Arrangement` (abstract) | `number`, `product`, pinned `terms` and `terms_history`, `holders`, branch history, `status`, `restrictions` | `terms_on()`, `migrate_terms()`, `ensure_usable()`, `servicing_branch_on()`; abstract `position()` | Anything a customer holds under a product's terms |
+| `DepositAccount` (abstract) | ledger `entries`, `holds`; `NEEDS_PAYOUT_ACCOUNT` | `ledger_balance()`, `available_balance()`, `check_debit()`; `position()` = held; abstract `overdraft_limit()` | Only deposits hold the customer's money |
+| `CurrentAccount` | (none) | `overdraft_limit()` from its terms | The only account that may go below zero |
+| `SavingsAccount` | (none) | `overdraft_limit()` = 0; `check_debit()` adds the monthly withdrawal limit, then calls `super()` | A savings rule on top of the shared funds check |
+| `FixedTermDeposit` | `term_months`, `annual_rate`, `maturity_on`, `payout_account` | `check_debit()` refuses before maturity; `ensure_usable()` allows one placement; `maturity_interest()` | Money locked for a term, paid out to another account |
+| `FinancingAgreement` | `principal`, versioned `schedules`, `transactions`, `settlement_account` | `position()` = owed; `allocate()`, `outstanding_principal()`, `settlement_quote()` | Money owed, not held: a sibling of `DepositAccount`, not a child |
+
+**Transactions**
+
+| Level | Data it adds | Behaviour it adds or changes | Why at this level |
+|---|---|---|---|
+| `BankTransaction` (abstract) | `txn_id`, `amount`, `status`, ledger `entries`, `reversals`, `failure_reason`, `supersedes` | `post()` (the legs must sum to zero), `net_amount`, `story_lines()` (template method); abstract `counterparty()` | Every movement of money is posted, has a status and may be reversed |
+| `CustomerPayment` (abstract) | `source_account`, `initiated_by`, `channel`, `mandate_used`, `authorisations`, `disputes`; dual-control states | extends `detail_lines()` and `case_lines()`; `dispute_refund()` = a `Reversal` | Only payments a customer instructed need authority, a second signatory and disputes |
+| `TransferPayment` | `beneficiary`, `beneficiary_version`, `hold`, `standing_order`; compliance-hold states | `counterparty()`; extends `detail_lines()` | Only transfers leave the bank to a saved payee |
+| `CardPayment` | `card`, `merchant`, `card_channel`, `country`, `merchant_category`, `refunds`; `DECLINED` | `net_amount` also subtracts merchant refunds; `dispute_refund()` = a `Chargeback` | Only card payments go through a card scheme |
+| `BillPayment`, `OwnAccountTransfer` | biller and consumer reference; target account | `counterparty()` | Each adds only its own counterparty |
+| `LoanTransaction` (abstract) and its three subclasses | `agreement`; then the approval, the allocations or the capitalisation approval | `counterparty()` in each subclass | Every movement on one loan, found in one place |
+| `Reversal`, then `Chargeback` | `original`, `reason`, `approval`; then `dispute`, `merchant`, `reason_code` | `counterparty()`; `Chargeback` overrides it to name the merchant | A chargeback is a reversal with card-scheme obligations |
+
+**Cases**
+
+| Level | Data it adds | Behaviour it adds or changes | Why at this level |
+|---|---|---|---|
+| `Case` (abstract) | `case_id`, `subject`, `summary`, `status`, assignments, notes, evidence, links, `outcome` | `assign()`, `add_note()`, `link()`, `close()`; abstract `handler_roles()` | Every case is worked, recorded and closed the same way |
+| `CustomerCase` | `channel`, `contact_person` | `handler_roles()`: branch staff | Raised by a customer through a channel |
+| `Complaint`, `Dispute`, `ServiceRequest` | `category`; the payment, amount, reason and refund; the request type and related record | (data only) | Different records, each with its own reference series |
+| `RiskCase` | `risk_level`, `restrictions` | `handler_roles()`: compliance; `close()` refuses while a restriction is in force | Opened by the bank, and may restrict the customer |
+| `FraudAlert`, `ComplianceInvestigation` | `rule`, `transaction`; (none) | (data only) | Raised by a monitoring rule; opened by compliance staff |
+| `CollectionsCase` | `agreement`, `overdue_at_opening`, `promises` | `handler_roles()`: collections | Overdue financing |
+
+### 6.4 The design checked against SOLID and design patterns
+
+The course's design principles (SOLID) and design patterns were used as a checklist against the finished code. The review found two places that broke the open/closed principle; both were fixed, and each fix is protected by a test.
+
+**S: Single responsibility.** Most classes do one job: `Period` answers "was this valid on a date?", `StatusHistory` keeps and checks status changes, `Lifecycle` says which moves are allowed, `LedgerEntry` is one posting, `Iban` checks one account number, and `Repository` knows the file format while its subclasses only decide where the text is kept. The exception is `Bank` (about 1,380 lines, 98 public operations). It is the application service: each operation checks who is acting, asks the domain objects (`check_debit()`, `find_mandate()`, `kyc_gaps()`, the lifecycles) and records the result. The business rules themselves live in those classes, not in `Bank`. At a larger bank it would be split into services by area (section 10); that is the honest limit of a one-file model.
+
+**O: Open/closed.** A new kind of thing is added by writing a subclass, without editing `Bank`: a deposit implements `overdraft_limit()` (and may extend `check_debit()`), a transaction `counterparty()`, a case `handler_roles()`, a storage place `_write()` and `_read()`, and a lifecycle extends its parent's with `Lifecycle.extend()`. The review found two places that still chose behaviour by type:
+
+| Before | Problem | After |
+|---|---|---|
+| `open_deposit_account` tested `account_class is FixedTermDeposit` | A subclass of `FixedTermDeposit` (for example an Islamic term deposit) would have skipped the payout-account rule | A class constant, `NEEDS_PAYOUT_ACCOUNT`, inherited by every term deposit |
+| `resolve_dispute` tested `isinstance(txn, CardPayment)` | A new disputable payment type would have meant editing `Bank` | The payment answers `dispute_refund()`: a `Reversal`, or a `Chargeback` for a card payment |
+
+A test now defines an `IslamicTermDeposit(FixedTermDeposit)` inside the test and shows that the bank opens it, demands its payout account and refuses early withdrawals, with no change to `Bank`. The `isinstance` checks that remain in `Bank` (33) are almost all guards (an operation that applies to one kind only: `break_term_deposit` refuses anything but a term deposit) or filters (the collections cases of one loan). One still chooses behaviour: `authorise_payment` completes a bill payment differently from a transfer. It was left because only these two payments can wait for a second signatory, and each settles to a different ledger account.
+
+**L: Liskov substitution.** Every subclass keeps its parent's promises, so code written for the parent works with any child. `DepositAccount.check_debit()` promises "return, or refuse with a `BankingError`". `SavingsAccount` and `FixedTermDeposit` refuse in more situations, but only with the same kind of error, and every caller (`initiate_transfer`, `withdraw_cash`, the standing-order run) already handles a refusal, so no caller changes. The rejected inheritances (section 7) are Liskov failures found in advance: a `MerchantRefund` used as a `Reversal` would mark the purchase reversed; a `FinancingAgreement` used as a `DepositAccount` would answer balance and debit questions about money that is owed, not held. `SubstitutionTests` check every object of the demonstration through its parent's interface: every arrangement's `position()`, every deposit's `check_debit()` refusing with a business error, every transaction's `story_lines()` and `counterparty()`, every case's `handler_roles()`.
+
+**I: Interface segregation.** Python has no interfaces; abstract classes play that role, and each asks its subclasses for very little: `DepositAccount` only `overdraft_limit()`, `Case` only `handler_roles()`, `Repository` only `_write()` and `_read()`, `Assistant` only `answer()`. No subclass has to implement a method it does not need.
+
+**D: Dependency inversion.** High-level code depends on abstractions and is given the details from outside. The assistant receives a function that returns the current bank, and `ClaudeAssistant` receives its client, so the tests pass a stand-in that never touches the internet. Saving is written against `Repository`: the tests use `MemoryRepository`, the GUI `JsonFileRepository`, and the domain classes know nothing about files. The GUI never reaches into domain objects: every button calls one `Bank` operation through `BankController`.
+
+**Design patterns found in the code.**
+
+| Pattern | Where | What it does here |
+|---|---|---|
+| Template method | `Party.kyc_gaps`, `BankTransaction.story_lines`, `Repository.save` / `load`, `Assistant.ask` | The parent fixes the steps; each subclass fills in its hooks |
+| Factory method (the class as a parameter) | `Bank.open_deposit_account(account_class, ...)`, `Bank._counter_post(kind, ...)`, `make_assistant()`, `Iban.build()`, `CardNumber.issue()` | The caller chooses which class is created; the creation code is written once |
+| Facade | `Bank` for the GUI, the assistant and the tests; `BankController` inside the GUI | One entry point to the whole model |
+| Command (a simple form) | `OperationSpec` in the GUI, `FormAction` in the assistant | An operation request as an object: its label, its fields and the call that runs it |
+| State machine as data (a form of State) | `Lifecycle` with `StatusHistory` | The allowed moves are a table; the history refuses any other move |
+| Value object | `Money`, `Exact`, `Date`, `Iban` | Compared by value and never changed after creation |
+| Repository | `Repository` → `JsonFileRepository` / `MemoryRepository` | Saving and loading kept out of the domain classes |
+| Test double | `_FakeClaude`, `MemoryRepository` | Tests run without the internet or files |
+| Analysis patterns (Fowler) | `Party` with role objects, `Mandate` (accountability), `Period` and versions (temporal property), `LedgerEntry` (account and posting), `Reversal` (reversal adjustment), `AuditEvent` (audit log), `CaseEvidence` (snapshot) | The banking ideas the model is built on (source 8) |
+
+**Not used, and why.** *Observer*: each `Bank` operation writes its own audit event and notice. If notices had to go out by SMS or e-mail, operations would publish events and notifiers would subscribe (section 10). *Singleton*: avoided; the only module-level state is the reference-number counter, which is saved and restored with the bank.
 
 ## 7. Tempting inheritance relationships that were rejected
 
@@ -605,6 +702,22 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 
 **If the business model changed.** Islamic banking products (for example Murabaha or Ijarah) would be new `Arrangement` subclasses, because their obligations differ structurally from interest-bearing loans; this is where the `Arrangement` level pays off. Investment or wealth products would also become new arrangement types with their own position records. Multi-currency would add a currency to `Money` (today every amount is PKR) and FX transaction types.
+
+**Each change, mapped to the classes it affects.** The table shows where each likely change would land. Most are a new subclass or a new strategy object, not an edit to existing classes (section 6.4).
+
+| Change | Classes affected | What would change |
+|---|---|---|
+| A database instead of one JSON file | `Repository` | A third subclass (for example `DatabaseRepository`) implementing `_write` and `_read`; `Period` and the version classes become `valid_from` / `valid_to` columns; the reference counter becomes a database sequence |
+| Many staff working at once | `Bank`, `StatusHistory`, `LedgerEntry` | Each operation runs as one database transaction; a status change checks that nobody changed the record first (optimistic locking). Append-only ledger entries and status changes make this easier, because nothing is ever updated in place |
+| More branches and channels | `Bank` | Split into services by area (customers, payments, cards, lending, compliance) behind the same operation names; audit events and notices published as events (the Observer pattern) |
+| Several currencies | `Money`, `GeneralLedgerAccount`, `BankTransaction` | `Money` gains a currency and refuses to add two different currencies; a new `FxConversion` transaction subclass posts both legs; the trial balance is checked per currency |
+| Instant payments (Raast) | `TransferPayment`, `Iban`, `Beneficiary` | Raast, the State Bank of Pakistan's instant payment system, addresses accounts by IBAN (already checked by `Iban`) or by a mobile-number alias; an alias class and a new payment status for "settled instantly" |
+| Islamic banking | `Arrangement`, `DepositAccount`, `InterestCredit` | Murabaha and Ijarah as `Arrangement` subclasses; profit-sharing deposits as `DepositAccount` subclasses, which the bank already accepts unchanged (the `IslamicTermDeposit` test); a profit distribution in place of `InterestCredit` |
+| Credit cards | `Arrangement`, `IssuedCard` | A revolving `CreditCardAccount(Arrangement)` with a monthly statement cycle; `IssuedCard` links to it instead of to a deposit account |
+| Risk scoring instead of one threshold | `Bank._complete_transfer` | A small `ReviewRule` hierarchy (a threshold rule, a score rule) passed to the bank, so the rule can change without editing the transfer code |
+| Approval rules such as "any two of A, B, C" | `Mandate`, `PaymentAuthorisation` | The mandate holds an approval policy object instead of one `dual_control_above` amount |
+| Notices by SMS or e-mail | `Notice` | A `Notifier` hierarchy (SMS, e-mail) subscribed to the bank's events |
+| Real sign-in | `Bank`, the GUI | The acting person comes from the login; roles already come from dated `RoleAssignment` records |
 
 ---
 

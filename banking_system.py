@@ -1271,6 +1271,7 @@ class DepositAccount(Arrangement):
     """
 
     prefix = "DEP"
+    NEEDS_PAYOUT_ACCOUNT = False        # paid out into another account at the end (term deposits)
 
     def __init__(self, product, holders, opened_on, branch, opened_by):
         super().__init__(product, holders, opened_on, branch, opened_by)
@@ -1344,6 +1345,7 @@ class FixedTermDeposit(DepositAccount):
 
     prefix = "FTD"
     PRODUCT_CATEGORY = "TERM_DEPOSIT"
+    NEEDS_PAYOUT_ACCOUNT = True
 
     def __init__(self, product, holders, opened_on, branch, opened_by):
         super().__init__(product, holders, opened_on, branch, opened_by)
@@ -1937,6 +1939,11 @@ class CustomerPayment(BankTransaction):
     def case_lines(self):
         return [f"  dispute {d.case_id}: {d.outcome or 'open'}" for d in self.disputes]
 
+    def dispute_refund(self, dispute):
+        """How an upheld dispute gives money back, as (class, its own arguments): the bank
+        reverses its own posting. CardPayment overrides this with a chargeback."""
+        return Reversal, ()
+
 
 class TransferPayment(CustomerPayment):
     """A transfer to a beneficiary. Snapshots the beneficiary VERSION it was sent to."""
@@ -1996,6 +2003,9 @@ class CardPayment(CustomerPayment):
     def detail_lines(self):
         return super().detail_lines() + [f"  card used: {self.card}"] + [
             f"  merchant refund {r.txn_id} {fmt(r.amount)} [{r.status.current}]: {r.reason}" for r in self.refunds]
+
+    def dispute_refund(self, dispute):
+        return Chargeback, (dispute,)    # claimed back from the merchant through the card scheme
 
 
 class BillPayment(CustomerPayment):
@@ -2903,7 +2913,7 @@ class Bank:
         if not (isinstance(account_class, type) and issubclass(account_class, DepositAccount)
                 and account_class is not DepositAccount):
             raise ProductNotAvailable("choose CurrentAccount, SavingsAccount or FixedTermDeposit")
-        if account_class is FixedTermDeposit and (
+        if account_class.NEEDS_PAYOUT_ACCOUNT and (
                 payout_account is None or set(payout_account.holders) != set(holders)):
             raise BankingError("a term deposit needs a payout account with the same holders")
         assignment = self._require_role(by, self.BRANCH_ROLES, "open accounts")
@@ -2914,7 +2924,7 @@ class Bank:
             if gaps:
                 raise KycIncomplete("; ".join(gaps))
         acct = account_class(product, holders, self.today, assignment.branch, by)
-        if payout_account is not None and isinstance(acct, FixedTermDeposit):
+        if acct.NEEDS_PAYOUT_ACCOUNT:
             acct.payout_account = payout_account
         self.arrangements[acct.number] = acct
         self._log(by, "OPEN_ACCOUNT", acct.number, f"{product.name} terms v{acct.terms.version_no}")
@@ -3613,10 +3623,8 @@ class Bank:
             if money(refund) > dispute.disputed_amount:
                 raise BankingError(f"refund exceeds the disputed {fmt(dispute.disputed_amount)}")
             reason = f"dispute {dispute.case_id} {outcome}"
-            if isinstance(dispute.transaction, CardPayment):
-                dispute.refund = self._counter_post(dispute.transaction, refund, reason, by, Chargeback, dispute)
-            else:
-                dispute.refund = self._counter_post(dispute.transaction, refund, reason, by, Reversal)
+            kind, extra = dispute.transaction.dispute_refund(dispute)
+            dispute.refund = self._counter_post(dispute.transaction, refund, reason, by, kind, *extra)
         dispute.close(outcome, self.today, by)
         self._log(by, "RESOLVE_DISPUTE", dispute.case_id, outcome)
 
@@ -5749,11 +5757,54 @@ class AbstractionTests(TestCase):
             self.assertIn(c.reason_code, Chargeback.REASON_CODES)
 
     def test_story_and_case_roles_need_no_type_checks(self):
-        for method in (Bank.transaction_story, Bank.assign_case):
+        for method in (Bank.transaction_story, Bank.assign_case, Bank.resolve_dispute):
             self.assertNotIn("isinstance", SourceIndex.method_source(Bank, method.__name__))
         transfer = next(t for t in self.bank.transactions.values() if isinstance(t, TransferPayment))
         self.assertTrue(any("beneficiary as sent" in line for line in transfer.story_lines()))
         self.assertEqual(CollectionsCase.handler_roles(None), Bank.COLLECTIONS_ROLES)
+
+
+class SubstitutionTests(TestCase):
+    """Liskov substitution: an object of any subclass can be used wherever its parent is
+    expected, and keeps the parent's promises. Checked on every object in the demonstration."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.bank = run_demo(DemoLog(echo=False))
+
+    def test_every_arrangement_keeps_the_arrangement_contract(self):
+        today = self.bank.today
+        for a in self.bank.arrangements.values():
+            amount, meaning = a.position()
+            self.assertIsInstance(amount, Money)
+            self.assertIn(meaning, ("held", "owed"))
+            if isinstance(a, DepositAccount):                  # any deposit: a balance and a debit check
+                self.assertIsInstance(a.available_balance(today), Money)
+                with self.assertRaises(BankingError):            # refused with a business reason, never a crash
+                    a.check_debit(money(10 ** 12), today)
+
+    def test_every_transaction_and_case_answers_through_its_parent(self):
+        for t in self.bank.transactions.values():
+            lines = t.story_lines()
+            self.assertTrue(lines[0].startswith(t.txn_id) and all(isinstance(x, str) for x in lines))
+            self.assertTrue(isinstance(t.counterparty(), str) and t.counterparty())
+            self.assertGreaterEqual(t.amount, t.net_amount)
+        for c in self.bank.cases.values():
+            self.assertTrue(c.handler_roles())
+        for p in self.bank.parties.values():
+            self.assertIsInstance(p.kyc_gaps(self.bank.today), list)
+
+    def test_a_new_kind_of_term_deposit_needs_no_change_to_the_bank(self):
+        class IslamicTermDeposit(FixedTermDeposit):              # a later product, written as a subclass
+            """Profit-sharing term deposit (illustration only)."""
+        w = _World()
+        ftd = w.bank.define_product("ITD", "Islamic term deposit", "TERM_DEPOSIT", term_months=6,
+                                    annual_rate="0.10")
+        with self.assertRaises(BankingError):                    # inherits the payout-account rule
+            w.bank.open_deposit_account(IslamicTermDeposit, ftd, [w.co], w.rm)
+        dep = w.bank.open_deposit_account(IslamicTermDeposit, ftd, [w.co], w.rm, payout_account=w.acct)
+        self.assertIs(dep.payout_account, w.acct)
+        self.assertEqual(w.bank.withdraw_cash(dep, 100, w.teller, w.a).status.current, "FAILED")
 
 
 def lifecycle_classes():

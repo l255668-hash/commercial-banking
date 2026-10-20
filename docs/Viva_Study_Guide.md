@@ -145,7 +145,7 @@ The writer turns dicts, lists, text and numbers into JSON text. The reader is a 
 
 ### C5. `TestCase` and `TestRunner`
 
-Every test class inherits its assertions (`assertEqual`, `assertRaises`...) from `TestCase`. A failed assertion raises `TestFailure`. `TestRunner` finds every subclass of `TestCase`, runs `setUpClass` once, then for each `test_` method makes a fresh object, runs `setUp` and the test, and counts it as ok, FAIL or ERROR. It prints "Ran 81 tests" and OK or FAILED.
+Every test class inherits its assertions (`assertEqual`, `assertRaises`...) from `TestCase`. A failed assertion raises `TestFailure`. `TestRunner` finds every subclass of `TestCase`, runs `setUpClass` once, then for each `test_` method makes a fresh object, runs `setUp` and the test, and counts it as ok, FAIL or ERROR. It prints "Ran 84 tests" and OK or FAILED.
 
 ### C6. `Iban`: payee account numbers that check themselves
 
@@ -159,7 +159,29 @@ A card number is 16 digits: issuer prefix (BIN, 6 digits), account digits, and a
 
 ---
 
-## Part D. Questions to practise (answer aloud)
+## Part D. Design principles (SOLID), patterns and the sequence diagram
+
+Learn one example from your own code for each letter. Report section 6.4 has the full version.
+
+| Principle | In one sentence | Your example |
+|---|---|---|
+| **S**ingle responsibility | A class has one job | `Period` only answers "valid on this date?"; `StatusHistory` only keeps and checks statuses. Honest exception: `Bank` is large, because it coordinates every operation |
+| **O**pen/closed | Add new kinds without editing old code | A new deposit type is a subclass; the `IslamicTermDeposit` test shows `Bank` needs no change |
+| **L**iskov substitution | A child can be used wherever its parent is expected | `SavingsAccount.check_debit` refuses more, but with the same `BankingError`, so every caller still works. `MerchantRefund` is *not* a `Reversal`, because using it as one would mark the purchase reversed |
+| **I**nterface segregation | Don't force a class to implement what it doesn't need | `DepositAccount` asks only for `overdraft_limit()`; `Repository` only for `_write()` and `_read()` |
+| **D**ependency inversion | Depend on abstractions, receive details from outside | Saving is written against `Repository`; `ClaudeAssistant` is given its client, so tests use a stand-in |
+
+**The two fixes the review made.** (1) `open_deposit_account` tested `account_class is FixedTermDeposit`, so a *subclass* of `FixedTermDeposit` would have skipped the payout-account rule; now every term deposit inherits `NEEDS_PAYOUT_ACCOUNT = True`. (2) `resolve_dispute` tested `isinstance(..., CardPayment)`; now it asks the payment, `dispute_refund()`, and `CardPayment` answers with a `Chargeback`.
+
+**Patterns to name:** template method (`kyc_gaps`, `story_lines`), factory method (`open_deposit_account(account_class, ...)`), facade (`Bank`), value object (`Money`, `Iban`), repository (`Repository`), state machine as data (`Lifecycle`).
+
+**The sequence diagram** (`docs/sequence_1_large_transfer.png`) shows *objects talking in time order* during one payment (TRF-002): Hamza starts it, Ayesha approves it, Kamran releases it. The flowchart shows the order of the *checks*; the sequence diagram shows *who asks whom*. Note that the mandate and the funds are checked again at each step.
+
+*Roman Urdu: SOLID ka har harf apne code ki ek misaal ke saath yaad karein; review ne do jagah type check pakre aur unhe polymorphism se badla.*
+
+---
+
+## Part E. Questions to practise (answer aloud)
 
 1. Why is `Customer` not a subclass of `Person`?
 2. Name all your multi-level hierarchies.
@@ -185,4 +207,9 @@ A card number is 16 digits: issuer prefix (BIN, 6 digits), account digits, and a
 20. How does the program know an IBAN was mistyped? Do the mod 97 check on the example. (Part C6.)
 21. What is the Luhn check digit, and why does the bank keep only part of a card number? (Part C7.)
 
-When you can answer all 21 without notes, you are ready.
+22. Explain Liskov substitution with an example from your code. (Part D: `SavingsAccount.check_debit`, or why `MerchantRefund` is not a `Reversal`.)
+23. Which SOLID principle does your code break, and why did you accept it? (`Bank` is a large class: single responsibility. It coordinates; the rules live in the domain classes. Report section 6.4.)
+24. What did your SOLID review change in the code? (The two fixes in Part D.)
+25. What does your sequence diagram show that a flowchart does not? (Part D.)
+
+When you can answer all 25 without notes, you are ready.
