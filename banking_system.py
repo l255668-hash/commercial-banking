@@ -21,6 +21,7 @@ that contains:
     PART 10 cases                                 Case -> RiskCase -> ComplianceInvestigation
     PART 11 statements and notices
     PART 12 Bank: the application service (every operation, rule and audit event)
+    PART 12A saving and loading the whole bank    Repository -> JsonFileRepository / MemoryRepository
     PART 13 seeded demonstration: 16 complex scenarios on a simulated calendar
     PART 14 automated tests (unittest)
     PART 15 class and UML diagram generators (SVG, read from the live classes)
@@ -32,6 +33,8 @@ How to run
     python banking_system.py --test       # run the automated tests
     python banking_system.py --classes    # print the inheritance tree and counts
     python banking_system.py --diagram DIR  # write the class and UML diagrams (SVG) into DIR
+    python banking_system.py --save FILE    # run the demonstration and save the whole bank as JSON
+    python banking_system.py --load FILE    # load a saved bank and print a summary
 
 Core design rule
 ----------------
@@ -61,10 +64,15 @@ All amounts are Pakistani rupees (PKR) held as Decimal, never float.
 """
 from __future__ import annotations
 
+import contextlib
 import inspect
+import io
+import json
 import sys
+import tempfile
 import unittest
 from abc import ABC, abstractmethod
+from pathlib import Path
 from datetime import date, timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
@@ -3344,6 +3352,149 @@ class Bank:
 
 
 # =============================================================================
+# PART 12A - Saving and loading the whole bank (files / JSON)
+#   Repository (abstract) -> JsonFileRepository / MemoryRepository
+# The JSON format is shared by every repository (template method); a subclass
+# decides only WHERE the text is kept. Loading restores every object exactly,
+# with its history, so a saved bank carries on as if it had never stopped.
+# =============================================================================
+class Repository(ABC):
+    """Saves a Bank as JSON text and loads it back exactly.
+
+    Each object becomes {"class": ..., "fields": {...}}; a reference to another
+    object is {"$ref": n}, so shared objects stay shared and cycles are fine.
+    Dates, Decimal amounts, tuples and frozensets keep their types, and each
+    lifecycle is saved by name (it is a class constant, not data).
+    """
+
+    FORMAT = "indus-commercial-bank/1"
+
+    def save(self, bank):
+        """Save the bank (and the reference-number counters)."""
+        self._write(json.dumps(self.encode(bank), indent=1))
+
+    def load(self):
+        """Load a saved bank. The reference counters continue from the saved values."""
+        return self.decode(json.loads(self._read()))
+
+    @abstractmethod
+    def _write(self, text):
+        """Keep the JSON text somewhere."""
+
+    @abstractmethod
+    def _read(self):
+        """Return the JSON text kept by _write."""
+
+    # ------------------------------------------------------------------ encoding
+    def encode(self, bank):
+        module = sys.modules[__name__]
+        lifecycles = {id(lc): f"{cls.__name__}.{attr}" for cls, attr, lc in lifecycle_classes()}
+        objects, index, queue = [], {}, []
+
+        def value(v):
+            if v is None or isinstance(v, (bool, int, float, str)):
+                return v
+            if isinstance(v, Decimal):
+                return {"$dec": str(v)}
+            if isinstance(v, date):
+                return {"$date": v.isoformat()}
+            if isinstance(v, list):
+                return [value(x) for x in v]
+            if isinstance(v, tuple):
+                return {"$tuple": [value(x) for x in v]}
+            if isinstance(v, frozenset):
+                return {"$frozenset": sorted((value(x) for x in v), key=lambda x: json.dumps(x, sort_keys=True))}
+            if isinstance(v, dict):
+                return {"$dict": {str(k): value(x) for k, x in v.items()}}
+            if id(v) in lifecycles:
+                return {"$lifecycle": lifecycles[id(v)]}
+            if getattr(module, type(v).__name__, None) is type(v) and hasattr(v, "__dict__"):
+                if id(v) not in index:              # first time seen: give it a number, encode it later
+                    index[id(v)] = len(objects)
+                    objects.append({"class": type(v).__name__})
+                    queue.append(v)
+                return {"$ref": index[id(v)]}
+            raise TypeError(f"cannot save a {type(v).__name__}")
+
+        root = value(bank)
+        while queue:                                 # iterative, so long chains of links never recurse deeply
+            obj = queue.pop(0)
+            objects[index[id(obj)]]["fields"] = {k: value(x) for k, x in vars(obj).items()}
+        return {"format": self.FORMAT, "counters": dict(_counters), "root": root, "objects": objects}
+
+    # ------------------------------------------------------------------ decoding
+    def decode(self, data):
+        if data.get("format") != self.FORMAT:
+            raise BankingError(f"not a saved bank in format {self.FORMAT}")
+        module = sys.modules[__name__]
+        made = []
+        for slot in data["objects"]:                 # 1st pass: create every object, empty
+            cls = getattr(module, slot["class"], None)
+            if not isinstance(cls, type):
+                raise BankingError(f"unknown class {slot['class']} in the saved bank")
+            made.append(cls.__new__(cls))
+
+        def value(v):
+            if isinstance(v, list):
+                return [value(x) for x in v]
+            if not isinstance(v, dict):
+                return v
+            (tag, inner), = v.items()
+            if tag == "$ref":
+                return made[inner]
+            if tag == "$dec":
+                return Decimal(inner)
+            if tag == "$date":
+                return date.fromisoformat(inner)
+            if tag == "$tuple":
+                return tuple(value(x) for x in inner)
+            if tag == "$frozenset":
+                return frozenset(value(x) for x in inner)
+            if tag == "$dict":
+                return {k: value(x) for k, x in inner.items()}
+            if tag == "$lifecycle":
+                cls_name, attr = inner.split(".")
+                return getattr(getattr(module, cls_name), attr)
+            raise BankingError(f"unknown value {tag} in the saved bank")
+
+        for obj, slot in zip(made, data["objects"]):   # 2nd pass: fill in the fields, links included
+            obj.__dict__.update({k: value(x) for k, x in slot["fields"].items()})
+        _counters.clear()
+        _counters.update(data["counters"])
+        return value(data["root"])
+
+
+class JsonFileRepository(Repository):
+    """Keeps the saved bank in a JSON file on disk."""
+
+    def __init__(self, path):
+        self.path = Path(path)
+
+    def _write(self, text):
+        self.path.write_text(text, encoding="utf-8")
+
+    def _read(self):
+        if not self.path.exists():
+            raise BankingError(f"no saved bank at {self.path}")
+        return self.path.read_text(encoding="utf-8")
+
+
+class MemoryRepository(Repository):
+    """Keeps the saved bank as text in memory (used by the tests; no file needed)."""
+
+    def __init__(self):
+        self.text = None
+
+    def _write(self, text):
+        self.text = text
+
+    def _read(self):
+        if self.text is None:
+            raise BankingError("nothing has been saved yet")
+        return self.text
+
+
+# =============================================================================
 # PART 13 - Seeded demonstration
 # A fictional bank (Indus Commercial Bank, Lahore) is seeded and then driven
 # through 16 scenarios on a simulated calendar (Jan 2026 - Aug 2027). Each
@@ -4710,6 +4861,49 @@ class LifecycleTests(unittest.TestCase):
             for final in lc.final:
                 self.assertFalse(lc.transitions.get(final), f"{cls.__name__}: {final} is final")
 
+
+class PersistenceTests(unittest.TestCase):
+    """Saving and loading: the loaded bank is the same bank and carries on working."""
+
+    @classmethod
+    def setUpClass(cls):
+        with contextlib.redirect_stdout(io.StringIO()):
+            cls.bank = run_demo()
+        cls.repo = MemoryRepository()
+        cls.repo.save(cls.bank)
+
+    def test_round_trip_is_exact(self):
+        again = MemoryRepository()
+        again.save(self.repo.load())
+        self.assertEqual(again.text, self.repo.text)
+
+    def test_loaded_bank_keeps_balances_and_history(self):
+        loaded = self.repo.load()
+        self.assertEqual(loaded.trial_balance()[1], 0)
+        self.assertEqual(len(loaded.transactions), len(self.bank.transactions))
+        ravi = next(p for p in loaded.parties.values() if p.name.startswith("Ravi"))
+        bilal = next(p for p in loaded.parties.values() if p.name == "Bilal Ahmed")
+        self.assertEqual([m.mandate_id for m in loaded.authority_on(ravi, bilal, date(2026, 4, 11))], ["MND-002"])
+        self.assertEqual(loaded.authority_on(ravi, bilal, loaded.today), [])
+
+    def test_loaded_bank_carries_on(self):
+        loaded = self.repo.load()
+        teller = next(e for e in loaded.employees.values()
+                      if (a := e.role_on(loaded.today)) and a.role == "TELLER")
+        txn = loaded.deposit_cash(loaded.arrangements["CUR-001"], 1000, teller)
+        self.assertEqual(txn.status.current, "POSTED")
+        self.assertNotIn(txn.txn_id, self.bank.transactions)          # numbering continued, no clash
+        with self.assertRaises(InvalidStateError):                    # lifecycles were restored too
+            loaded.cards["CARD-001"].status.change("ACTIVE", loaded.today)
+
+    def test_file_repository_writes_and_reads_a_file(self):
+        with tempfile.TemporaryDirectory() as folder:
+            repo = JsonFileRepository(Path(folder) / "bank.json")
+            repo.save(self.bank)
+            self.assertEqual(repo.load().today, self.bank.today)
+            with self.assertRaises(BankingError):
+                JsonFileRepository(Path(folder) / "missing.json").load()
+
 # =============================================================================
 # PART 15 - Introspection, class diagram and UML diagram generators
 # The diagram is drawn from the live classes, so it can never drift from the code.
@@ -4738,9 +4932,11 @@ def bank_operations():
 
 def support_classes():
     """Classes that are infrastructure rather than banking concepts: history building
-    blocks, the audit line and the application service. Counted separately so the
-    business class count is honest (the brief discounts artificial classes)."""
-    return [Period, StatusChange, StatusHistory, Lifecycle, AuditEvent, Bank]
+    blocks, the audit line, the application service and saving/loading. Counted
+    separately so the business class count is honest (the brief discounts artificial
+    classes)."""
+    return [Period, StatusChange, StatusHistory, Lifecycle, AuditEvent, Bank,
+            Repository, JsonFileRepository, MemoryRepository]
 
 
 def inheritance_tree():
@@ -5126,7 +5322,7 @@ def _write_one_association_diagram(folder, fname, title, layout, edges):
 # PART 16 - Command line
 # =============================================================================
 def main(argv=None):
-    """Entry point: demo by default; --test, --classes or --diagram DIR otherwise."""
+    """Entry point: demo by default; --test, --classes, --diagram DIR, --save FILE or --load FILE."""
     argv = list(sys.argv[1:] if argv is None else argv)
     if "--test" in argv:
         suite = unittest.defaultTestLoader.loadTestsFromModule(sys.modules[__name__])
@@ -5144,6 +5340,26 @@ def main(argv=None):
         folder = argv[i + 1] if i + 1 < len(argv) else "."
         for path in [write_class_diagram(folder)] + write_uml_diagrams(folder):
             print("written", path)
+        return 0
+    if "--save" in argv:
+        i = argv.index("--save")
+        path = argv[i + 1] if i + 1 < len(argv) else "bank.json"
+        with contextlib.redirect_stdout(io.StringIO()):
+            bank = run_demo()
+        JsonFileRepository(path).save(bank)
+        print(f"Saved {bank.name} as at {bank.today} to {path}")
+        return 0
+    if "--load" in argv:
+        i = argv.index("--load")
+        path = argv[i + 1] if i + 1 < len(argv) else "bank.json"
+        try:
+            bank = JsonFileRepository(path).load()
+        except (BankingError, ValueError) as e:
+            print(f"Could not load {path}: {e}")
+            return 1
+        print(f"Loaded {bank.name}, business date {bank.today}: {len(bank.parties)} parties, "
+              f"{len(bank.arrangements)} arrangements, {len(bank.transactions)} transactions, "
+              f"{len(bank.audit)} audit events; trial balance {bank.trial_balance()[1]:,.2f}")
         return 0
     run_demo()
     return 0

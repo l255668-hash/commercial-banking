@@ -144,7 +144,7 @@ Twenty are listed in `docs/Code_Review.md`, each with a regression test. Good ex
 Store the data in a database with effective-dated tables (the `Period` class maps to valid-from and valid-to columns), split the `Bank` class into services, add authentication so the acting person comes from the login, and replace the fixed review threshold with risk scoring.
 
 **What is deliberately simplified?**
-Single currency, simple interest calculations, two-signatory dual control only, two credit authority levels and in-memory storage. These are listed in report section 10.
+Single currency, simple interest calculations, two-signatory dual control only, two credit authority levels, and saving only as one whole JSON file (no database). These are listed in report section 10.
 
 ## Before the viva
 

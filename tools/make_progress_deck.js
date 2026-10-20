@@ -66,7 +66,7 @@ s.addNotes(NOTES[0]);
 s = pres.addSlide(); s.background = { color: WHITE };
 header(s, "Where the project stands", "Six planned phases: four complete, refinement under way, then the final submission", 0);
 const phases = [["Domain research & assumptions", "done"], ["Class & inheritance design", "done"], ["Implementation + tests", "done"],
-  ["GUI + AI assistant", "done"], ["Refinement: JSON, SOLID", "now"], ["Final report & viva", "next"]];
+  ["GUI + AI assistant", "done"], ["Refinement: SOLID review", "now"], ["Final report & viva", "next"]];
 const colour = { done: GREEN, now: AMBER, next: "9AAAA7" }, label = { done: "Done", now: "In progress", next: "Next" };
 const x0 = 0.75, step = 1.62, yLine = 1.9;
 s.addShape(pres.shapes.LINE, { x: x0 + 0.2, y: yLine, w: step * 5, h: 0, line: { color: LINE, width: 2 } });
@@ -77,7 +77,7 @@ phases.forEach(([name, st], i) => {
   s.addText(name, { x: x - 0.55, y: yLine + 0.3, w: 1.5, h: 0.55, fontFace: BODY, fontSize: 11, bold: true, color: INK, align: "center", valign: "top", margin: 0, isTextBox: true });
   s.addText(label[st], { x: x - 0.55, y: yLine + 0.85, w: 1.5, h: 0.25, fontFace: BODY, fontSize: 10.5, color: colour[st], align: "center", margin: 0, isTextBox: true });
 });
-const stats = [["8", "sources studied"], ["71", "business classes"], ["98", "operations"], ["16", "exception scenarios"], ["73", "automated tests"]];
+const stats = [["8", "sources studied"], ["71", "business classes"], ["98", "operations"], ["16", "exception scenarios"], ["77", "automated tests"]];
 stats.forEach(([n, l], i) => {
   const x = 0.5 + i * 1.84;
   card(s, x, 3.45, 1.7, 1.45);
@@ -173,9 +173,9 @@ s = pres.addSlide(); s.background = { color: WHITE };
 header(s, "Implementation and GUI: built and tested", "Python, standard library only; GUI in Tkinter", 3);
 fitImage(s, "screenshots/gui_02_overview.png", 0.4, 1.35, 5.0, 3.2);
 s.addText("GUI prototype: staff overview screen", { x: 0.4, y: 4.6, w: 5.0, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: GREY, align: "center", margin: 0, isTextBox: true });
-const work = [["Built", GREEN, ["Four hierarchies; double-entry ledger that always balances", "16 exception scenarios, 73 automated tests",
-    "GUI for staff and for customers", "AI assistant (Claude) that answers from the records"]],
-  ["Now refining", AMBER, ["Saving and loading records (files / JSON)", "Design review against SOLID", "Clearer diagrams for the final presentation"]]];
+const work = [["Built", GREEN, ["Four hierarchies; double-entry ledger that always balances", "16 exception scenarios, 77 automated tests",
+    "GUI for staff and customers; AI assistant", "Save and load the whole bank (JSON file)"]],
+  ["Now refining", AMBER, ["Design review against SOLID and design patterns", "The final 30-minute presentation"]]];
 let y = 1.35;
 work.forEach(([tag, col, items]) => {
   s.addShape(pres.shapes.ROUNDED_RECTANGLE, { x: 5.7, y, w: 1.3, h: 0.34, fill: { color: col }, rectRadius: 0.08, line: { color: col } });
@@ -188,9 +188,9 @@ s.addNotes(NOTES[7]);
 // 9. Next steps -------------------------------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 header(s, "Next steps to the final submission", "What remains, in order", 4);
-const next = [["Now", "Save and load the bank's records with files / JSON (weeks 6, 11)"],
-  ["Next", "Review the design against SOLID and the design patterns (weeks 10, 11)"],
+const next = [["Now", "Review the design against SOLID and the design patterns (weeks 10, 11)"],
   ["Next", "Apply the feedback from this checkpoint"],
+  ["Next", "Prepare the final 30-minute presentation and live demonstration"],
   ["Final", "Complete the design report and diagrams; prepare the viva"]];
 next.forEach(([tag, t], i) => {
   const yy = 1.4 + i * 0.85;

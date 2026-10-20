@@ -12,7 +12,7 @@ The whole implementation is one file, `banking_system.py` (Python 3.9+, standard
 
 ```
 python banking_system.py              # run the seeded demonstration
-python banking_system.py --test       # run the 73 automated tests
+python banking_system.py --test       # run the 77 automated tests
 python banking_system.py --classes    # print the inheritance tree and the counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 ```
@@ -23,7 +23,7 @@ python banking_system.py --diagram docs   # regenerate every diagram (SVG) from 
 | 2. Assumptions | Section 2 (A1 to A36) |
 | 3. Requirements interpretation | Section 3; 3.1 answers the brief's eight open questions; 3.2 maps every participant, research area and scope item of the brief to the model |
 | 4. Class diagram | Section 4: overview, four UML hierarchy diagrams, three association diagrams (`docs/*.png`); 4.1 six flowcharts of the main workflows; 4.2 four UML state machine diagrams |
-| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (71 business classes plus 6 supporting, 98 operations, 80 of them state-changing commands) |
+| 5. Implementation with at least 30 classes and 30 operations | Section 5; `banking_system.py` (71 business classes plus 9 supporting, 98 operations, 80 of them state-changing commands) |
 | 6. Explanation of every inheritance relationship | Section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | 7. At least three tempting inheritances rejected | Section 7 (fourteen given); 7.1 compares the design with a plausible alternative |
 | 8. Seeded demonstration | Section 8; `docs/demo_output.txt` |
@@ -39,12 +39,12 @@ The essentials of each required item, for a quick read. Each section below gives
 2. **Assumptions.** 36 numbered decisions where the brief is silent, for example: a sole trader is a `Person`; a charity needs two trustees; owners of 25% or more must be verified; payments above a mandate's threshold need a second signatory.
 3. **Requirements.** The model must keep history when anything changes: documents expire, people lose authority, products close, cards are replaced, loans are restructured, branches close. Nothing is overwritten or deleted; changes are new records with dates.
 4. **Class model.** Four hierarchies (`Party`, `Arrangement`, `BankTransaction`, `Case`) plus standalone classes linked by association (cards, mandates, branches, employees, products). Diagrams: class overview, UML per hierarchy, associations, six flowcharts, four state machines.
-5. **Implementation.** One file, standard library only: 71 business classes (plus 6 supporting), 98 operations (80 change state), 73 automated tests, a double-entry ledger whose trial balance is always zero.
+5. **Implementation.** One file, standard library only: 71 business classes (plus 9 supporting), 98 operations (80 change state), 77 automated tests, a double-entry ledger whose trial balance is always zero.
 6. **Inheritance.** Four multi-level hierarchies, for example `Party › Organization › Company` and `BankTransaction › Reversal › Chargeback`. Shared data sits at the highest level every subclass needs, and each subclass changes one behaviour (for example, `SavingsAccount.check_debit` adds a monthly withdrawal limit).
 7. **Rejected inheritance.** Fourteen rejected, for example `Customer(Person)` (a role, not a kind), `Card(Account)` (holds no money), `SoleTrader(Organization)` (legally the person) and `MerchantRefund(Reversal)` (the purchase stays valid). The design is compared with an account-centric alternative on ten critical cases.
 8. **Seeded demonstration.** One bank, 3 branches, 10 staff, 20 people, a company, a charity, accounts, cards and financing, run on a simulated calendar from January 2026 to August 2027.
 9. **Complex scenarios.** Sixteen, covering every critical case in the brief, for example: onboarding blocked by an expiring document; a transfer held, then released; a card stolen and replaced twice; a loan restructured after paid instalments; a branch closed and its customers moved.
-10. **Limitations.** A single currency, in-memory storage, simplified interest, two-signatory dual control only. Growing larger would need a database, concurrency control, multiple currencies and configurable approval rules; section 10 maps each change to the classes it affects.
+10. **Limitations.** A single currency, saving only as one whole JSON file, simplified interest, two-signatory dual control only. Growing larger would need a database, concurrency control, multiple currencies and configurable approval rules; section 10 maps each change to the classes it affects.
 
 ---
 
@@ -402,7 +402,7 @@ Every posting goes through `BankTransaction.post`, which refuses any set of legs
 
 Two conventions worth defending: payments that break a rule return a transaction with status `FAILED` or `DECLINED` (a failed payment is itself a record the bank must keep), while other rule violations raise a `BankingError` subclass (nothing should be created).
 
-**Automated tests.** 73 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
+**Automated tests.** 77 independent tests (`python banking_system.py --test`). Each builds a small fresh bank and checks one rule or historical guarantee. They include one regression test for every defect fixed during the code review (`docs/Code_Review.md`), eleven tests for the features added after checking the model against every line of the brief (`BriefCoverageTests`), four tests that check the brief's own requirements from the code (at least 30 classes and 30 operations, multi-level inheritance, that the diagrams name only real classes, and that the whole demonstration runs with a zero trial balance), seven abstraction tests (`AbstractionTests`: the hierarchy roots cannot be instantiated, every leaf class is concrete, the polymorphic methods replace the old type checks, a merchant is a counterparty linked to every card payment made there, and every upheld card dispute in the demonstration became a `Chargeback`), two card tests from the research (`CardRefundAndChargebackTests`: a merchant refund is a new credit that leaves the purchase posted and limits what can still be disputed; a chargeback needs a scheme reason code and cannot itself be reversed) and four lifecycle tests (`LifecycleTests`: every status change in the demonstration followed its class's state machine, an illegal move is refused even when the `Bank` is bypassed, lifecycles are inherited and extended, and every state machine is well formed).
 
 ---
 
@@ -423,6 +423,22 @@ The brief says artificial classes added only to meet a count do not qualify. So 
 - **`ComplianceInvestigation`** (no own fields): a risk case opened by compliance staff rather than by a monitoring rule. Unlike `FraudAlert`, it has no triggering rule or transaction, which is exactly why it is a sibling and not a subclass. It keeps its own reference series (`CMPL-`).
 
 **The strict count:** even counting only the 48 classes with their own behaviour, the model is well above the brief's minimum of 30. The record classes are what keep history meaningful (the brief's common rule on historical records), so they are counted as meaningful too, but they are not needed to pass the threshold.
+
+### 5.2 Saving and loading the whole bank (files and JSON)
+
+`Repository` (a small supporting hierarchy, not one of the four banking hierarchies) saves the entire bank as JSON text and loads it back exactly: every object and its full history, including status histories, versions and the audit log. A saved bank carries on where it stopped: new reference numbers continue from the saved counters, and the lifecycles still refuse illegal moves.
+
+| Class | Inherits from | What the level adds |
+|---|---|---|
+| `Repository` | (abstract) | The JSON format, shared by every repository: `save()` and `load()` as template methods; `encode()` and `decode()` |
+| `JsonFileRepository` | `Repository` | Keeps the text in a file on disk |
+| `MemoryRepository` | `Repository` | Keeps the text in memory, so the tests need no files |
+
+**How the format works.** Each object is saved once, as its class name and its fields. A link to another object is saved as `{"$ref": n}`, so an object shared by several records (an employee who approved many payments, for example) is still one object after loading, and links in both directions are no problem. Dates and Decimal amounts keep their types (`{"$date": ...}`, `{"$dec": ...}`). A lifecycle is saved by its name (for example `TransferPayment.LIFECYCLE`), because it is part of the class, not data. Encoding is iterative, not recursive, so long chains of linked records cannot exceed Python's recursion limit.
+
+**Why a hierarchy.** What changes between repositories is only *where* the text is kept; the format must be identical, or a bank saved by one could not be read by another. So the format lives once in the parent, and each subclass implements two small methods (`_write`, `_read`). A database repository would be a third subclass.
+
+**Proof.** Four tests: saving a loaded bank gives byte-for-byte the same JSON (all 1,366 objects of the demo bank); the loaded bank keeps its balances and answers history questions (Bilal's mandate on 11 April 2026); it carries on (a new deposit posts under a new reference, and a destroyed card still cannot become active); and the file repository reads what it wrote and refuses a missing file. From the command line: `python banking_system.py --save bank.json` and `--load bank.json`. In the GUI: Save and Open in the top bar.
 
 ## 6. Inheritance relationships explained
 
@@ -540,7 +556,7 @@ All ten critical cases listed in the brief for Problem 4 are covered, and scenar
 
 ## 10. Limitations and scaling
 
-**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. In-memory storage only, with reference numbers held in a module-level counter. No concurrency or rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no authentication: the GUI's sign-in chooses a person without a password, each operation is told who is acting, and the model then checks that person's authority.
+**Current limitations.** Single currency. Term deposits pay simple interest and have no rollover option. Card controls do not carry over to a replacement card. Only debit cards: a credit card would be a revolving credit `Arrangement` with its own statement cycle, which is not modelled. Chargebacks are final when posted; real schemes allow provisional credit to the customer and a merchant's re-presentment ("second presentment"), which would be further statuses on `Chargeback`. Savings interest is a simple month-end calculation (no daily accrual, tax withholding or Islamic profit-sharing weights). A fixed review threshold rather than risk scoring. A small chart of accounts. The bank is saved and loaded as one whole JSON file (`Repository`, section 5.2): there is no database, so no partial updates, no concurrent users, and reference numbers come from a module-level counter that the file restores. No rollback across several objects. Simplified loan maths (equal principal, monthly interest on the outstanding balance, no penalty charges). Dual control supports exactly two signatories rather than configurable rules such as "any two of A, B, C". Two credit authority levels only. There is no authentication: the GUI's sign-in chooses a person without a password, each operation is told who is acting, and the model then checks that person's authority.
 
 **If the bank became much larger.** Records would move to a database with effective-dated tables (the `Period` and version classes map directly to `valid_from` / `valid_to` columns). The `Bank` class would split into separate services (customers, payments, cards, lending, compliance) communicating through events, because one object cannot own every registry. The acting person would come from authentication, with role-based permissions. The ledger would become a full general ledger with a larger chart of accounts, and monitoring would use rules and scoring models rather than one threshold.
 

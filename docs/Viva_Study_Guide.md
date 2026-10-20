@@ -134,9 +134,10 @@ Fixed order: own verification against a document valid **on that date**, then `s
 11. What does "deletion" mean in your system? (Archiving; deletion requests are refused with a retention date.)
 12. Name three tempting inheritances you rejected, and why.
 13. How do you know the books balance? (`trial_balance()` sums to zero; every posting has equal and opposite legs.)
-14. Give one weakness of your design. (Section 10: single currency, in-memory storage, two-signatory dual control only.)
+14. Give one weakness of your design. (Section 10: single currency, saving only as one whole JSON file with no database, two-signatory dual control only.)
 15. What design would be the plausible alternative, and why is yours better? (An account-centric model; report section 7.1.)
 
 16. Are all 71 classes meaningful? (48 have their own behaviour, already above the 30 required; 20 are record classes that keep history; only 3 are small subclasses, each with a reason. Report section 5.1.)
+17. How does saving work, and where is the inheritance? (`Repository` holds the JSON format; `JsonFileRepository` and `MemoryRepository` only decide where the text is kept. Links are saved as references, so shared objects stay shared. Report section 5.2.)
 
-When you can answer all 16 without notes, you are ready.
+When you can answer all 17 without notes, you are ready.

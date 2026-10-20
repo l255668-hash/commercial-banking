@@ -29,7 +29,7 @@ Keep technical words (class, inheritance, mandate, reversal) in English, as writ
 
 ### سلائیڈ 2: پروجیکٹ کہاں کھڑا ہے (0:20 تا 0:55)
 
-میں نے پروجیکٹ کو چھ phases میں plan کیا۔ پہلے چار phases مکمل ہیں: research اور assumptions، class اور inheritance design، tests کے ساتھ Python implementation، اور GUI کے ساتھ AI assistant۔ اس وقت پانچواں phase، یعنی refinement، جاری ہے، اور آخری phase final report اور viva ہے۔ نیچے دیے گئے numbers code سے لیے گئے ہیں: آٹھ sources، اکہتر business classes، اٹھانوے operations، سولہ exception scenarios، اور تہتر automated tests جو سب pass ہوتے ہیں۔ Brief کم از کم تیس classes اور تیس operations مانگتا ہے۔
+میں نے پروجیکٹ کو چھ phases میں plan کیا۔ پہلے چار phases مکمل ہیں: research اور assumptions، class اور inheritance design، tests کے ساتھ Python implementation، اور GUI کے ساتھ AI assistant۔ اس وقت پانچواں phase، یعنی refinement، جاری ہے، اور آخری phase final report اور viva ہے۔ نیچے دیے گئے numbers code سے لیے گئے ہیں: آٹھ sources، اکہتر business classes، اٹھانوے operations، سولہ exception scenarios، اور ستتر automated tests جو سب pass ہوتے ہیں۔ Brief کم از کم تیس classes اور تیس operations مانگتا ہے۔
 
 ### سلائیڈ 3: ریسرچ (0:55 تا 1:40)
 
@@ -53,11 +53,11 @@ Brief کہتا ہے کہ model بنانے سے پہلے industry کو سمجھو
 
 ### سلائیڈ 8: Implementation اور GUI (3:55 تا 4:35)
 
-اب implementation۔ Model Python میں بن چکا ہے: چاروں hierarchies، double-entry ledger جو ہمیشہ balance رہتا ہے، اور brief کے سولہ exception scenarios، جو تہتر automated tests سے check ہوتے ہیں۔ Tkinter میں GUI بھی بن چکا ہے، یہ اس کی screen ہے، جہاں staff اور customer دونوں اپنے role کے حساب سے کام کرتے ہیں۔ اور ایک AI assistant بھی ہے، جو Claude API سے bank کے records پڑھ کر سوالوں کا جواب دیتا ہے، مگر خود کوئی record نہیں بدل سکتا۔ اس وقت میں refinement کر رہا ہوں: files اور JSON سے records save کرنا، SOLID کے مطابق review، اور final presentation کے لیے زیادہ واضح diagrams۔
+اب implementation۔ Model Python میں بن چکا ہے: چاروں hierarchies، double-entry ledger جو ہمیشہ balance رہتا ہے، اور brief کے سولہ exception scenarios، جو ستتر automated tests سے check ہوتے ہیں۔ Tkinter میں GUI بھی بن چکا ہے، یہ اس کی screen ہے، جہاں staff اور customer دونوں اپنے role کے حساب سے کام کرتے ہیں۔ اور ایک AI assistant بھی ہے، جو Claude API سے bank کے records پڑھ کر سوالوں کا جواب دیتا ہے، مگر خود کوئی record نہیں بدل سکتا۔ پورا bank ایک JSON file میں save اور دوبارہ load بھی ہو جاتا ہے۔ اس وقت میں refinement کر رہا ہوں: SOLID اور design patterns کے مطابق review، اور final presentation کی تیاری۔
 
 ### سلائیڈ 9: اگلے steps (4:35 تا 5:00)
 
-اگلے steps: پہلے files اور JSON سے bank کے records save اور load کرنا، پھر SOLID اور design patterns کے مطابق design review، پھر آج کے feedback پر عمل۔ آخر میں final report اور viva۔ شکریہ، میں سوالات کے لیے حاضر ہوں۔
+اگلے steps: پہلے SOLID اور design patterns کے مطابق design review، پھر آج کے feedback پر عمل، پھر final presentation اور live demo کی تیاری۔ آخر میں final report اور viva۔ شکریہ، میں سوالات کے لیے حاضر ہوں۔
 
 ## Speech in Roman Urdu
 
@@ -69,7 +69,7 @@ Assalam-o-Alaikum. Mera naam Khizar Rizwan hai, roll number 25L-5668. Mera proje
 
 ### Slide 2 (0:20-0:55)
 
-Main ne project ko chhe phases mein plan kiya. Pehle chaar phases mukammal hain: research aur assumptions, class aur inheritance design, tests ke saath Python implementation, aur GUI ke saath AI assistant. Is waqt paanchwan phase, yani refinement, jaari hai, aur aakhri phase final report aur viva hai. Neeche diye gaye numbers code se liye gaye hain: aath sources, ikhattar business classes, athanve operations, solah exception scenarios, aur tehattar automated tests jo sab pass hote hain. Brief kam az kam tees classes aur tees operations maangta hai.
+Main ne project ko chhe phases mein plan kiya. Pehle chaar phases mukammal hain: research aur assumptions, class aur inheritance design, tests ke saath Python implementation, aur GUI ke saath AI assistant. Is waqt paanchwan phase, yani refinement, jaari hai, aur aakhri phase final report aur viva hai. Neeche diye gaye numbers code se liye gaye hain: aath sources, ikhattar business classes, athanve operations, solah exception scenarios, aur sattattar automated tests jo sab pass hote hain. Brief kam az kam tees classes aur tees operations maangta hai.
 
 ### Slide 3 (0:55-1:40)
 
@@ -93,11 +93,11 @@ Yeh flowchart ek poora workflow dikhata hai: digital banking se ek bara transfer
 
 ### Slide 8 (3:55-4:35)
 
-Ab implementation. Model Python mein ban chuka hai: chaaron hierarchies, double-entry ledger jo hamesha balance rehta hai, aur brief ke solah exception scenarios, jo tehattar automated tests se check hote hain. Tkinter mein GUI bhi ban chuka hai, yeh us ki screen hai, jahan staff aur customer dono apne role ke hisaab se kaam karte hain. Aur ek AI assistant bhi hai, jo Claude API se bank ke records parh kar sawalon ka jawab deta hai, magar khud koi record nahi badal sakta. Is waqt main refinement kar raha hoon: files aur JSON se records save karna, SOLID ke mutabiq review, aur final presentation ke liye zyada wazeh diagrams.
+Ab implementation. Model Python mein ban chuka hai: chaaron hierarchies, double-entry ledger jo hamesha balance rehta hai, aur brief ke solah exception scenarios, jo sattattar automated tests se check hote hain. Tkinter mein GUI bhi ban chuka hai, yeh us ki screen hai, jahan staff aur customer dono apne role ke hisaab se kaam karte hain. Aur ek AI assistant bhi hai, jo Claude API se bank ke records parh kar sawalon ka jawab deta hai, magar khud koi record nahi badal sakta. Poora bank ek JSON file mein save aur dobara load bhi ho jata hai. Is waqt main refinement kar raha hoon: SOLID aur design patterns ke mutabiq review, aur final presentation ki tayyari.
 
 ### Slide 9 (4:35-5:00)
 
-Agle steps: pehle files aur JSON se bank ke records save aur load karna, phir SOLID aur design patterns ke mutabiq design review, phir aaj ke feedback par amal. Aakhir mein final report aur viva. Shukriya, main sawalat ke liye hazir hoon.
+Agle steps: pehle SOLID aur design patterns ke mutabiq design review, phir aaj ke feedback par amal, phir final presentation aur live demo ki tayyari. Aakhir mein final report aur viva. Shukriya, main sawalat ke liye hazir hoon.
 
 ## Likely questions (answers in Roman Urdu)
 
@@ -113,7 +113,7 @@ Agle steps: pehle files aur JSON se bank ke records save aur load karna, phir SO
 
 **AI assistant kyun, aur kya yeh khatarnak nahi?** Assistant sirf records parhta hai aur form bhar kar deta hai; Run insaan dabata hai, is liye bank ke saare rules aur audit log waise hi lagte hain. Internet na ho to offline assistant jawab deta hai.
 
-**Abhi kya baqi hai?** Files/JSON se records save aur load karna, SOLID aur design patterns ka review, aaj ka feedback, aur final report aur viva.
+**Abhi kya baqi hai?** SOLID aur design patterns ka review, aaj ka feedback, final presentation aur viva.
 
 ## Rehearsal checklist
 

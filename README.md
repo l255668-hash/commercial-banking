@@ -16,7 +16,8 @@ An optional desktop GUI, `banking_gui.py`, is a separate file that uses the mode
 
 ```
 python banking_system.py              # run the seeded demonstration (16 scenarios)
-python banking_system.py --test       # run the 73 automated tests
+python banking_system.py --test       # run the 77 automated tests
+python banking_system.py --save bank.json   # save the whole bank as JSON (--load bank.json opens it)
 python banking_system.py --classes    # print the inheritance tree and the class/operation counts
 python banking_system.py --diagram docs   # regenerate every diagram (SVG) from the code
 python banking_gui.py                 # open the desktop app (sign in as staff or as a customer)
@@ -97,7 +98,7 @@ Six flowcharts in `docs/` show the behaviour the class diagrams cannot: the orde
 | 11 | Statements and notices |
 | 12 | `Bank`: 98 operations (80 state-changing commands), each checking its rules and writing an audit event |
 | 13 | Seeded demonstration on a simulated calendar (Jan 2026 to Aug 2027) |
-| 14 | 73 automated tests (including abstraction, lifecycle, refund and chargeback tests) |
+| 14 | 77 automated tests (including abstraction, lifecycle, refund, chargeback and save/load tests) |
 | 15-16 | Class and UML diagram generators, command line |
 
 ## The desktop GUI (`banking_gui.py`)
@@ -177,7 +178,7 @@ Keep the key on your own computer: never put it in the code, a screenshot or the
 | Assumptions | Report section 2 (A1 to A36) |
 | Requirements interpretation | Report section 3 |
 | Class diagram | Report section 4: overview, 4 UML hierarchy and 3 association diagrams; 4.1: 6 flowcharts; 4.2: 4 state machine diagrams |
-| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 77 classes (71 business + 6 supporting), 98 operations; report section 5 |
+| Implementation (at least 30 classes and 30 operations) | `banking_system.py`: 80 classes (71 business + 9 supporting), 98 operations; report section 5 |
 | Multi-level inheritance explained | Report section 6; 6.1 abstract classes and polymorphism; 6.2 inherited state machines |
 | At least three rejected inheritances | Report section 7 (fourteen given) and 7.1 (comparison with a plausible alternative design) |
 | Seeded demonstration | `run_demo()`, `docs/demo_output.txt`, report section 8 |
@@ -205,4 +206,4 @@ Report section 3.2 maps every participant, research area and scope item in the b
 
 ## Notes
 
-The bank, people and companies are fictional. All amounts are Pakistani rupees. Data is held in memory and rebuilt on each run.
+The bank, people and companies are fictional. All amounts are Pakistani rupees. Data is rebuilt on each run, and can be saved to and opened from a JSON file (`--save` / `--load`, or Save and Open in the GUI).

@@ -22,9 +22,9 @@ Work through this list before you hand the project in.
 ## 4. Verify on your own computer
 
 ```
-python banking_system.py --test       # expect: Ran 73 tests ... OK
+python banking_system.py --test       # expect: Ran 77 tests ... OK
 python banking_system.py              # expect: TOTAL 0.00 at the end
-python banking_system.py --classes    # expect: 77 domain classes (71 business + 6 supporting), 7 error classes, 98 Bank operations
+python banking_system.py --classes    # expect: 80 domain classes (71 business + 9 supporting), 7 error classes, 98 Bank operations
 python banking_gui.py                 # the sign-in screen opens (Linux: sudo apt install python3-tk)
 python banking_assistant.py --test    # expect "Ran 9 tests ... OK"
 python tools/gui_smoke_test.py        # optional: expect "GUI smoke test passed" (needs a display)

@@ -36,6 +36,8 @@
 <line x1="1032" y1="646" x2="940" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
 <line x1="848" y1="646" x2="940" y2="614" stroke="#4a6076" marker-end="url(#tri)"/>
 <line x1="112" y1="584" x2="572" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1246" y1="584" x2="1338" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
+<line x1="1430" y1="584" x2="1338" y2="552" stroke="#4a6076" marker-end="url(#tri)"/>
 <rect x="211" y="70" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
 <text x="296" y="89" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">Party</text>
 <rect x="119" y="132" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
@@ -110,6 +112,12 @@
 <text x="848" y="665" text-anchor="middle" fill="#1d2b3a">ComplianceInvestigation</text>
 <rect x="947" y="646" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
 <text x="1032" y="665" text-anchor="middle" fill="#1d2b3a">FraudAlert</text>
+<rect x="1253" y="522" width="170" height="30" rx="6" fill="#d8e6f3" stroke="#4a6076"/>
+<text x="1338" y="541" text-anchor="middle" fill="#1d2b3a" font-weight="bold" font-style="italic">Repository</text>
+<rect x="1161" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1246" y="603" text-anchor="middle" fill="#1d2b3a">JsonFileRepository</text>
+<rect x="1345" y="584" width="170" height="30" rx="6" fill="#eef3f8" stroke="#4a6076"/>
+<text x="1430" y="603" text-anchor="middle" fill="#1d2b3a">MemoryRepository</text>
 <rect x="20" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>
 <text x="105" y="807" text-anchor="middle" fill="#1d2b3a">AccountHold</text>
 <rect x="204" y="788" width="170" height="30" rx="6" fill="#f6f6f2" stroke="#4a6076"/>

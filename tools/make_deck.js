@@ -50,7 +50,7 @@ s.addNotes("Introduce the project: a teaching model of a commercial bank. The as
 // 2. Scale at a glance -------------------------------------------------------
 s = pres.addSlide(); s.background = { color: WHITE };
 title(s, "The project at a glance", "One Python file, standard library only - banking_system.py");
-const stats = [["71", "business classes (+6 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["73", "automated tests"], ["0.00", "trial balance total"]];
+const stats = [["71", "business classes (+9 supporting)"], ["98", "Bank operations (80 commands)"], ["4", "multi-level hierarchies"], ["16", "complex scenarios"], ["77", "automated tests"], ["0.00", "trial balance total"]];
 stats.forEach(([n, label], i) => {
   const x = 0.5 + (i % 3) * 3.05, y = 1.45 + Math.floor(i / 3) * 1.9;
   card(s, x, y, 2.85, 1.65);
@@ -219,7 +219,7 @@ s.addNotes("Full table in docs/Code_Review.md. Every fix is protected by a test,
 // 11. Limits and closing ---------------------------------------------------------
 s = pres.addSlide(); s.background = { color: TEAL };
 s.addText("Limitations and how it would scale", { x: 0.6, y: 0.4, w: 8.8, h: 0.6, fontFace: HEAD, fontSize: 28, bold: true, color: WHITE, margin: 0, isTextBox: true });
-const lim = [["Today", ["Single currency (PKR)", "In-memory storage", "Two-signatory dual control only", "Fixed review threshold, simple interest"]],
+const lim = [["Today", ["Single currency (PKR)", "One JSON file, no database", "Two-signatory dual control only", "Fixed review threshold, simple interest"]],
   ["At scale", ["Period -> valid_from / valid_to columns in a database", "Bank split into services linked by events", "Login supplies the acting person", "Islamic products as new Arrangement subclasses"]]];
 lim.forEach(([h, pts], i) => {
   const x = 0.6 + i * 4.5;

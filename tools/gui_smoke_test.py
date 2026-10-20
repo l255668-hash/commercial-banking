@@ -346,6 +346,26 @@ def assistant_story(app):
         print(f"  ok       explained {refused.txn_id}; prepared and ran a deposit form: {last.txn_id} POSTED")
 
 
+def save_and_open(app):
+    """Save the bank to a file, change it, open the file: the saved state comes back exactly."""
+    import tempfile
+    from pathlib import Path
+    print("== save and open the bank (JSON file)")
+    with tempfile.TemporaryDirectory() as folder:
+        path = Path(folder) / "bank.json"
+        before = (len(app.ctl.bank.transactions), app.ctl.today)
+        app.save_bank(str(path))
+        app.advance(1)                                   # change something after saving
+        app.open_bank(str(path))
+        after = (len(app.ctl.bank.transactions), app.ctl.today)
+        if after != before or not app.ctl.books_balance():
+            problems.append(f"opening the saved bank did not restore it ({before} -> {after})")
+        else:
+            app.show("Transactions")
+            app.update()
+            print(f"  ok       saved, changed and reopened: {after[0]} transactions on {after[1]}, books balance")
+
+
 def main():
     app = g.BankingApp()
     try:
@@ -362,6 +382,7 @@ def main():
         digital_banking_story(app)
         app.sign_in_staff(None)
         assistant_story(app)
+        save_and_open(app)
         print("== every screen refreshed")
         app.show("Overview")
         overview = app.pages["Overview"]

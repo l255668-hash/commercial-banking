@@ -53,11 +53,12 @@ import re
 import sys
 from datetime import date, timedelta
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 try:
     import tkinter as tk
     import tkinter.font as tkfont
-    from tkinter import messagebox, ttk
+    from tkinter import filedialog, messagebox, ttk
 except ImportError:                                   # pragma: no cover - depends on the OS
     sys.exit("Tkinter is not installed. Windows/macOS: reinstall Python with 'tcl/tk' ticked. "
              "Linux: sudo apt install python3-tk")
@@ -3936,6 +3937,8 @@ class BankingApp(tk.Tk):
         self.books_chip.pack(side="left", padx=10)
         ttk.Button(inner, text="Next day", command=lambda: self.advance(1)).pack(side="left", padx=(12, 0))
         ttk.Button(inner, text="Next month", command=lambda: self.advance(30)).pack(side="left", padx=6)
+        ttk.Button(inner, text="Save", style="Link.TButton", command=self.save_bank).pack(side="left", padx=2)
+        ttk.Button(inner, text="Open", style="Link.TButton", command=self.open_bank).pack(side="left", padx=2)
         ttk.Button(inner, text="Reset", style="Link.TButton", command=self.reset).pack(side="left", padx=2)
         ttk.Button(inner, text="Switch user", command=self.sign_out).pack(side="right")
         self.user_chip = tk.Frame(inner, bg=t.CARD)
@@ -3985,6 +3988,33 @@ class BankingApp(tk.Tk):
         self.ctl.advance(days)
         self.show_outcome(Outcome("ok", f"Business date moved to {self.ctl.today:%d %b %Y}",
                                   "The end-of-day batch ran for every day in between."))
+
+    def save_bank(self, path=None):
+        """Save the whole bank, with its history, as a JSON file (bs.JsonFileRepository)."""
+        path = path or filedialog.asksaveasfilename(title="Save the bank", defaultextension=".json",
+                                                    initialfile="bank.json", filetypes=[("Saved bank", "*.json")])
+        if not path:
+            return
+        bs.JsonFileRepository(path).save(self.ctl.bank)
+        self.show_outcome(Outcome("ok", f"Saved to {Path(path).name}",
+                                  f"Every record and its history, as at {self.ctl.today:%d %b %Y}."))
+
+    def open_bank(self, path=None):
+        """Replace the bank with one saved earlier; it carries on exactly where it stopped."""
+        path = path or filedialog.askopenfilename(title="Open a saved bank", filetypes=[("Saved bank", "*.json")])
+        if not path:
+            return
+        try:
+            bank = bs.JsonFileRepository(path).load()
+        except (bs.BankingError, ValueError, OSError) as e:
+            self.show_outcome(Outcome("blocked", "Could not open the saved bank", str(e)))
+            return
+        self.ctl.bank = bank
+        self._relocate_user()
+        self._update_user_chip()
+        self.show_outcome(Outcome("ok", f"Opened {Path(path).name}",
+                                  f"Business date {bank.today:%d %b %Y}; {len(bank.transactions)} transactions; "
+                                  f"the books {'balance' if bank.trial_balance()[1] == 0 else 'do NOT balance'}."))
 
     def reset(self):
         if messagebox.askyesno("Reset data", "Rebuild the seeded bank? Changes made in the console are lost."):
